@@ -25,6 +25,18 @@ Stav k 2026-11-04. Odškrtnuté = hotovo a ověřeno, neodškrtnuté = zbývá.
 - [ ] htop3: balíček je sestavený (samostatný `htop3` vedle systémového 0.8.3, obálka s `-d 50` a `HTOPRC`),
   zbývá ho nainstalovat na N900 (`make -C apps/htop install`) a ověřit menu, obálku a odinstalaci.
   Viz [apps/htop/htop.md](apps/htop/htop.md). Nový htop je 2,4× náročnější na procesor.
+- [ ] **curl a git s moderním HTTPS (priorita):** balíčky `curl` (750 kB) a `git` (10 MB, nahradí `git 1.6.2-1`)
+  jsou nainstalované a ověřené na N900 (klon `nokia-n900-notes` přes HTTPS za 126 s, 19 příkazů gitu OK).
+  Zbývá: odinstalace/návrat ke `git 1.6.2`, `git push` přes HTTPS s tokenem, SSH klient pro `git@github.com:`. Viz [apps/curl/curl.md](apps/curl/curl.md),
+  [apps/git/git.md](apps/git/git.md).
+- [ ] **cmatrix, cbonsai, tty-clock:** balíčky jsou sestavené (22 kB, 95 kB, 10,5 kB). Zbývá nainstalovat na N900 a ověřit
+  spouštěče v menu (`cbonsai-live`), `man`, chování na displeji. Viz [apps/cmatrix/cmatrix.md](apps/cmatrix/cmatrix.md),
+  [apps/cbonsai/cbonsai.md](apps/cbonsai/cbonsai.md), [apps/tty-clock/tty-clock.md](apps/tty-clock/tty-clock.md).
+- [ ] Převést starší aplikace (wordgrinder, htop, curl, git) na `mk/app.mk` a `scripts/debpack.sh`, ať se nic neopakuje.
+- [ ] Zafixovat SHA-256 zdrojových tarballů (curl, mbedTLS, zlib, git) v build skriptech.
+- [ ] `wget` s moderním TLS (nebo upravit skripty, aby volaly `curl`).
+- [ ] Obalit volání `workshop exec` příkazem `timeout -k` v `mk/common.mk`: `exec` se po dokončení dlouhých
+  buildů občas nevrátí (potvrzeno u toolchain, htop a curl).
 - [ ] Další aplikace v `apps/<app>/` (kandidáty vybrat).
 - [ ] Python 3.11: přepsat na armel a glibc 2.5, vlastní OpenSSL (SDK má jen 0.9.8n). Viz [README.md](README.md).
 

@@ -10,9 +10,19 @@
 #  - --hash-style=both so that the older dynamic linker copes as well. [to verify] on the device.
 #  - -fgnu89-inline: the glibc 2.5 headers use GNU89-style "extern inline". In C99 mode (gnu99, e.g.
 #    WordGrinder) the assembler otherwise reports "symbol stat64 is already defined".
+#  - MAEMO_DEPS (optional, colon-separated prefixes, e.g. /project/build/deps/zlib-1.3.2:...):
+#    their include/ and lib/ are searched BEFORE the sysroot. Needed when a newer library is built
+#    privately, because the old one in the sysroot (e.g. zlib 1.2.3) would otherwise win. The
+#    include directories are given as -isystem BEFORE the sysroot one: GCC ignores a plain -I for a
+#    directory that is also passed as -isystem (curl does that), which would put it after the sysroot.
 SR="${MAEMO_SYSROOT:-/project/sysroot}"
 GCCINC="$(arm-linux-gnueabi-gcc -print-file-name=include)"
-exec arm-linux-gnueabi-gcc \
+DEPFLAGS=
+for d in $(printf '%s' "${MAEMO_DEPS:-}" | tr ':' ' '); do
+    DEPFLAGS="$DEPFLAGS -isystem $d/include -L$d/lib"
+done
+# shellcheck disable=SC2086  # DEPFLAGS is intentionally split into words
+exec arm-linux-gnueabi-gcc $DEPFLAGS \
     --sysroot="$SR" -B"$SR/usr/lib" -L"$SR/usr/lib" -L"$SR/lib" \
     -nostdinc -isystem "$GCCINC" -isystem "$SR/usr/include" \
     -march=armv7-a -mfpu=neon -mfloat-abi=softfp \

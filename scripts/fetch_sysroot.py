@@ -30,6 +30,7 @@ INDEXES = [
     "dists/fremantle/sdk/non-free/binary-armel/Packages",
 ]
 DEFAULT_ROOTS = [
+    "ncurses-base",   # terminfo data (/etc/terminfo), so that curses programs can run under qemu
     "libc6-dev",
     "zlib1g-dev",
     "libncurses5-dev",

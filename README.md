@@ -211,6 +211,9 @@ ssh user@<ip-n900> 'dpkg -i /home/user/MyDocs/balicek_armhf.deb'   # Maemo 5: ro
 ### Konkrétní aplikace (jedna aplikace = jeden soubor v `DOC/`)
 
 - [WordGrinder](apps/wordgrinder/wordgrinder.md): konzolový textový procesor, první kandidát.
+- Malé ncurses programy: [cmatrix](apps/cmatrix/cmatrix.md), [cbonsai](apps/cbonsai/cbonsai.md), [tty-clock](apps/tty-clock/tty-clock.md).
+- [curl 8.23 (TLS 1.3)](apps/curl/curl.md): moderní HTTPS na starém systému, staticky s mbedTLS.
+- [git 2.56](apps/git/git.md): nahrazuje `git 1.6.2`, HTTPS přes libcurl (potřebuje `curl`).
 - [htop 3](apps/htop/htop.md): nový htop vedle systémového 0.8.3 (balíček `htop3`), měření výkonu.
 
 ### Kandidáti na backport (bude třeba vybrat)

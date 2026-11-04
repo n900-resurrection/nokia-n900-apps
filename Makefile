@@ -5,7 +5,7 @@
 
 include mk/common.mk
 
-TARGETS := help up down status enter toolchain sysroot hello wordgrinder htop push clean distclean
+TARGETS := help up down status enter toolchain sysroot hello wordgrinder htop curl git cmatrix cbonsai tty-clock push clean distclean
 .PHONY: $(TARGETS)
 
 UP := Create and start the workshop (first run)
@@ -43,6 +43,26 @@ wordgrinder:
 HTOP := Build htop (more: make -C apps/htop)
 htop:
 	$(MAKE) -C apps/htop build
+
+CURL := Build curl with TLS 1.3 (more: make -C apps/curl)
+curl:
+	$(MAKE) -C apps/curl build
+
+GIT := Build git with HTTPS (needs curl, more: make -C apps/git)
+git:
+	$(MAKE) -C apps/git build
+
+CMATRIX := Build cmatrix (more: make -C apps/cmatrix)
+cmatrix:
+	$(MAKE) -C apps/cmatrix build
+
+CBONSAI := Build cbonsai (more: make -C apps/cbonsai)
+cbonsai:
+	$(MAKE) -C apps/cbonsai build
+
+TTY-CLOCK := Build tty-clock (more: make -C apps/tty-clock)
+tty-clock:
+	$(MAKE) -C apps/tty-clock build
 
 PUSH := Copy FILE to the N900 (creates the target dir): make push [DEVICE=n900] [FILE=build/hello]
 push:

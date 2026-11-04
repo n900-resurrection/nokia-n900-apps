@@ -61,6 +61,28 @@ Co je skutečně nainstalované na testovacím N900 (`dpkg -l`, ověřeno 2026-1
 `libstdc++6 4.2.1`, `libssl0.9.8 0.9.8n`, `libncurses5 5.7` (**bez w**), `libgtk2.0-0 2.14.7`, `libhildon1 2.2.23`,
 `libsdl1.2 1.2.13` (+ image, mixer), `libzip1`, `libzbar0`; zlib je k dispozici jako `libz.so.1`.
 
+### ncurses: statická knihovna, nebo závislost? (rozhodnuto 2026-11-04)
+
+Telefon má jen `libncurses5` 5.7 (**bez** širokých znaků); `libncursesw` na něm není. SDK ji má (297 kB sdílená,
+487 kB statická), stejné verze 5.7. Naměřené dopady (po stripu):
+
+| Program | Potřebuje | Zvolené řešení | Velikost binárky |
+|---|---|---|---|
+| tty-clock, cmatrix | obyčejný ncurses | **dynamicky, `Depends: libncurses5 (>= 5.7)`** (systémová) | 18 kB, 14 kB |
+| cbonsai | široké znaky (`cchar_t`) | **staticky** ncursesw + panelw | 156 kB |
+| WordGrinder | široké znaky | **staticky** ncursesw | 681 kB (z toho asi 150 kB ncursesw) |
+| htop 3 | široké znaky (Unicode) | **staticky** ncursesw | 394 kB |
+
+Pravidlo:
+1. Stačí-li obyčejný ncurses, **závislost na systémovém `libncurses5`**: je na každém telefonu, nic se
+   nehostuje a binárka je malá.
+2. Jsou-li potřeba široké znaky, **statický ncursesw** v binárce. Cena je asi 150 kB na program.
+
+Proč ne sdílený balíček `libncursesw5`: ušetřil by asi 150 kB × 4 programy ≈ 0,6 MB, ale vyžadoval by v našem
+repozitáři další balíček (přebraný z SDK repa, ncurses má volnou licenci), pořadí instalace a hlídání verzí.
+Při velikosti úložiště (1,2 GB volných na `/home`) to nestojí za složitost. Vrátit se k tomu má smysl, až
+bude vlastní repozitář a aplikací s ncursesw bude víc (řádově 10 a více).
+
 Doporučení:
 - **Nikdy nenahrazovat systémové knihovny** (`libc`, `libstdc++6`, `libssl0.9.8`). Rozbilo by to Maemo.
 - Preferovat **statické linkování** pro cokoli, co není na zařízení garantované. Cena je velikost

@@ -42,7 +42,7 @@ Libs: -L$SR/usr/lib -Wl,-Bstatic -lncursesw -Wl,-Bdynamic
 EOF
 
 # 3. Configure and build out of tree.
-#    compat.h supplies O_CLOEXEC, which the glibc 2.5 headers lack (the 2.6.28 kernel has it).
+#    scripts/maemo-compat.h supplies O_CLOEXEC, which the glibc 2.5 headers lack (the 2.6.28 kernel has it).
 rm -rf "$OBJ" "$OUT"
 mkdir -p "$OBJ" "$OUT/root"
 cd "$OBJ"
@@ -53,7 +53,7 @@ export PKG_CONFIG_PATH="$PC" PKG_CONFIG_LIBDIR="$PC"
     --enable-unicode \
     --disable-hwloc --disable-sensors --disable-capabilities --disable-delayacct \
     CC="$PROJ/scripts/maemo-gcc" \
-    CFLAGS="-Os -include $PROJ/apps/htop/compat.h" \
+    CFLAGS="-Os -include $PROJ/scripts/maemo-compat.h" \
     > "$OUT/configure.log" 2>&1 || { tail -30 "$OUT/configure.log"; exit 1; }
 make -j"$(nproc)" > "$OUT/make.log" 2>&1 || { grep -E 'error|Error' "$OUT/make.log" | head -20; exit 1; }
 make install DESTDIR="$OUT/root" >> "$OUT/make.log" 2>&1

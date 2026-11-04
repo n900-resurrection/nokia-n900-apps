@@ -7,7 +7,7 @@ Balíček `htop3` se sestaví, **instalace na telefon zatím nezkoušena**.
 
 - Upstream tag `3.5.3`, autotools, cross-build ve Workshopu (`apps/htop/build.sh`).
 - ncursesw staticky (telefon má jen `libncurses5`), `--enable-unicode`, vypnuto hwloc, sensors, capabilities, delayacct.
-- Jediná úprava kvůli glibc 2.5: chybí `O_CLOEXEC` (viz `apps/htop/compat.h`). Hlavička nesmí nic includovat.
+- Jediná úprava kvůli glibc 2.5: chybí `O_CLOEXEC` (viz `scripts/maemo-compat.h`). Hlavička nesmí nic includovat.
 - Prefix `/opt/htop3`. Výsledek: 394 kB po stripu, `NEEDED`: librt, libdl, libm, libc, nejvyšší symbol `GLIBC_2.4`.
 - Na telefonu ověřeno: `--version`, spuštění s ptty a vykreslení rozhraní.
 
@@ -99,4 +99,4 @@ složku pro config.
 
 **Neověřeno:** instalace na zařízení (`dpkg -i`, `dpkg -L`), spuštění z menu, Application Manager.
 Binárka sama na telefonu běží (viz výše). Ikona v menu bude výchozí (`.desktop` nemá `Icon=`).
-Licence: htop je GPL-2+, balíček obsahuje `COPYING` a odkaz na zdroj (upstream tag + naše úprava `compat.h`).
+Licence: htop je GPL-2+, balíček obsahuje `COPYING` a odkaz na zdroj (upstream tag + naše úprava `scripts/maemo-compat.h`).
