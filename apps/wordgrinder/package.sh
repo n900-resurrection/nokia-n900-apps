@@ -1,11 +1,11 @@
 #!/bin/bash
-# Zabalí sestavený WordGrinder do .deb pro Maemo 5. Spouští se UVNITŘ Workshopu po build.sh:
+# Package the built WordGrinder as a .deb for Maemo 5. Run INSIDE the Workshop after build.sh:
 #   workshop exec n900 -- bash -c 'VERSION=0.8 REV=1maemo1 /project/apps/wordgrinder/package.sh'
-#   (nebo na hostiteli: make -C apps/wordgrinder deb)
-# Výstup: /project/build/deb/wordgrinder_<VERSION>-<REV>_armel.deb
+#   (or on the host: make -C apps/wordgrinder deb)
+# Output: /project/build/deb/wordgrinder_<VERSION>-<REV>_armel.deb
 #
-# Stav: balíček se vytvoří a jde zkontrolovat (dpkg-deb -I/-c). Chování Application Manageru
-# a pole specifická pro Maemo 5 NEJSOU ověřená, viz DOC/packaging.md, sekce 4.
+# Status: verified on a real N900 (2026-11-04): install, dpkg -L, ldd, launch from the menu.
+# Not verified: installation through the Application Manager, see DOC/packaging.md, section 4.
 set -euo pipefail
 
 APP=wordgrinder
@@ -18,7 +18,7 @@ SRC="$PROJ/build/upstream/$APP"
 STAGE="$PROJ/build/deb/stage-$APP"
 DEB="$PROJ/build/deb/${APP}_${VERSION}-${REV}_armel.deb"
 
-[ -x "$OUT/$APP" ] || { echo "Chybí $OUT/$APP, spusť nejdřív build.sh (make build)"; exit 1; }
+[ -x "$OUT/$APP" ] || { echo "Missing $OUT/$APP, run build.sh first (make build)"; exit 1; }
 
 rm -rf "$STAGE"
 mkdir -p "$STAGE/DEBIAN" \
@@ -28,7 +28,7 @@ mkdir -p "$STAGE/DEBIAN" \
          "$STAGE/usr/bin" \
          "$STAGE/usr/share/applications/hildon"
 
-# Aplikace žije v /opt (na telefonu bind mount z /home/opt, kořenový oddíl je malý).
+# The application lives in /opt (a bind mount of /home/opt on the device; the root partition is small).
 install -m 755 "$OUT/$APP" "$STAGE/opt/$APP/bin/$APP"
 install -m 644 "$SRC/README.wg" "$STAGE/opt/$APP/share/doc/$APP/README.wg"
 if [ -d "$SRC/licenses" ]; then
@@ -36,10 +36,10 @@ if [ -d "$SRC/licenses" ]; then
 fi
 gzip -9n -c "$SRC/wordgrinder.man" > "$STAGE/opt/$APP/share/man/man1/$APP.1.gz"
 
-# Odkaz v PATH (relativní, aby fungoval i při jiném kořeni)
+# Link in PATH (relative, so it works regardless of the root it is installed under)
 ln -s "../../opt/$APP/bin/$APP" "$STAGE/usr/bin/$APP"
 
-# Spouštěč v menu. Konzolová aplikace potřebuje terminál. [ověřit] parametry osso-xterm na zařízení.
+# Menu launcher. A console application needs a terminal.
 cat > "$STAGE/usr/share/applications/hildon/$APP.desktop" <<EOF
 [Desktop Entry]
 Encoding=UTF-8
@@ -68,14 +68,15 @@ Description: Console word processor
  Upstream: https://github.com/davidgiven/wordgrinder
 EOF
 
-# Jednotná práva (umask v kontejneru dává group-write): adresáře 755, soubory 644, spustitelné zůstanou 755.
+# Uniform permissions (the container umask gives group-write): directories 755, files 644,
+# executables stay 755.
 chmod -R u+rwX,go+rX,go-w "$STAGE"
 
 mkdir -p "$(dirname "$DEB")"
-# gzip: staré dpkg na Maemo 5 (1.14) nezná xz. --root-owner-group: soubory patří root:root.
+# gzip: the old dpkg on Maemo 5 (1.14) does not know xz. --root-owner-group: files belong to root:root.
 dpkg-deb --root-owner-group -Zgzip --build "$STAGE" "$DEB"
 
-echo "== Balíček"
+echo "== Package"
 dpkg-deb -I "$DEB"
 dpkg-deb -c "$DEB"
 ls -l "$DEB"

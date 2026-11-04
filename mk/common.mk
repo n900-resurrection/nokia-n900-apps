@@ -1,26 +1,28 @@
-# Společná část Makefile (kořenový i apps/<app>/Makefile): nastavení, barvy, help.
-# Použití: na začátku Makefile `include <cesta>/mk/common.mk`, potom definovat TARGETS,
-# `.PHONY: $(TARGETS)` a cíle. Výchozí cíl je help.
+# Shared part of the Makefiles (root and apps/<app>/Makefile): settings, colours, help.
+# Usage: at the top of a Makefile `include <path>/mk/common.mk`, then define TARGETS,
+# `.PHONY: $(TARGETS)` and the targets. The default goal is help.
 #
-# Konvence: před každým cílem je proměnná se jménem cíle VELKÝMI PÍSMENY, jejíž
-# obsah je popis cíle. Cíl `help` z nich sestaví nápovědu. Nový cíl = přidat jeho
-# jméno do TARGETS a před něj proměnnou s popisem. V popisech nepoužívat # ani '.
-# Pozor: cíl se nesmí jmenovat shell (proměnná SHELL ovládá, jakým shellem make běží).
+# Convention: every target is preceded by a variable named like the target in UPPER CASE whose
+# value is the description of the target. The `help` target builds its output from them. To add
+# a target: put its name into TARGETS and define the description variable right before it.
+# Do not use # or a single quote in descriptions.
+# Caution: no target may be called shell (the variable SHELL selects the shell make runs).
+# Also avoid target names whose upper-case form clashes with a variable defined here.
 
-# Kořen projektu (složka nad mk/)
+# Project root (the directory above mk/)
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/..)
 
-# Nastavení: .env.default (ve verzování, výchozí hodnoty), potom .env (lokální, v .gitignore,
-# přepisuje výchozí). Nejvyšší prioritu má příkazová řádka: make push DEVICE=user@ip
+# Settings: .env.default (versioned defaults), then .env (local, git-ignored, overrides the
+# defaults). The command line wins over both: make push DEVICE=user@ip
 include $(ROOT)/.env.default
 -include $(ROOT)/.env
 
-# Příkazy uvnitř Workshopu. -p určuje projekt, takže fungují i z podsložek.
+# Commands inside the Workshop. -p selects the project, so they work from subdirectories too.
 WORKSHOP := workshop -p $(ROOT)
 INSIDE   := $(WORKSHOP) exec $(WS) --
 WSRUN    := $(WORKSHOP) run $(WS) --
 
-# Barvy: zapnuté jen v terminálu (stderr je tty). FORCE_COLOR=1 vynutí, NO_COLOR=1 vypne.
+# Colours: enabled only on a terminal (stderr is a tty). FORCE_COLOR=1 forces, NO_COLOR=1 disables.
 COLOR_ON := $(if $(NO_COLOR),,$(if $(FORCE_COLOR),y,$(shell test -t 2 && echo y)))
 ifneq ($(COLOR_ON),)
 RED    := $(shell printf '\033[0;31m')
@@ -37,7 +39,7 @@ endif
 
 uc = $(shell echo '$(1)' | tr 'a-z' 'A-Z')
 
-HELP := Vypise dostupne cile a jejich popis
+HELP := Show the available targets and their descriptions
 help:
-	@printf '$(BOLD)Pouziti:$(RESET) make $(CYAN)<cil>$(RESET)\n\n'
+	@printf '$(BOLD)Usage:$(RESET) make $(CYAN)<target>$(RESET)\n\n'
 	@$(foreach t,$(TARGETS),printf '$(CYAN)%-11s$(RESET) %s\n' '$(t)' '$($(call uc,$(t)))';)

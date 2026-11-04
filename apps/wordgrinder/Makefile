@@ -1,6 +1,6 @@
-# WordGrinder pro Maemo 5: sestavení, balení a instalace na N900.
-# Spouští se na hostiteli (`make -C apps/wordgrinder <cil>` nebo `cd apps/wordgrinder && make`),
-# sestavení a balení běží ve Workshopu. Společná část je v ../../mk/common.mk.
+# WordGrinder for Maemo 5: build, package and install on the N900.
+# Run on the host (`make -C apps/wordgrinder <target>` or `cd apps/wordgrinder && make`);
+# building and packaging happen inside the Workshop. The shared part is ../../mk/common.mk.
 
 include ../../mk/common.mk
 
@@ -12,40 +12,40 @@ DEBFILE := $(APP)_$(VERSION)-$(REV)_armel.deb
 TARGETS := help build deb info push install remove run clean
 .PHONY: $(TARGETS)
 
-BUILD := Sestavi binarku ve Workshopu (VERSION=0.8) do build/out/
+BUILD := Build the binary in the workshop (VERSION=0.8) into build/out/
 build:
 	$(INSIDE) bash -c 'VERSION=$(VERSION) /project/apps/$(APP)/build.sh'
 
-DEB := Vytvori .deb (armel) v build/deb/ (vyzaduje make build)
+DEB := Create the .deb (armel) in build/deb/ (needs make build)
 deb:
 	$(INSIDE) bash -c 'VERSION=$(VERSION) REV=$(REV) /project/apps/$(APP)/package.sh'
 
-INFO := Vypise obsah a metadata balicku
+INFO := Show the package metadata and contents
 info:
-	@test -f $(ROOT)/build/deb/$(DEBFILE) || { printf '$(RED)Chybi build/deb/$(DEBFILE), spust make deb$(RESET)\n'; exit 1; }
+	@test -f $(ROOT)/build/deb/$(DEBFILE) || { printf '$(RED)Missing build/deb/$(DEBFILE), run make deb$(RESET)\n'; exit 1; }
 	dpkg-deb -I $(ROOT)/build/deb/$(DEBFILE)
 	dpkg-deb -c $(ROOT)/build/deb/$(DEBFILE)
 
-PUSH := Zkopiruje .deb na N900 do DEST (vytvori slozku)
+PUSH := Copy the .deb to the N900 into DEST (creates the directory)
 push:
-	@test -n "$(DEVICE)" || { printf '$(RED)Zadej DEVICE (do .env nebo na prikazovou radku)$(RESET)\n'; exit 1; }
-	@test -f $(ROOT)/build/deb/$(DEBFILE) || { printf '$(RED)Chybi build/deb/$(DEBFILE), spust make deb$(RESET)\n'; exit 1; }
+	@test -n "$(DEVICE)" || { printf '$(RED)Set DEVICE (in .env or on the command line)$(RESET)\n'; exit 1; }
+	@test -f $(ROOT)/build/deb/$(DEBFILE) || { printf '$(RED)Missing build/deb/$(DEBFILE), run make deb$(RESET)\n'; exit 1; }
 	ssh $(DEVICE) mkdir -p $(DEST)
 	scp $(ROOT)/build/deb/$(DEBFILE) $(DEVICE):$(DEST)
 
-INSTALL := Nainstaluje .deb na N900 (dpkg -i, meni telefon)
+INSTALL := Install the .deb on the N900 (dpkg -i, changes the phone)
 install: push
 	ssh $(DEVICE) dpkg -i $(DEST)$(DEBFILE)
 
-REMOVE := Odinstaluje balicek z N900 (dpkg -r)
+REMOVE := Remove the package from the N900 (dpkg -r)
 remove:
-	@test -n "$(DEVICE)" || { printf '$(RED)Zadej DEVICE$(RESET)\n'; exit 1; }
+	@test -n "$(DEVICE)" || { printf '$(RED)Set DEVICE$(RESET)\n'; exit 1; }
 	ssh $(DEVICE) dpkg -r $(APP)
 
-RUN := Spusti WordGrinder na N900 pres ssh (TERM=xterm)
+RUN := Run WordGrinder on the N900 over ssh (TERM=xterm)
 run:
 	ssh -t $(DEVICE) 'TERM=xterm /usr/bin/$(APP)'
 
-CLEAN := Smaze vystupy teto aplikace z build/
+CLEAN := Remove the outputs of this application from build/
 clean:
 	rm -rf $(ROOT)/build/out/$(APP)-* $(ROOT)/build/obj/$(APP)-* $(ROOT)/build/deb

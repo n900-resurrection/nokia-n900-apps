@@ -186,6 +186,10 @@ ssh user@<ip-n900> 'dpkg -i /home/user/MyDocs/balicek_armhf.deb'   # Maemo 5: ro
 - Community SSU (CSSU) je komunitní aktualizace Maemo 5 (oznámena 2011). Doporučuji mít na zařízeních nainstalovaný, jelikož běžní vývojáři cílí na něj. **[ověřit]**
 - Fórum talk.maemo.org (Maemo 5 sekce), pro zjištění, co už je portované.
 
+### Co je hotové a co zbývá
+
+- [TODO.md](TODO.md)
+
 ### Struktura a balíčky
 
 - [Rozbor: struktura repa, závislosti, .deb, lokální repo, GitHub](DOC/packaging.md)

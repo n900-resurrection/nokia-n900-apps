@@ -30,6 +30,7 @@ zkoušený, ověřeno je jen 0.8.
 ## Stav
 
 - `build`: ověřeno (binárka běží na N900, `--help` a převod `txt → html`).
-- `deb`: balíček se vytvoří a má správná práva i formát. **Instalace na telefon zatím nezkoušena**, takže
-  neověřeno: chování Application Manageru, `Section: user/office`, spouštěč v menu
-  (`osso-xterm -e …`), `Depends`.
+- `deb`: balíček se vytvoří a má správná práva i formát. **Ověřeno na N900 (2026-11-04):** instalace,
+  `dpkg -L` (všechny soubory na místě), `ldd` (jen libz, libm, libc), spuštění ze spouštěče v menu a z terminálu.
+- Neověřeno: instalace z Application Manageru (ne přes `dpkg`), zobrazení v kategorii *Office*, vlastní ikona
+  (`.desktop` nemá `Icon=`). Viz [../../TODO.md](../../TODO.md).

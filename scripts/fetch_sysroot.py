@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
-"""Sestaví sysroot pro Maemo 5 (Fremantle, armel, glibc 2.5) z SDK repozitáře.
+"""Build a sysroot for Maemo 5 (Fremantle, armel, glibc 2.5) from the SDK repository.
 
-Stáhne index `Packages` z mirroru, vyřeší závislosti zadaných balíčků,
-stáhne jen potřebné .deb a rozbalí je do ./sysroot (přes dpkg-deb -x).
-Nestahuje celý mirror.
+Downloads the `Packages` index from a mirror, resolves the dependencies of the requested
+packages, downloads only the .deb files that are needed and unpacks them into ./sysroot
+(via dpkg-deb -x). It does not download the whole mirror.
 
-Použití:
-    scripts/fetch_sysroot.py                       # výchozí sada -dev balíčků
+Usage:
+    scripts/fetch_sysroot.py                       # default set of -dev packages
     scripts/fetch_sysroot.py libgtk2.0-dev zlib1g-dev
-    scripts/fetch_sysroot.py --dry-run             # jen vypíše, co by stáhl
-    scripts/fetch_sysroot.py --list libncurses     # hledání v indexu
+    scripts/fetch_sysroot.py --dry-run             # only print what would be downloaded
+    scripts/fetch_sysroot.py --list libncurses     # search the index
 
-Stav: neotestováno na zařízení. Viz DOC/workshop-crosscompile.md.
+Status: verified by cross-compiling and running programs on a real N900 (2026-11).
+See DOC/workshop-crosscompile.md.
 """
 import argparse
+import os
 import re
 import subprocess
 import sys
@@ -39,7 +41,7 @@ DEFAULT_ROOTS = [
     "libsdl1.2-dev",
     "libreadline5-dev",
 ]
-DELAY = 0.3  # s mezi stahováním, ať nezatěžujeme cizí server
+DELAY = 0.3  # seconds between downloads, to go easy on somebody else's server
 
 
 def fetch(url: str) -> bytes:
@@ -49,7 +51,7 @@ def fetch(url: str) -> bytes:
 
 
 def parse_packages(text: str):
-    """Vrátí {jmeno: [stanza,...]} (v indexu je víc verzí téhož balíčku)."""
+    """Return {name: [stanza, ...]} (the index holds several versions of the same package)."""
     pkgs = {}
     for block in text.split("\n\n"):
         if not block.strip():
@@ -102,12 +104,12 @@ def load_index():
         try:
             data = fetch(url)
         except Exception as e:  # noqa: BLE001
-            print(f"VAROVÁNÍ: {url}: {e}", file=sys.stderr)
+            print(f"WARNING: {url}: {e}", file=sys.stderr)
             continue
         for name, lst in parse_packages(data.decode("utf-8", "replace")).items():
             pkgs.setdefault(name, []).extend(lst)
     if not pkgs:
-        sys.exit("Index se nepodařilo načíst.")
+        sys.exit("Could not load the package index.")
     return pkgs
 
 
@@ -132,10 +134,11 @@ def resolve(pkgs, roots):
 
 
 def fix_symlinks(sysroot: Path) -> int:
-    """Absolutní symlinky (např. usr/lib/libm.so -> /lib/libm.so.6) přepíše na relativní.
+    """Rewrite absolute symlinks (e.g. usr/lib/libm.so -> /lib/libm.so.6) as relative ones.
 
-    Balíčky počítají s tím, že "/" je kořen zařízení. Mimo něj by odkaz vedl na hostitele
-    a linker by hlásil "cannot open ... libm.so". Přepisuje jen odkazy, jejichž cíl v sysrootu je.
+    The packages assume that "/" is the root of the device. Outside of it such a link would
+    point to the host and the linker would report "cannot open ... libm.so". Only links whose
+    target exists inside the sysroot are rewritten.
     """
     root = sysroot.resolve()
     n = 0
@@ -148,7 +151,7 @@ def fix_symlinks(sysroot: Path) -> int:
         dest = root / str(target).lstrip("/")
         if not (dest.exists() or dest.is_symlink()):
             continue
-        rel = Path(__import__("os").path.relpath(dest, p.parent))
+        rel = Path(os.path.relpath(dest, p.parent))
         p.unlink()
         p.symlink_to(rel)
         n += 1
@@ -157,11 +160,11 @@ def fix_symlinks(sysroot: Path) -> int:
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("roots", nargs="*", help="kořenové balíčky (výchozí: DEFAULT_ROOTS)")
-    ap.add_argument("--sysroot", default="sysroot", help="cílový adresář (výchozí ./sysroot)")
-    ap.add_argument("--cache", default="downloads", help="cache .deb (výchozí ./downloads)")
-    ap.add_argument("--dry-run", action="store_true", help="jen vypsat plán")
-    ap.add_argument("--list", metavar="TEXT", help="vypsat balíčky s TEXT v názvu a skončit")
+    ap.add_argument("roots", nargs="*", help="root packages (default: DEFAULT_ROOTS)")
+    ap.add_argument("--sysroot", default="sysroot", help="target directory (default ./sysroot)")
+    ap.add_argument("--cache", default="downloads", help="download cache for .deb files (default ./downloads)")
+    ap.add_argument("--dry-run", action="store_true", help="only print the plan")
+    ap.add_argument("--list", metavar="TEXT", help="list packages with TEXT in the name and exit")
     a = ap.parse_args()
 
     pkgs = load_index()
@@ -174,9 +177,9 @@ def main():
     roots = a.roots or DEFAULT_ROOTS
     chosen, missing = resolve(pkgs, roots)
     total = sum(int(s.get("Size", 0)) for s in chosen.values())
-    print(f"Balíčků: {len(chosen)}, přibližně {total / 1048576:.1f} MB")
+    print(f"Packages: {len(chosen)}, approximately {total / 1048576:.1f} MB")
     if missing:
-        print("Nenalezeno v indexu (přeskočeno):", ", ".join(sorted(missing)))
+        print("Not found in the index (skipped):", ", ".join(sorted(missing)))
     if a.dry_run:
         for n, s in sorted(chosen.items()):
             print(f"  {n} {s['Version']}")
@@ -188,13 +191,13 @@ def main():
     for n, s in sorted(chosen.items()):
         deb = cache / Path(s["Filename"]).name
         if not deb.exists():
-            print(f"stahuji {n} {s['Version']}")
+            print(f"downloading {n} {s['Version']}")
             deb.write_bytes(fetch(BASE + s["Filename"]))
             time.sleep(DELAY)
         subprocess.run(["dpkg-deb", "-x", str(deb), str(sysroot)], check=True)
     fixed = fix_symlinks(sysroot)
-    print(f"Přepsáno absolutních symlinků na relativní: {fixed}")
-    print(f"Hotovo: {sysroot.resolve()}")
+    print(f"Absolute symlinks rewritten as relative: {fixed}")
+    print(f"Done: {sysroot.resolve()}")
 
 
 if __name__ == "__main__":

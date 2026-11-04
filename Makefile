@@ -1,55 +1,59 @@
-# Ovládání vývojového prostředí pro Maemo 5 (Workshop "n900").
-# Spouští se na hostiteli, příkazy běží v kontejneru. Viz DOC/workshop-crosscompile.md.
-# Společná část (nastavení z .env, barvy, help) je v mk/common.mk, tam je i popis konvence.
-# Každá aplikace má svůj Makefile v apps/<app>/ (build, deb, push, install…).
+# Control of the Maemo 5 development environment (Workshop "n900").
+# Runs on the host, the commands execute inside the container. See DOC/workshop-crosscompile.md.
+# The shared part (settings from .env, colours, help) lives in mk/common.mk, which also
+# describes the conventions. Each application has its own Makefile in apps/<app>/.
 
 include mk/common.mk
 
-TARGETS := help up down status enter toolchain sysroot hello wordgrinder push clean distclean
+TARGETS := help up down status enter toolchain sysroot hello wordgrinder htop push clean distclean
 .PHONY: $(TARGETS)
 
-UP := Vytvori a spusti workshop (prvni spusteni)
+UP := Create and start the workshop (first run)
 up:
 	$(WORKSHOP) launch $(WS)
 
-DOWN := Zastavi workshop
+DOWN := Stop the workshop
 down:
 	$(WORKSHOP) stop $(WS)
 
-STATUS := Stav workshopu
+STATUS := Show the workshop status
 status:
 	$(WORKSHOP) list
 
-ENTER := Interaktivni shell uvnitr workshopu
+ENTER := Open an interactive shell inside the workshop
 enter:
 	$(WORKSHOP) shell $(WS)
 
-TOOLCHAIN := Nainstaluje cross-toolchain (armel) a qemu-user
+TOOLCHAIN := Install the armel cross toolchain and qemu-user
 toolchain:
 	$(WSRUN) toolchain
 
-SYSROOT := Stahne sysroot z Fremantle SDK do ./sysroot
+SYSROOT := Download the Fremantle SDK sysroot into ./sysroot
 sysroot:
 	$(WSRUN) sysroot
 
-HELLO := Prelozi a spusti hello.c (qemu-user, glibc 2.5)
+HELLO := Build and run hello.c (qemu-user, glibc 2.5)
 hello:
 	$(WSRUN) hello
 
-WORDGRINDER := Sestavi WordGrinder (dal: make -C apps/wordgrinder)
+WORDGRINDER := Build WordGrinder (more: make -C apps/wordgrinder)
 wordgrinder:
 	$(MAKE) -C apps/wordgrinder build
 
-PUSH := Zkopiruje FILE na N900 (vytvori cilovou slozku): make push [DEVICE=n900] [FILE=build/hello]
+HTOP := Build htop (more: make -C apps/htop)
+htop:
+	$(MAKE) -C apps/htop build
+
+PUSH := Copy FILE to the N900 (creates the target dir): make push [DEVICE=n900] [FILE=build/hello]
 push:
-	@test -n "$(DEVICE)" || { printf '$(RED)Zadej DEVICE=user@ip (do .env nebo na prikazovou radku)$(RESET)\n'; exit 1; }
+	@test -n "$(DEVICE)" || { printf '$(RED)Set DEVICE=user@ip (in .env or on the command line)$(RESET)\n'; exit 1; }
 	ssh $(DEVICE) mkdir -p $(DEST)
 	scp $(FILE) $(DEVICE):$(DEST)
 
-CLEAN := Smaze ./build
+CLEAN := Remove ./build
 clean:
 	rm -rf build
 
-DISTCLEAN := Smaze i ./sysroot a ./downloads
+DISTCLEAN := Also remove ./sysroot and ./downloads
 distclean: clean
 	rm -rf sysroot downloads

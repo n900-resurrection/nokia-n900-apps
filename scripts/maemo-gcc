@@ -1,14 +1,15 @@
 #!/bin/sh
-# Wrapper kolem arm-linux-gnueabi-gcc pro Maemo 5 (Fremantle, armel, glibc 2.5).
-# Jen pro C. Spouštět uvnitř Workshopu, sysroot vytvoří scripts/fetch_sysroot.py.
+# Wrapper around arm-linux-gnueabi-gcc for Maemo 5 (Fremantle, armel, glibc 2.5).
+# C only. Run inside the Workshop; the sysroot is created by scripts/fetch_sysroot.py.
 #
-# Proč tyhle volby (ověřeno 2026-11-03, Ubuntu 24.04 + gcc 13.3 + sysroot z Fremantle SDK):
-#  - Ubuntu cross-gcc hledá svoji libc (glibc 2.39) v /usr/arm-linux-gnueabi/lib dřív než sysroot,
-#    výsledek by pak chtěl GLIBC_2.34 (__libc_start_main). Proto -B/-L/-nostdinc.
-#  - ld.bfd 2.42 s objekty z glibc 2.5 padá na assertu v elf32-arm.c, funguje -fuse-ld=gold.
-#  - --hash-style=both, aby si poradil i starší dynamický linker. [ověřit] na zařízení.
-#  - -fgnu89-inline: hlavičky glibc 2.5 používají "extern inline" ve stylu GNU89. V režimu C99
-#    (gnu99, třeba WordGrinder) jinak assembler hlásí "symbol stat64 is already defined".
+# Why these options (verified 2026-11-03: Ubuntu 24.04 + gcc 13.3 + a sysroot from the Fremantle SDK):
+#  - Ubuntu's cross-gcc looks for its own libc (glibc 2.39) in /usr/arm-linux-gnueabi/lib before the
+#    sysroot, so the result would require GLIBC_2.34 (__libc_start_main). Hence -B/-L/-nostdinc.
+#  - ld.bfd 2.42 crashes on an assertion in elf32-arm.c when given the glibc 2.5 objects;
+#    -fuse-ld=gold works.
+#  - --hash-style=both so that the older dynamic linker copes as well. [to verify] on the device.
+#  - -fgnu89-inline: the glibc 2.5 headers use GNU89-style "extern inline". In C99 mode (gnu99, e.g.
+#    WordGrinder) the assembler otherwise reports "symbol stat64 is already defined".
 SR="${MAEMO_SYSROOT:-/project/sysroot}"
 GCCINC="$(arm-linux-gnueabi-gcc -print-file-name=include)"
 exec arm-linux-gnueabi-gcc \
