@@ -1,0 +1,9 @@
+name: n900
+base: ubuntu@24.04
+actions:
+  # Cross-toolchain pro armel (Maemo 5) a qemu-user pro zkušební spuštění binárek.
+  toolchain: sudo apt-get update && sudo apt-get install -y build-essential gcc-arm-linux-gnueabi g++-arm-linux-gnueabi binutils-arm-linux-gnueabi file dpkg-dev python3 git ninja-build make pkg-config qemu-user
+  # Stáhne jen potřebné -dev balíčky z Fremantle SDK a rozbalí je do ./sysroot.
+  sysroot: python3 scripts/fetch_sysroot.py
+  # Přeloží hello.c přes scripts/maemo-gcc a spustí ho pod qemu proti sysrootu (glibc 2.5).
+  hello: mkdir -p build && scripts/maemo-gcc -O2 -o build/hello scripts/hello.c && file build/hello && qemu-arm -L /project/sysroot build/hello

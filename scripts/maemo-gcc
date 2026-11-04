@@ -1,0 +1,17 @@
+#!/bin/sh
+# Wrapper kolem arm-linux-gnueabi-gcc pro Maemo 5 (Fremantle, armel, glibc 2.5).
+# Jen pro C. Spouštět uvnitř Workshopu, sysroot vytvoří scripts/fetch_sysroot.py.
+#
+# Proč tyhle volby (ověřeno 2026-11-03, Ubuntu 24.04 + gcc 13.3 + sysroot z Fremantle SDK):
+#  - Ubuntu cross-gcc hledá svoji libc (glibc 2.39) v /usr/arm-linux-gnueabi/lib dřív než sysroot,
+#    výsledek by pak chtěl GLIBC_2.34 (__libc_start_main). Proto -B/-L/-nostdinc.
+#  - ld.bfd 2.42 s objekty z glibc 2.5 padá na assertu v elf32-arm.c, funguje -fuse-ld=gold.
+#  - --hash-style=both, aby si poradil i starší dynamický linker. [ověřit] na zařízení.
+SR="${MAEMO_SYSROOT:-/project/sysroot}"
+GCCINC="$(arm-linux-gnueabi-gcc -print-file-name=include)"
+exec arm-linux-gnueabi-gcc \
+    --sysroot="$SR" -B"$SR/usr/lib" -L"$SR/usr/lib" -L"$SR/lib" \
+    -nostdinc -isystem "$GCCINC" -isystem "$SR/usr/include" \
+    -march=armv7-a -mfpu=neon -mfloat-abi=softfp \
+    -fuse-ld=gold -Wl,--hash-style=both \
+    "$@"

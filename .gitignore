@@ -1,0 +1,10 @@
+# Lokální nastavení (výchozí hodnoty jsou v .env.default)
+.env
+
+# Workshop
+.workshop.lock
+
+# Sysroot a cache stažených balíčků (obnovitelné skriptem scripts/fetch_sysroot.py)
+sysroot/
+downloads/
+build/
