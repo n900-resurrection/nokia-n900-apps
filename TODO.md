@@ -22,6 +22,9 @@ Stav k 2026-11-04. Odškrtnuté = hotovo a ověřeno, neodškrtnuté = zbývá.
 - [ ] Doplnit `PATH` o sbin trvale i pro SSH relace (hotovo jen pro login shell: `/etc/profile.d/sbin-path.sh`).
 - [ ] Zkusit `make build deb` pro jinou verzi WordGrinderu (ověřena jen 0.8), případně 0.9 (Luau, C++).
 - [ ] `maemo-g++` wrapper pro C++ (zatím jen `maemo-gcc` pro C).
+- [ ] htop3: balíček je sestavený (samostatný `htop3` vedle systémového 0.8.3, obálka s `-d 50` a `HTOPRC`),
+  zbývá ho nainstalovat na N900 (`make -C apps/htop install`) a ověřit menu, obálku a odinstalaci.
+  Viz [apps/htop/htop.md](apps/htop/htop.md). Nový htop je 2,4× náročnější na procesor.
 - [ ] Další aplikace v `apps/<app>/` (kandidáty vybrat).
 - [ ] Python 3.11: přepsat na armel a glibc 2.5, vlastní OpenSSL (SDK má jen 0.9.8n). Viz [README.md](README.md).
 

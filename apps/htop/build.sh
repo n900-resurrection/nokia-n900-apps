@@ -4,9 +4,10 @@
 # Output: /project/build/out/htop-$VERSION/htop   (stripped binary)
 #         /project/build/out/htop-$VERSION/root/  (installed tree)
 #
-# Note: the device ships htop 0.8.3 (package htop 0.8.3-1maemo5). This script only builds;
-# nothing is installed over the system package. Verified 2026-11-04: 3.5.3 starts and draws its
-# UI on a real N900 when copied there by hand.
+# Note: the device ships htop 0.8.3 (package htop 0.8.3-1maemo5, /opt/maemo/usr/bin/htop). The
+# build is installed under /opt/htop3 and packaged as a separate package "htop3" (see package.sh),
+# so the system htop stays untouched. Verified 2026-11-04: 3.5.3 starts and draws its UI on a
+# real N900.
 set -euo pipefail
 
 VERSION="${VERSION:-3.5.3}"
@@ -48,7 +49,7 @@ cd "$OBJ"
 export PKG_CONFIG_PATH="$PC" PKG_CONFIG_LIBDIR="$PC"
 "$SRC/configure" \
     --host=arm-linux-gnueabi --build="$(gcc -dumpmachine)" \
-    --prefix=/opt/htop \
+    --prefix=/opt/htop3 \
     --enable-unicode \
     --disable-hwloc --disable-sensors --disable-capabilities --disable-delayacct \
     CC="$PROJ/scripts/maemo-gcc" \
@@ -57,7 +58,7 @@ export PKG_CONFIG_PATH="$PC" PKG_CONFIG_LIBDIR="$PC"
 make -j"$(nproc)" > "$OUT/make.log" 2>&1 || { grep -E 'error|Error' "$OUT/make.log" | head -20; exit 1; }
 make install DESTDIR="$OUT/root" >> "$OUT/make.log" 2>&1
 
-BIN="$OUT/root/opt/htop/bin/htop"
+BIN="$OUT/root/opt/htop3/bin/htop"
 arm-linux-gnueabi-strip -o "$OUT/htop" "$BIN"
 
 echo "== Check"
