@@ -11,35 +11,32 @@
 # Status: the package builds and can be inspected (dpkg-deb -I/-c). Installation on a device and
 # the behaviour in the Application Manager are not verified yet, see TODO.md.
 set -euo pipefail
-
-APP=htop3
-VERSION="${VERSION:-3.5.3}"
-REV="${REV:-1maemo1}"
-MAINT="${MAINTAINER:-elPytel}"
 PROJ=/project
+. "$PROJ/scripts/debpack.sh"
+
+PKG=htop3
+VERSION="${VERSION:-3.5.3}"
 OUT="$PROJ/build/out/htop-$VERSION"
 SRC="$PROJ/build/upstream/htop"
-STAGE="$PROJ/build/deb/stage-$APP"
-DEB="$PROJ/build/deb/${APP}_${VERSION}-${REV}_armel.deb"
+STAGE="$PROJ/build/deb/stage-$PKG"
 TREE="$OUT/root/opt/htop3"
 
 [ -x "$OUT/htop" ] && [ -d "$TREE" ] || { echo "Missing build output in $OUT, run build.sh first (make build)"; exit 1; }
 
 rm -rf "$STAGE"
-mkdir -p "$STAGE/DEBIAN" \
-         "$STAGE/opt/$APP/bin" \
-         "$STAGE/opt/$APP/share/man/man1" \
-         "$STAGE/opt/$APP/share/doc/$APP" \
+mkdir -p "$STAGE/opt/$PKG/bin" \
+         "$STAGE/opt/$PKG/share/man/man1" \
+         "$STAGE/opt/$PKG/share/doc/$PKG" \
          "$STAGE/usr/bin" \
          "$STAGE/usr/share/applications/hildon"
 
 # The real binary (stripped). The wrapper below is what users run.
-install -m 755 "$OUT/htop" "$STAGE/opt/$APP/bin/htop"
-gzip -9n -c "$TREE/share/man/man1/htop.1" > "$STAGE/opt/$APP/share/man/man1/htop.1.gz"
+install -m 755 "$OUT/htop" "$STAGE/opt/$PKG/bin/htop"
+gzip -9n -c "$TREE/share/man/man1/htop.1" > "$STAGE/opt/$PKG/share/man/man1/htop.1.gz"
 
 # htop is GPL-2+: ship the license text and say where the source and our changes are.
-install -m 644 "$SRC/COPYING" "$STAGE/opt/$APP/share/doc/$APP/COPYING"
-cat > "$STAGE/opt/$APP/share/doc/$APP/README.Maemo" <<EOF
+install -m 644 "$SRC/COPYING" "$STAGE/opt/$PKG/share/doc/$PKG/COPYING"
+cat > "$STAGE/opt/$PKG/share/doc/$PKG/README.Maemo" <<EOF
 htop $VERSION built for Maemo 5 (armel, glibc 2.5). Upstream: https://github.com/htop-dev/htop
 Source: upstream tag $VERSION, built unchanged except for a compatibility header that defines
 O_CLOEXEC (missing in the glibc 2.5 headers). ncursesw is linked statically.
@@ -69,42 +66,13 @@ EOF
 chmod 755 "$STAGE/usr/bin/htop3"
 
 # Menu launcher. Same mechanism as for WordGrinder (osso-xterm -e), verified to work there.
-cat > "$STAGE/usr/share/applications/hildon/$APP.desktop" <<EOF
-[Desktop Entry]
-Encoding=UTF-8
-Version=1.0
-Type=Application
-Name=htop 3
-Exec=/usr/bin/osso-xterm -e /usr/bin/htop3
-X-Osso-Type=application/x-executable
-EOF
+debpack_desktop "htop 3" "/usr/bin/htop3"
 
-SIZE_KB=$(du -sk "$STAGE" | cut -f1)
-cat > "$STAGE/DEBIAN/control" <<EOF
-Package: $APP
-Version: $VERSION-$REV
-Architecture: armel
-Section: user/system
-Priority: optional
-Installed-Size: $SIZE_KB
-Depends: libc6 (>= 2.5)
-Maintainer: $MAINT
-XB-Maemo-Display-Name: htop 3
-Description: Interactive process viewer (htop 3.x)
- htop is an interactive process viewer. This is htop 3.x built for Maemo 5, installed in
- /opt/htop3 next to the system htop 0.8.3. Start it with htop3 (refresh interval 5 s by default).
- Upstream: https://github.com/htop-dev/htop
-EOF
-
-# Uniform permissions (the container umask gives group-write): directories 755, files 644,
-# executables stay 755.
-chmod -R u+rwX,go+rX,go-w "$STAGE"
-
-mkdir -p "$(dirname "$DEB")"
-# gzip: the old dpkg on Maemo 5 (1.14) does not know xz. --root-owner-group: files belong to root:root.
-dpkg-deb --root-owner-group -Zgzip --build "$STAGE" "$DEB"
-
-echo "== Package"
-dpkg-deb -I "$DEB"
-dpkg-deb -c "$DEB"
-ls -l "$DEB"
+SECTION=user/system
+DEPENDS="libc6 (>= 2.5)"
+DISPLAY_NAME="htop 3"
+SHORT_DESC="Interactive process viewer (htop 3.x)"
+LONG_DESC="htop is an interactive process viewer. This is htop 3.x built for Maemo 5, installed in
+/opt/htop3 next to the system htop 0.8.3. Start it with htop3 (refresh interval 5 s by default).
+Upstream: https://github.com/htop-dev/htop"
+debpack_build

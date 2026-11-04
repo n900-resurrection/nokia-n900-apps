@@ -190,6 +190,10 @@ ssh user@<ip-n900> 'dpkg -i /home/user/MyDocs/balicek_armhf.deb'   # Maemo 5: ro
 
 - [TODO.md](TODO.md)
 
+### Plán dalšího vývoje
+
+- [Roadmapa: e-mail, feedy a podcasty, kontakty a kalendář, rádio a audioknihy, vlastní Hildon aplikace](DOC/roadmap.md)
+
 ### Struktura a balíčky
 
 - [Rozbor: struktura repa, závislosti, .deb, lokální repo, GitHub](DOC/packaging.md)

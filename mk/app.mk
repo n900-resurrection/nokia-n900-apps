@@ -6,10 +6,9 @@
 #   PKG      := tty-clock                      # optional, package name (default: APP)
 #   REV      ?= 1maemo1                        # optional, package revision
 #   RUN_CMD  := TERM=xterm /usr/bin/tty-clock  # command run on the device by `make run`
-#   (`make emu` runs build/out/<APP>-<VERSION>/<APP> in the workshop under qemu-user, no phone needed)
+#   EMU_BIN  := /project/build/out/...         # optional, binary for `make emu` (default: build/out/<APP>-<VERSION>/<APP>)
 #   include ../../mk/app.mk
 #
-# Older applications (wordgrinder, htop, curl, git) have their own Makefile with the same targets.
 # See common.mk for the conventions (description variables, colours, .env).
 
 include $(dir $(lastword $(MAKEFILE_LIST)))common.mk
@@ -59,7 +58,7 @@ run:
 # EMU_TERM overrides it.
 EMU := Run the built binary in the workshop under qemu-user: make emu ARGS=--help
 emu:
-	$(INSIDE) env LC_ALL=C TERM=$(or $(EMU_TERM),xterm) qemu-arm -L /project/sysroot /project/build/out/$(APP)-$(VERSION)/$(APP) $(ARGS)
+	$(INSIDE) env LC_ALL=C TERM=$(or $(EMU_TERM),xterm) qemu-arm -L /project/sysroot $(or $(EMU_BIN),/project/build/out/$(APP)-$(VERSION)/$(APP)) $(ARGS)
 
 CLEAN := Remove the outputs of this application from build/
 clean:

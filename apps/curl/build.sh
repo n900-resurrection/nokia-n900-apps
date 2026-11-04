@@ -1,7 +1,7 @@
 #!/bin/bash
 # Cross-build a modern curl (TLS 1.2/1.3 via mbedTLS) for Maemo 5 (armel, glibc 2.5).
 # Run INSIDE the Workshop:
-#   workshop exec n900 -- bash -c 'CURL_VERSION=8.23.0 MBEDTLS_VERSION=3.6.7 ZLIB_VERSION=1.3.2 /project/apps/curl/build.sh'
+#   workshop exec n900 -- bash -c 'VERSION=8.23.0 /project/apps/curl/build.sh'
 #   (or on the host: make -C apps/curl build)
 #
 # Why: the device ships OpenSSL 0.9.8n (TLS 1.0 only), libcurl 7.18 and wget 1.10, so it cannot
@@ -14,7 +14,8 @@
 #   cacert.pem          Mozilla CA bundle (from curl.se) used as the default CA store
 set -euo pipefail
 
-CURL_VERSION="${CURL_VERSION:-8.23.0}"
+# CURL_VERSION is the older name of VERSION and is still accepted.
+CURL_VERSION="${CURL_VERSION:-${VERSION:-8.23.0}}"
 MBEDTLS_VERSION="${MBEDTLS_VERSION:-3.6.7}"
 ZLIB_VERSION="${ZLIB_VERSION:-1.3.2}"
 PROJ=/project

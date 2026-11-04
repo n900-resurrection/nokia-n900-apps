@@ -72,6 +72,14 @@ debpack_build() {
 
     echo "== Package"
     dpkg-deb -I "$deb"
-    dpkg-deb -c "$deb" | grep -v '/$'
+    # Long listings (git has hundreds of symlinks) are summarised instead of printed.
+    local listing count
+    listing=$(dpkg-deb -c "$deb" | grep -v '/$')
+    count=$(printf '%s\n' "$listing" | wc -l)
+    if [ "$count" -gt 40 ]; then
+        echo "files: $count, of which symlinks: $(printf '%s\n' "$listing" | grep -c '^l')"
+    else
+        printf '%s\n' "$listing"
+    fi
     ls -l "$deb"
 }

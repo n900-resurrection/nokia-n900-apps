@@ -1,7 +1,7 @@
 #!/bin/bash
 # Cross-build a modern git (HTTPS over TLS 1.2/1.3) for Maemo 5 (armel, glibc 2.5).
 # Run INSIDE the Workshop, after the curl build (apps/curl), which provides libcurl.a and its deps:
-#   workshop exec n900 -- bash -c 'GIT_VERSION=2.56.0 /project/apps/git/build.sh'
+#   workshop exec n900 -- bash -c 'VERSION=2.56.0 /project/apps/git/build.sh'
 #   (or on the host: make -C apps/git build)
 #
 # git-remote-https is linked statically with libcurl, mbedTLS and zlib from apps/curl, so it does
@@ -12,7 +12,10 @@
 #   root/opt/git/...   installed tree (stripped, git-core programs are symlinks to "git")
 set -euo pipefail
 
-GIT_VERSION="${GIT_VERSION:-2.56.0}"
+# GIT_VERSION is the older name of VERSION and is still accepted. VERSION itself is unset afterwards,
+# so that it cannot leak into the git Makefile.
+GIT_VERSION="${GIT_VERSION:-${VERSION:-2.56.0}}"
+unset VERSION
 CURL_VERSION="${CURL_VERSION:-8.23.0}"
 MBEDTLS_VERSION="${MBEDTLS_VERSION:-3.6.7}"
 ZLIB_VERSION="${ZLIB_VERSION:-1.3.2}"
