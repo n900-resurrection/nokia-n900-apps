@@ -7,11 +7,14 @@
 #    výsledek by pak chtěl GLIBC_2.34 (__libc_start_main). Proto -B/-L/-nostdinc.
 #  - ld.bfd 2.42 s objekty z glibc 2.5 padá na assertu v elf32-arm.c, funguje -fuse-ld=gold.
 #  - --hash-style=both, aby si poradil i starší dynamický linker. [ověřit] na zařízení.
+#  - -fgnu89-inline: hlavičky glibc 2.5 používají "extern inline" ve stylu GNU89. V režimu C99
+#    (gnu99, třeba WordGrinder) jinak assembler hlásí "symbol stat64 is already defined".
 SR="${MAEMO_SYSROOT:-/project/sysroot}"
 GCCINC="$(arm-linux-gnueabi-gcc -print-file-name=include)"
 exec arm-linux-gnueabi-gcc \
     --sysroot="$SR" -B"$SR/usr/lib" -L"$SR/usr/lib" -L"$SR/lib" \
     -nostdinc -isystem "$GCCINC" -isystem "$SR/usr/include" \
     -march=armv7-a -mfpu=neon -mfloat-abi=softfp \
+    -fgnu89-inline \
     -fuse-ld=gold -Wl,--hash-style=both \
     "$@"

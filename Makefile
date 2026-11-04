@@ -26,7 +26,7 @@ BOLD   := $(shell printf '\033[1m')
 RESET  := $(shell printf '\033[0m')
 endif
 
-TARGETS := help up down status enter toolchain sysroot hello push clean distclean
+TARGETS := help up down status enter toolchain sysroot hello wordgrinder push clean distclean
 .PHONY: $(TARGETS)
 .DEFAULT_GOAL := help
 
@@ -65,9 +65,14 @@ HELLO := Prelozi a spusti hello.c (qemu-user, glibc 2.5)
 hello:
 	$(RUN) hello
 
-PUSH := Zkopiruje FILE na N900: make push DEVICE=user@ip [FILE=build/hello]
+WORDGRINDER := Sestavi WordGrinder (VERSION=0.8) do build/out/wordgrinder-VERSION/
+wordgrinder:
+	workshop exec $(WS) -- bash -c '/project/apps/wordgrinder/build.sh'
+
+PUSH := Zkopiruje FILE na N900 (vytvori cilovou slozku): make push [DEVICE=n900] [FILE=build/hello]
 push:
 	@test -n "$(DEVICE)" || { printf '$(RED)Zadej DEVICE=user@ip (do .env nebo na prikazovou radku)$(RESET)\n'; exit 1; }
+	ssh $(DEVICE) mkdir -p $(DEST)
 	scp $(FILE) $(DEVICE):$(DEST)
 
 CLEAN := Smaze ./build

@@ -131,6 +131,30 @@ def resolve(pkgs, roots):
     return chosen, missing
 
 
+def fix_symlinks(sysroot: Path) -> int:
+    """Absolutní symlinky (např. usr/lib/libm.so -> /lib/libm.so.6) přepíše na relativní.
+
+    Balíčky počítají s tím, že "/" je kořen zařízení. Mimo něj by odkaz vedl na hostitele
+    a linker by hlásil "cannot open ... libm.so". Přepisuje jen odkazy, jejichž cíl v sysrootu je.
+    """
+    root = sysroot.resolve()
+    n = 0
+    for p in root.rglob("*"):
+        if not p.is_symlink():
+            continue
+        target = Path(p.readlink())
+        if not target.is_absolute():
+            continue
+        dest = root / str(target).lstrip("/")
+        if not (dest.exists() or dest.is_symlink()):
+            continue
+        rel = Path(__import__("os").path.relpath(dest, p.parent))
+        p.unlink()
+        p.symlink_to(rel)
+        n += 1
+    return n
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("roots", nargs="*", help="kořenové balíčky (výchozí: DEFAULT_ROOTS)")
@@ -168,6 +192,8 @@ def main():
             deb.write_bytes(fetch(BASE + s["Filename"]))
             time.sleep(DELAY)
         subprocess.run(["dpkg-deb", "-x", str(deb), str(sysroot)], check=True)
+    fixed = fix_symlinks(sysroot)
+    print(f"Přepsáno absolutních symlinků na relativní: {fixed}")
     print(f"Hotovo: {sysroot.resolve()}")
 
 

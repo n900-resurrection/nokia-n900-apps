@@ -190,7 +190,7 @@ ssh user@<ip-n900> 'dpkg -i /home/user/MyDocs/balicek_armhf.deb'   # Maemo 5: ro
 
 - [Syntaxe Workshopu, definice prostředí a sysroot](DOC/workshop-crosscompile.md)
 - Prostředí: [.workshop/n900.yaml](.workshop/n900.yaml), skript sysrootu: [scripts/fetch_sysroot.py](scripts/fetch_sysroot.py)
-- Stav (2026-11-03): Workshop `n900` běží, toolchain (GCC 13.3, armel) a sysroot z Fremantle SDK jsou nainstalované. `hello.c` se přeloží přes [scripts/maemo-gcc](scripts/maemo-gcc), odkazuje jen na `GLIBC_2.4` a spustí se pod qemu-user proti sysrootu s glibc 2.5. **Na skutečném N900 zatím nevyzkoušeno.**
+- Stav (2026-11-03): Workshop `n900` běží, toolchain (GCC 13.3, armel) a sysroot z Fremantle SDK jsou nainstalované. [src/hello.c](src/hello.c) (viz [src/README.md](src/README.md)) se přeloží přes [scripts/maemo-gcc](scripts/maemo-gcc), odkazuje jen na `GLIBC_2.4` a spustí se pod qemu-user proti sysrootu s glibc 2.5. **Ověřeno i na skutečném N900** (2026-11-04, kernel 2.6.28-omap1, `make push` + spuštění, vypsalo `Hello from Maemo 5 (armel, glibc 2.5)`). Binárky nejdou spouštět z `/home/user/MyDocs` (FAT, `noexec`), kopíruj do `/home/user/apps/` (výchozí `DEST`). Přístup: SSH klíčem přes alias `n900` v `~/.ssh/config`, viz `.env`.
 - Pozor: SDK má jen **OpenSSL 0.9.8n**, pro Python 3.11 je potřeba vlastní novější OpenSSL.
 
 ### Repozitáře a vlastní mirror
