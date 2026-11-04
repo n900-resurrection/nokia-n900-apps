@@ -186,6 +186,13 @@ ssh user@<ip-n900> 'dpkg -i /home/user/MyDocs/balicek_armhf.deb'   # Maemo 5: ro
 - Community SSU (CSSU) je komunitní aktualizace Maemo 5 (oznámena 2011). Doporučuji mít na zařízeních nainstalovaný, jelikož běžní vývojáři cílí na něj. **[ověřit]**
 - Fórum talk.maemo.org (Maemo 5 sekce), pro zjištění, co už je portované.
 
+### Struktura a balíčky
+
+- [Rozbor: struktura repa, závislosti, .deb, lokální repo, GitHub](DOC/packaging.md)
+- Každá aplikace je v `apps/<app>/` s vlastním `Makefile` (`build`, `deb`, `push`, `install`…), příklad:
+  [apps/wordgrinder](apps/wordgrinder/README.md). Společná část Makefile je v [mk/common.mk](mk/common.mk).
+- Přehled příkazů: `make` (kořen) a `make -C apps/wordgrinder`.
+
 ### Cross-kompilace ve Workshopu
 
 - [Syntaxe Workshopu, definice prostředí a sysroot](DOC/workshop-crosscompile.md)
