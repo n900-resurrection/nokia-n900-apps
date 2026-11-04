@@ -1,7 +1,7 @@
 # WordGrinder pro Maemo 5
 
 Konzolový textový procesor ([upstream](https://github.com/davidgiven/wordgrinder), MIT) přeložený pro N900
-(armel, glibc 2.5). Rozbor a deník: [../../DOC/wordgrinder.md](../../DOC/wordgrinder.md).
+(armel, glibc 2.5). Rozbor a deník: [wordgrinder.md](wordgrinder.md).
 
 ## Soubory
 

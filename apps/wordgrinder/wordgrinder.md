@@ -59,7 +59,7 @@ Upstream: `make` detekuje konfiguraci, `PREFIX=/usr/local ./configure` pro vlast
   Výsledek: ELF ARM EABI5, 681 kB po stripu, `NEEDED`: libz.so.1, libm.so.6, libc.so.6, nejvyšší symbol `GLIBC_2.4`.
   Na telefonu ověřeno: `--help` a `--convert t.txt t.html` (Lua engine i export). **Interaktivní UI (curses) zatím
   nevyzkoušeno** – spustit v terminálu telefonu: `TERM=xterm /home/user/apps/wordgrinder`.
-- Co se muselo řešit a proč: viz [packaging.md](packaging.md), sekce 1 (ncursesw staticky, hostitelská Lua,
+- Co se muselo řešit a proč: viz [../../DOC/packaging.md](../../DOC/packaging.md), sekce 1 (ncursesw staticky, hostitelská Lua,
   `-fgnu89-inline`, relativní symlinky ve sysrootu, strip).
 - Otevřené: UTF-8 vstup z hardwarové klávesnice, výchozí ovládání (Esc = `Shift + modrá šipka + Backspace`), velikost
   slovníku/šablon, práce s terminfo (`TERM=xterm`, `xterm-256color` na telefonu chybí).

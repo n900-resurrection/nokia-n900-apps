@@ -210,7 +210,8 @@ ssh user@<ip-n900> 'dpkg -i /home/user/MyDocs/balicek_armhf.deb'   # Maemo 5: ro
 
 ### Konkrétní aplikace (jedna aplikace = jeden soubor v `DOC/`)
 
-- [WordGrinder](DOC/wordgrinder.md): konzolový textový procesor, první kandidát.
+- [WordGrinder](apps/wordgrinder/wordgrinder.md): konzolový textový procesor, první kandidát.
+- [htop 3](apps/htop/htop.md): nový htop vedle systémového 0.8.3 (balíček `htop3`), měření výkonu.
 
 ### Kandidáti na backport (bude třeba vybrat)
 
