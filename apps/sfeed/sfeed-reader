@@ -1,0 +1,13 @@
+#!/bin/sh
+# sfeed-reader: update the feeds and read them in sfeed_curses. First run copies the example config.
+#   sfeed-reader          update, then read
+#   sfeed-reader -n       read without updating
+mkdir -p "$HOME/.sfeed/feeds"
+if [ ! -f "$HOME/.sfeed/sfeedrc" ]; then
+    cp /opt/sfeed/share/doc/sfeed/sfeedrc.example "$HOME/.sfeed/sfeedrc"
+    echo "Created ~/.sfeed/sfeedrc (edit it to add your feeds)."
+fi
+if [ "$1" != "-n" ]; then
+    sfeed_update "$HOME/.sfeed/sfeedrc"
+fi
+exec sfeed_curses "$HOME/.sfeed/feeds/"*

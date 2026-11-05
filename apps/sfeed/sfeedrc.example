@@ -1,0 +1,16 @@
+# Example sfeedrc for the N900. Copy to ~/.sfeed/sfeedrc (the sfeed-reader command does it for you).
+# Feeds are downloaded with curl (TLS 1.3, CA bundle of the curl package) into ~/.sfeed/feeds/<name>.
+sfeedpath="$HOME/.sfeed/feeds"
+
+# fetch <name> <url> <feedurl>
+fetch() {
+    curl -L --max-time 60 -H 'User-Agent: sfeed' -s -f --cacert /opt/curl/etc/ssl/cacert.pem "$2" 2>/dev/null
+}
+
+# feeds: feed <name> <feedurl> [basesiteurl] [encoding]
+feeds() {
+    feed "codemadness" "https://codemadness.org/atom.xml"
+    feed "maemo-news" "https://maemo.org/news/rss.xml"
+    # Podcasts are ordinary RSS feeds: the audio link is in the "enclosure" column of the sfeed format
+    # (field 9). Example: feed "my-podcast" "https://feeds.transistor.fm/cteme-vam-seznam-zpravy"
+}
