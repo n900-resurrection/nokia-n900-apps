@@ -1,0 +1,13 @@
+#!/bin/sh
+# Called by ifupdown when a network interface comes up (Wi-Fi or cellular data).
+# Syncs the clock in the background, at most once per 10 minutes.
+[ "$IFACE" = lo ] && exit 0
+STAMP=/var/run/ntp-sync.stamp
+now=$(date +%s)
+if [ -f "$STAMP" ]; then
+    last=$(cat "$STAMP" 2>/dev/null)
+    # A clock that went backwards (wrong time) must not block the sync.
+    [ -n "$last" ] && [ "$now" -ge "$last" ] && [ $((now - last)) -lt 600 ] && exit 0
+fi
+(sleep 5; /usr/bin/ntp-sync -q; date +%s > "$STAMP") >/dev/null 2>&1 &
+exit 0

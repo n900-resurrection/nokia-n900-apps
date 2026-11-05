@@ -1,0 +1,70 @@
+#!/bin/sh
+# ntp-sync: set the system clock (and the RTC) over NTP using the busybox ntpd of the N900.
+#
+# Why: the "automatic time" switch in the Maemo 5 settings uses the cellular network time (NITZ,
+# via clockd), not NTP. Without a SIM / operator it does nothing, and the RTC battery of the
+# device is usually dead, so the clock is wrong after every restart. Wrong time breaks TLS.
+#
+# Usage: ntp-sync [-n] [-q]     (needs root)
+#   -n  only query the servers and print the offset, do not change the clock
+#   -q  quiet (for the network hook)
+#   -h  help
+# Servers: NTP_SERVERS environment variable or /etc/ntp-sync.conf (one host per line).
+CONF=/etc/ntp-sync.conf
+DRY=0; QUIET=0
+usage() {
+    cat <<'EOT'
+Usage: ntp-sync [-n] [-q] [-h]
+Set the system clock and the RTC over NTP (needs root).
+  -n  only query the servers and print the offset, do not change the clock
+  -q  quiet (used by the network hook)
+  -h  this help
+Servers: NTP_SERVERS (environment) or /etc/ntp-sync.conf, one host per line.
+Manual page: man ntp-sync
+EOT
+}
+while getopts nqh o; do
+    case $o in
+        h) usage; exit 0 ;;
+        n) DRY=1 ;;
+        q) QUIET=1 ;;
+        *) usage >&2; exit 2 ;;
+    esac
+done
+say() { [ "$QUIET" = 1 ] || echo "$@"; }
+
+SERVERS="${NTP_SERVERS:-}"
+[ -z "$SERVERS" ] && [ -r "$CONF" ] && SERVERS=$(grep -v '^[[:space:]]*#' "$CONF" | tr '\n' ' ')
+[ -z "$SERVERS" ] && SERVERS="pool.ntp.org time.cloudflare.com time.google.com"
+
+PEERS=""
+for s in $SERVERS; do PEERS="$PEERS -p $s"; done
+
+if [ "$DRY" = 1 ]; then
+    # -w: query only. Collect the replies for 15 s and print the last one of each server.
+    tmp=/tmp/ntp-sync.$$
+    ntpd -w -d -n $PEERS > "$tmp" 2>&1 &
+    pid=$!
+    sleep 15
+    kill $pid 2>/dev/null
+    grep 'offset' "$tmp" | tail -3
+    rm -f "$tmp"
+    exit 0
+fi
+
+[ "$(id -u)" = 0 ] || { echo "ntp-sync: needs root (sudo gainroot)" >&2; exit 1; }
+say "ntp-sync: before: $(date)"
+# -q: step the clock once and quit; -n: stay in foreground.
+# busybox ntpd does not exit by itself when no server answers, so limit it to 60 s.
+ntpd -q -n $PEERS &
+pid=$!
+n=0
+while kill -0 $pid 2>/dev/null && [ $n -lt 60 ]; do sleep 1; n=$((n + 1)); done
+if kill -0 $pid 2>/dev/null; then
+    kill $pid 2>/dev/null
+    say "ntp-sync: no NTP server answered within 60 s (no network?)"
+    exit 1
+fi
+# Keep the new time over a restart (RTC; the battery behind it may be weak, so this can be lost).
+hwclock -w 2>/dev/null
+say "ntp-sync: after:  $(date)"

@@ -1,0 +1,44 @@
+.TH NTP-SYNC 1 "2026-11-05" "ntp-sync 0.2" "N900 tools"
+.SH NAME
+ntp-sync \- set the clock over NTP
+.SH SYNOPSIS
+.B ntp-sync
+[\fB\-n\fR] [\fB\-q\fR] [\fB\-h\fR]
+.SH DESCRIPTION
+Sets the system clock once with the busybox \fBntpd\fR and then writes it to the hardware clock
+(\fBhwclock \-w\fR). Needs root. The Maemo 5 setting for automatic time uses the cellular network
+time (NITZ), not NTP, so it does nothing without a SIM card. A correct clock is needed to verify
+TLS certificates.
+.PP
+The script is also called by \fI/etc/network/if-up.d/ntp-sync\fR when a network interface comes up,
+at most once every 10 minutes.
+.SH OPTIONS
+.TP
+.B \-n
+Only query the servers and print the offset, do not change the clock.
+.TP
+.B \-q
+Quiet, print nothing (used by the network hook).
+.TP
+.B \-h
+Print a short help.
+.SH FILES
+.TP
+.I /etc/ntp-sync.conf
+NTP servers, one host name per line. Lines starting with # are ignored.
+.TP
+.I /var/run/ntp-sync.stamp
+Time of the last run of the network hook.
+.SH ENVIRONMENT
+.TP
+.B NTP_SERVERS
+Space separated list of servers, overrides the configuration file.
+.SH EXIT STATUS
+0 on success, 1 if no server answered within 60 seconds or the user is not root, 2 for a wrong option.
+.SH EXAMPLES
+.nf
+ntp-sync \-n          # show the offset only
+sudo gainroot; ntp-sync
+.fi
+.SH SEE ALSO
+\fBntpd\fR(8), \fBhwclock\fR(8)
