@@ -31,7 +31,9 @@ Modest je součástí Maemo 5 (Aplikace → E-mail). Nastavení účtu:
 2. Typ účtu: IMAP. Příchozí server `imap.centrum.cz`, zabezpečení SSL (port 993), uživatel celá adresa.
 3. Odchozí server `smtp.centrum.cz`, zabezpečení SSL (port 465), ověření ano, stejné údaje.
 
-**Vyzkoušeno uživatelem (2026-11-05): Modest hlásí špatný port nebo nastavení, přihlášení nefunguje.** Příčina: Centrum odmítá TLS 1.0 (z telefonu `openssl s_client` dostane `tlsv1 alert protocol version` na portu 993 i 465), nastavení ani port nejsou chybně. Port 143 STARTTLS nenabízí. Řešení: [mutt-hildon](../apps/mutt-hildon/mutt-hildon.md) nebo přeložený camel-lite s OpenSSL 3 (v TODO).
+**Vyzkoušeno uživatelem (2026-11-05): Modest hlásí špatný port nebo nastavení, přihlášení nefunguje.** Příčina: Centrum odmítá TLS 1.0 (z telefonu `openssl s_client` dostane `tlsv1 alert protocol version` na portu 993 i 465), nastavení ani port nejsou chybně. Port 143 STARTTLS nenabízí. Řešení: [mutt-hildon](../apps/mutt-hildon/mutt-hildon.md), nebo balíček `camel-lite-ssl3` ([apps/camel-lite/camel-lite.md](../apps/camel-lite/camel-lite.md)): camel-lite (knihovna Modestu) přeložená s OpenSSL 3. Po instalaci balíčku Modest zavři a otevři znovu; spojení na imap/smtp.centrum.cz přes novou knihovnu je ověřené, přihlášení v samotném Modestu zatím ne.
+
+**Ověřeno uživatelem (2026-11-05): s `camel-lite-ssl3` Modest funguje a načítá poštu z Centrum.** Pozor na uživatelské jméno: musí být celá adresa `jerrykorner@centrum.cz` u IMAPu i SMTP. Se jménem `Korner` Modest hlásil špatné heslo nebo nastavení a zprávy se nenačetly. Opraveno v gconf (`/apps/modest/server_accounts/CentrumID_store/username` a `CentrumID_transport/username`).
 
 Původní předpoklad: Názvy menu v průvodci jsou z paměti a mohou se lišit. Modest používá starou
 knihovnu NSS (TLS jen do verze 1.0, viz DOC/roadmap.md, sekce 3) a server TLS 1.0 odmítá, takže je pravděpodobné, že
