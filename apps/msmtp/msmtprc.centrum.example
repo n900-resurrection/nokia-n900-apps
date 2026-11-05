@@ -1,0 +1,19 @@
+# Example msmtp configuration for Centrum on the N900. Copy to ~/.msmtprc, chmod 600 ~/.msmtprc, edit the address.
+# The password is NOT here. Either create a file only you can read:
+#   (umask 077; echo 'your-app-password' > ~/.msmtp-password)
+# and keep the passwordeval line, or delete that line and msmtp will ask on the terminal.
+defaults
+auth           on
+tls            on
+tls_trust_file /opt/curl/etc/ssl/cacert.pem
+logfile        ~/.msmtp.log
+
+account        centrum
+host           smtp.centrum.cz
+port           465
+tls_starttls   off
+from           you@centrum.cz
+user           you@centrum.cz
+passwordeval   cat ~/.msmtp-password
+
+account default : centrum
