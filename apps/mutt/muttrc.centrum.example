@@ -1,0 +1,33 @@
+# Example Mutt configuration for a Centrum account on the N900. Copy to ~/.muttrc and edit the address.
+# NO PASSWORD here. It is read from ~/.msmtp-password (mode 600, one line), the same file as msmtp uses:
+#   (umask 077; read -s -p 'Password: ' p; echo "$p" > ~/.msmtp-password)
+# Delete the imap_pass line to make Mutt ask on every start instead.
+set realname      = "Your Name"
+set from          = "you@centrum.cz"
+set imap_user     = "you@centrum.cz"
+set imap_pass     = "`cat ~/.msmtp-password`"
+set folder        = "imaps://imap.centrum.cz/"
+set spoolfile     = "+INBOX"
+# Folder names on the server are in IMAP modified UTF-7 (&AOE- = a with acute, &AWE- = s with caron).
+set record        = "+odeslan&AOE-"
+set postponed     = "+rozepsan&AOE-"
+set trash         = "+ko&AWE-"
+
+# Sending: through msmtp (package msmtp, its own config ~/.msmtprc, see msmtprc.centrum.example).
+# Mutt itself cannot log in to SMTP here: it is built without Cyrus SASL.
+set sendmail      = "/usr/bin/msmtp -a centrum"
+set use_envelope_from = yes
+
+# TLS: certificates are checked against the CA bundle of the curl package (ssl_usesystemcerts, default).
+set ssl_force_tls = yes
+set ssl_starttls  = no
+# The CA bundle is found through /opt/openssl/etc/ssl/cert.pem (a link installed by this package).
+set certificate_file = "~/.mutt/certificates"
+
+# Slow CPU and memory: keep caches on the (ext3) home partition, not in /tmp (1 MB tmpfs). No header cache is built in.
+set message_cachedir = "~/.mutt/cache"
+set tmpdir        = "~/.mutt/tmp"
+set charset       = "utf-8"
+set editor        = "vi"
+set mail_check    = 120
+set timeout       = 30
