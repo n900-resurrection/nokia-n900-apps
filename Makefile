@@ -5,7 +5,7 @@
 
 include mk/common.mk
 
-TARGETS := help up down status enter toolchain sysroot hello wordgrinder htop curl git cmatrix cbonsai tty-clock push clean distclean
+TARGETS := help up down status enter toolchain sysroot hello wordgrinder htop curl git cmatrix cbonsai tty-clock openssl ntp-sync go bash busybox jq mutt msmtp sfeed test mutt-hildon push clean distclean
 .PHONY: $(TARGETS)
 
 UP := Create and start the workshop (first run)
@@ -60,9 +60,54 @@ CBONSAI := Build cbonsai (more: make -C apps/cbonsai)
 cbonsai:
 	$(MAKE) -C apps/cbonsai build
 
+SFEED := Build sfeed (more: make -C apps/sfeed)
+sfeed:
+	$(MAKE) -C apps/sfeed build
+
+MUTT := Build Mutt (more: make -C apps/mutt)
+mutt:
+	$(MAKE) -C apps/mutt build
+
+MUTT-HILDON := Package the Hildon GUI over Mutt (more: make -C apps/mutt-hildon)
+mutt-hildon:
+	$(MAKE) -C apps/mutt-hildon build
+
+MSMTP := Build msmtp (more: make -C apps/msmtp)
+msmtp:
+	$(MAKE) -C apps/msmtp build
+
+JQ := Build jq (more: make -C apps/jq)
+jq:
+	$(MAKE) -C apps/jq build
+
+TEST := Run the tests of all apps on the N900 (apps/*/test.sh); the packages must be installed
+test:
+	@fail=0; for t in $(ROOT)/apps/*/test.sh; do a=$$(basename $$(dirname $$t)); printf '\n$(BOLD)== %s$(RESET)\n' $$a; $(MAKE) --no-print-directory -C apps/$$a test || fail=$$((fail+1)); done; \
+	if [ $$fail -eq 0 ]; then printf '\n$(GREEN)All test suites passed$(RESET)\n'; else printf '\n$(RED)%s test suite(s) failed$(RESET)\n' $$fail; exit 1; fi
+
 TTY-CLOCK := Build tty-clock (more: make -C apps/tty-clock)
 tty-clock:
 	$(MAKE) -C apps/tty-clock build
+
+OPENSSL := Build static OpenSSL 3 (dependency) (more: make -C apps/openssl)
+openssl:
+	$(MAKE) -C apps/openssl build
+
+NTP-SYNC := Check the ntp-sync script (more: make -C apps/ntp-sync)
+ntp-sync:
+	$(MAKE) -C apps/ntp-sync build
+
+GO := Download Go and build the Go hello example (more: make -C apps/go)
+go:
+	$(MAKE) -C apps/go build
+
+BASH := Build Bash 5 (more: make -C apps/bash)
+bash:
+	$(MAKE) -C apps/bash build
+
+BUSYBOX := Build BusyBox 1.37 (more: make -C apps/busybox)
+busybox:
+	$(MAKE) -C apps/busybox build
 
 PUSH := Copy FILE to the N900 (creates the target dir): make push [DEVICE=n900] [FILE=build/hello]
 push:

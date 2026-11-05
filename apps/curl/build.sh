@@ -90,7 +90,7 @@ cp "$DL/cacert.pem" "$OUT/cacert.pem"
     --with-zlib="$ZDIR" \
     --enable-static --disable-shared \
     --disable-ldap --disable-ldaps --disable-rtsp --disable-dict --disable-telnet --disable-tftp \
-    --disable-pop3 --disable-imap --disable-smtp --disable-gopher --disable-mqtt --disable-manual \
+    --disable-gopher --disable-mqtt --disable-manual \
     --without-libpsl --without-brotli --without-zstd --without-libidn2 --without-nghttp2 \
     --without-librtmp --without-libssh2 --without-libssh \
     CC="$CC" AR="$AR" RANLIB="$RANLIB" CFLAGS="-Os" \

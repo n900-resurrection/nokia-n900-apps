@@ -219,6 +219,17 @@ ssh user@<ip-n900> 'dpkg -i /home/user/MyDocs/balicek_armhf.deb'   # Maemo 5: ro
 - [curl 8.23 (TLS 1.3)](apps/curl/curl.md): moderní HTTPS na starém systému, staticky s mbedTLS.
 - [git 2.56](apps/git/git.md): nahrazuje `git 1.6.2`, HTTPS přes libcurl (potřebuje `curl`).
 - [htop 3](apps/htop/htop.md): nový htop vedle systémového 0.8.3 (balíček `htop3`), měření výkonu.
+- [Bash 5.3](apps/bash/bash.md) (balíček `bash5`) a [BusyBox 1.37](apps/busybox/busybox.md) (balíček `busybox37`): moderní shell a nástroje vedle systémových; testy viz [DOC/testing.md](DOC/testing.md).
+- [ntp-sync](apps/ntp-sync/ntp-sync.md): nastavení času přes NTP (GUI volba používá čas operátora, bez SIM nefunguje).
+- [Go](apps/go/go.md): křížový překlad Go programů (statická binárka, TLS 1.3); runtime potřebuje úpravu kvůli jádru 2.6.28.
+- [OpenSSL 3](apps/openssl/build.sh): statická knihovna jako závislost (ne balíček).
+- [Mutt 2.4](apps/mutt/mutt.md) a [msmtp 1.8](apps/msmtp/msmtp.md): terminálový e-mail s TLS 1.3 (čtení IMAP, odesílání přes msmtp).
+- [mutt-hildon 0.2](apps/mutt-hildon/mutt-hildon.md): grafický e-mail (Hildon, Python 2.5) nad curl, msmtp a Muttem.
+- [sfeed 2.4](apps/sfeed/sfeed.md): RSS/Atom a podcasty v terminálu (stahování přes curl, TLS 1.3).
+- [jq 1.8](apps/jq/jq.md) a [Wget 1.25 (TLS 1.3)](apps/wget/wget.md): JSON na příkazové řádce a `wget`, který umí moderní HTTPS.
+- [Testy na telefonu](DOC/testing.md): `make test`.
+- [E-mail Centrum](DOC/email-centrum.md): nastavení serverů (IMAP/SMTP), curl a Modest, bez hesla.
+- Plány: [roadmapa](DOC/roadmap.md) (TLS, e-mail, feedy, audio, Audiobookshelf), [messengery](DOC/messengers.md).
 
 ### Kandidáti na backport (bude třeba vybrat)
 
