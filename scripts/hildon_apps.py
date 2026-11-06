@@ -34,7 +34,8 @@ def _newest_debs():
 
 def _unpack_metadata(deb):
     """Desktop files and icons of a package, cached in build/emu/pkgs/<deb>/."""
-    d = os.path.join(EMU, "pkgs", os.path.basename(deb))
+    # the modification time is part of the name: a rebuilt package of the same version is unpacked again
+    d = os.path.join(EMU, "pkgs", "%s.%d" % (os.path.basename(deb), os.path.getmtime(deb)))
     if not os.path.isdir(d):
         os.makedirs(d)
         tar = subprocess.run("dpkg-deb --fsys-tarfile %s | tar -x -C %s --wildcards './usr/share/applications/hildon/*.desktop' './usr/share/icons/*'"
@@ -120,7 +121,7 @@ def _install(deb, seen=None):
     seen.add(deb)
     for dep in _depends(deb):
         _install(dep, seen)
-    stamp = os.path.join(EMU, "installed", os.path.basename(deb))
+    stamp = os.path.join(EMU, "installed", "%s.%d" % (os.path.basename(deb), os.path.getmtime(deb)))
     if not os.path.exists(stamp):
         subprocess.run(["dpkg-deb", "-x", deb, SR], check=True)
         os.makedirs(os.path.dirname(stamp), exist_ok=True)

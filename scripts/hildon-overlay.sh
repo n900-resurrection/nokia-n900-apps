@@ -23,3 +23,9 @@ for so in /usr/lib/pymodules/python2.5/_dbus_bindings.so /usr/lib/pymodules/pyth
 done
 [ -z "${miss// /}" ] || ssh "$DEVICE" "tar -C / -chf - $miss 2>/dev/null; true" | tar -C sysroot -xf -
 ssh "$DEVICE" 'tar -C / -chf - usr/lib/libffi.so.5 usr/lib/libpyglib-2.0-python2.5.so.0 2>/dev/null; true' | tar -C sysroot -xf -
+# Desktop wallpapers of the emulator: the stock Nokia backgrounds (800x480 PNG) from the phone. Kept in the sysroot only (not in the repository).
+mkdir -p sysroot/usr/share/hildon-emu
+ssh "$DEVICE" 'cat /home/user/.backgrounds/background-1.png' > sysroot/usr/share/hildon-emu/background-1.png 2>/dev/null || true
+for n in 2 3 4; do
+    ssh "$DEVICE" "cat /home/user/.backgrounds/background-$n.png" > "sysroot/usr/share/hildon-emu/background-$n.png" 2>/dev/null || rm -f "sysroot/usr/share/hildon-emu/background-$n.png"
+done

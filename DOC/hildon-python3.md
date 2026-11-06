@@ -28,8 +28,12 @@ make hildon-run SCRIPT=... VNC=1         # obraz navíc přes VNC
   Spuštění: `HOME=/project/build/fakehome PY2=1 SHOT=... scripts/hildon-run.sh /opt/mutt-hildon/mutt-hildon`. Seznam zpráv se vykreslil stejně jako na telefonu.
 - **Emulated desktop (`make emulator`, `make hildon-run APP=<app>`):** `scripts/hildon-session.sh` starts the virtual screen (Xvfb 800x480), the window manager
   `matchbox-window-manager` and the top bar `scripts/hildon-shell.py` (host GTK3, 800x56; applications get 800x424 below it, like on the N900).
-  The bar: **Apps** (launcher: every `apps/<app>/hildon-run.sh` is an application, first lines `# Name: Mail`), buttons of the running windows (switching,
-  the active one is highlighted), **Menu** (application menu of the active window) and **Back** (closes the active window like the Back button).
+  The bar has stock icons of the phone (`general_applications`, `keyboard_menu`, `general_back`, `general_close` from the copied icon theme; text if the overlay is missing):
+  **Apps** (application switcher like on the phone: *Running applications* with a thumbnail of each window, the current one highlighted, a close button under each;
+  below it *Installed applications*, a scrollable grid with the icons of the packages; every `apps/<app>/hildon-run.sh` is an application, first lines `# Name: Mail`),
+  buttons of the running windows (switching, the active one is highlighted), **Menu** (application menu of the active window) and **Back** (closes the active window like the Back button).
+  Thumbnails are taken from the visible window (an obscured X window cannot be captured), every 4 s for the active one and 2.5 s after a window first comes forward.
+  The desktop has the stock wallpaper of the phone (`background-1.png`, 800x480, copied into `sysroot/usr/share/hildon-emu` by `make hildon-overlay`, not part of the repository; `HILDON_BG=file.png` or `HILDON_BG=none` changes it).
   `make emulator` shows the empty desktop (VNC is on, the address is printed; `make emulator-stop` ends a session left behind, a new start does it itself) and you pick an application; `make hildon-run APP=mutt-hildon` starts the desktop with that application.
   Ctrl-C ends the session. Closing the last window leaves the emulator running.
 - **Why Menu works:** `scripts/hildon-stubs/sitecustomize.py` (loaded by Python 2.5 itself when `HILDON_DEVSHELL=1`) handles F4 and Escape inside the program. `HildonAppMenu.popup()`

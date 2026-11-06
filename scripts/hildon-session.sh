@@ -39,6 +39,11 @@ fi
 pgrep -x matchbox-window >/dev/null || pgrep -f matchbox-window-manager >/dev/null || {
     setsid matchbox-window-manager -display "$D" -use_titlebar no -use_desktop_mode plain >/tmp/matchbox.log 2>&1 &
     sleep 1; }
+# Wallpaper of the desktop (stock Nokia background copied from the phone by hildon-overlay.sh; HILDON_BG=file.png or HILDON_BG=none)
+BG="${HILDON_BG:-$PROJ/sysroot/usr/share/hildon-emu/background-1.png}"
+if [ "$BG" != none ] && [ -s "$BG" ] && command -v display >/dev/null; then
+    DISPLAY="$D" timeout 15 display -window root "$BG" >/dev/null 2>&1 || true
+fi
 [ -z "${NOSHELL:-}" ] || exit 0     # only the screen and the window manager
 if [ -n "${FOREGROUND:-}" ]; then
     exec python3 "$PROJ/scripts/hildon-shell.py"
