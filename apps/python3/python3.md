@@ -24,7 +24,7 @@ nemění.
 Balíček má 19 MB (rozbaleno 55 MB v `/opt`, který je na oddílu `/home`, ne na malém rootfs).
 
 ## Chybí
-`readline` (REPL bez historie a editace řádku), `ctypes` (libffi), `tkinter`, `bz2`, `lzma`, `uuid`, `gdbm`. Postupně podle potřeby.
+`tkinter`, `uuid` (`_uuid`), `dbm`, `gdbm`. Přibyly `readline`, `ctypes` (libffi), `bz2`, `lzma` a `pip` (`pip3`, revize 2maemo1; balíček má 79 MB rozbalený). Knihovny pro ně staticky staví `deps.sh`, linkování modulů zajišťuje `ldshared.sh`. Zbytek podle potřeby.
 `pip`: `python3 -m ensurepip` (kola jsou součástí knihovny), potom `python3 -m pip install ...`; čistě pythonové balíčky půjdou, balíčky s C kódem ne.
 
 ## Jak je to řešené

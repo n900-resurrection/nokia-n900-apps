@@ -28,6 +28,22 @@ c = socket.create_connection(s.getsockname()); a, _ = s.accept(); c.sendall(b"ok
 t curses-wide ok python3 -c 'import _curses, _curses_panel; print("ok")'
 t pty ok python3 -c 'import os; m, s = os.openpty(); os.close(m); os.close(s); print("ok")'
 t ensurepip-present ok python3 -c 'import ensurepip; print("ok")'
+t readline ok python3 -c 'import readline; readline.add_history("x"); print("ok" if readline.get_current_history_length() == 1 else "no")'
+t ctypes-libc 5 python3 -c 'import ctypes; print(ctypes.CDLL("libc.so.6").strlen(b"hello"))'
+t ctypes-callback "1 2 3" python3 -c '
+import ctypes
+a = (ctypes.c_int * 3)(3, 1, 2)
+cmp = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int))(lambda x, y: x[0] - y[0])
+ctypes.CDLL("libc.so.6").qsort(a, 3, 4, cmp)
+print(*a)'
+t bz2 2000 python3 -c 'import bz2; print(len(bz2.decompress(bz2.compress(b"y"*2000))))'
+t lzma 3000 python3 -c 'import lzma; print(len(lzma.decompress(lzma.compress(b"z"*3000))))'
+t tarfile-xz hello python3 -c '
+import tarfile, io
+b = io.BytesIO(); t = tarfile.open(fileobj=b, mode="w:xz"); i = tarfile.TarInfo("f"); i.size = 5; t.addfile(i, io.BytesIO(b"hello")); t.close()
+b.seek(0); print(tarfile.open(fileobj=b, mode="r:xz").extractfile("f").read().decode())'
+contains pip-version "pip 24." python3 -m pip --version
+t pip-script-works ok sh -c 'pip3 --version >/dev/null && echo ok'
 # HTTPS to a real server through the ssl module: TLS 1.3 and a verified certificate (needs the network).
 if /opt/curl/bin/curl -s -o /dev/null --max-time 10 https://www.python.org 2>/dev/null; then
     contains https-tls13 "TLSv1.3" python3 -c '
@@ -36,7 +52,12 @@ c = ssl.create_default_context()
 s = c.wrap_socket(socket.create_connection(("www.python.org", 443), 15), server_hostname="www.python.org")
 print(s.version())'
     contains urllib-https "200" python3 -c 'import urllib.request; print(urllib.request.urlopen("https://www.python.org", timeout=20).status)'
+    # pip over TLS 1.3 from PyPI: install a pure-Python package into a temporary directory, import it.
+    tmpdir
+    contains pip-install "Successfully installed" python3 -m pip install --no-cache-dir --target "$TESTDIR/pkg" six
+    t pip-installed-import 1.0 sh -c 'cd "$1" && PYTHONPATH=$1/pkg python3 -c "import six; print(\"1.0\" if six.PY3 else \"no\")"' _ "$TESTDIR"
 else
+    skip pip-install "no network"
     skip https-tls13 "no network"
     skip urllib-https "no network"
 fi

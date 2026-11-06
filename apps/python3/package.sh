@@ -19,11 +19,12 @@ cp -a "$OUT/root/opt/python3" "$STAGE/opt/"
 rm -f "$STAGE/opt/python3/lib/libpython3.11.a"
 find "$STAGE/opt/python3" -name "*.opt-1.pyc" -delete
 for b in python3 python3.11; do ln -s "../../opt/python3/bin/python3.11" "$STAGE/usr/bin/$b"; done
+ln -s ../../opt/python3/bin/pip3 "$STAGE/usr/bin/pip3"
 mkdir -p "$STAGE/opt/python3/share/doc/python3"
 cp "$PROJ/build/src/python3-$VERSION/LICENSE" "$STAGE/opt/python3/share/doc/python3/LICENSE"
 cat > "$STAGE/opt/python3/share/doc/python3/README.Maemo" <<EOT
 Python $VERSION cross-built for Maemo 5 (armel, glibc 2.5). ssl module with OpenSSL 3.5 (static, TLS 1.3),
-sqlite3 (SQLite 3.50), zlib, curses (wide), no readline/ctypes/tkinter yet.
+sqlite3 (SQLite 3.50), zlib, bz2, lzma, readline, ctypes, curses (wide), pip; no tkinter, dbm, uuid.
 Certificates: set SSL_CERT_FILE=/opt/curl/etc/ssl/cacert.pem (package curl); the interpreter does it by itself, see sitecustomize.
 pip: python3 -m ensurepip (bundled wheels), then python3 -m pip install <pure python package>.
 EOT
@@ -39,6 +40,6 @@ EOT
 SECTION=user/development
 DEPENDS="libc6 (>= 2.5), curl"
 DISPLAY_NAME="Python 3.11"
-SHORT_DESC="Python $VERSION for Maemo 5 with TLS 1.3 (ssl), sqlite3 and zlib"
-LONG_DESC="Python $VERSION built for the N900 in /opt/python3 (links /usr/bin/python3, python3.11). The ssl module uses OpenSSL 3.5, certificates come from the curl package. The system Python 2.5 stays untouched."
+SHORT_DESC="Python $VERSION for Maemo 5 with TLS 1.3 (ssl), sqlite3, ctypes, readline and pip"
+LONG_DESC="Python $VERSION built for the N900 in /opt/python3 (links /usr/bin/python3, python3.11). The ssl module uses OpenSSL 3.5, certificates come from the curl package. pip is included (pip3). The system Python 2.5 stays untouched."
 debpack_build
