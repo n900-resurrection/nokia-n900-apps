@@ -49,7 +49,10 @@ Pomocné funkce a jejich popis jsou v [tests/lib.sh](../tests/lib.sh).
 | wordgrinder | 4 | prošly |
 | mutt | 15 | prošly |
 | sfeed | 11 | prošly |
-| mutt-hildon | 6 | prošly |
+| mutt-hildon | 8 | prošly |
+| camel-lite-ssl3 | 9 | prošly |
+| python3 | 30 | prošly |
+| apt-transport-curl | 12 | prošly |
 | msmtp | 7 | prošly |
 
 Aplikace s terminálovým rozhraním (htop3, cmatrix, cbonsai, tty-clock, wordgrinder) mají jen kouřové testy: balíček, odkaz, ikona, `--help`/`--version`, chybějící knihovny. Vzhled a ovládání v terminálu se testovat nedá. Při psaní jsme narazili na: `/tmp` je tmpfs 1 MB (clone gitu selhal),

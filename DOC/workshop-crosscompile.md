@@ -152,3 +152,9 @@ Tím je ověřeno linkování proti glibc 2.5, ne chování na skutečném N900.
 - [Claude Code ve Workshopu (Classmethod)](https://dev.classmethod.jp/en/articles/ubuntu-workshop-claude-code-sandbox/)
 - [canonical/sdkcraft](https://github.com/canonical/sdkcraft)
 - [SDK concepts](https://ubuntu.com/workshop/docs/explanation/sdks/concepts/)
+
+## Sestavování balíčků přes make (2026-11-06)
+- `make debs` projde `apps/*` a sestaví jen zastaralé `.deb` (razítka v `build/stamps`); `make debs APP="curl git"` vybere aplikace, `INSTALL=1` je i nainstaluje, `make -n debs` ukáže plán.
+- `make <app> ACTION=deb` volá jiný cíl aplikace (výchozí je `build`). Cíle aplikací se generují z `apps/*/Makefile`.
+- `DEPS := openssl curl` v `apps/<app>/Makefile`: závislosti se sestaví napřed a jejich přestavba způsobí přestavbu aplikace.
+- Akce Workshopu `toolchain` obsahuje všechny balíky apt, které skripty používají, akce `pylibs` stáhne knihovny yt-dlp a gPodderu 3 do `build/pylibs`.

@@ -1,7 +1,12 @@
 name: n900
 base: ubuntu@24.04
 actions:
-  toolchain: sudo apt-get update && sudo apt-get install -y build-essential gcc-arm-linux-gnueabi g++-arm-linux-gnueabi binutils-arm-linux-gnueabi file dpkg-dev python3 git ninja-build make pkg-config qemu-user
+  # Cross toolchain, qemu-user and everything the apps/*/build.sh scripts use:
+  #   autoconf automake libtool (camel-lite autoreconf), gettext (msgfmt for gPodder), python3-pip (yt-dlp libraries),
+  #   xvfb x11vnc imagemagick x11-utils (make hildon-run: virtual screen, VNC, screenshots), rsync, xz/bzip2/patch/curl.
+  toolchain: sudo apt-get update && sudo apt-get install -y build-essential gcc-arm-linux-gnueabi g++-arm-linux-gnueabi binutils-arm-linux-gnueabi file dpkg-dev python3 python3-pip git ninja-build make pkg-config qemu-user autoconf automake libtool gettext patch xz-utils bzip2 unzip curl ca-certificates rsync perl xvfb x11vnc x11-utils imagemagick
+  # Python libraries for yt-dlp and gPodder 3 (pure Python, run later under the ARM Python 3.11): build/pylibs
+  pylibs: pip3 install --break-system-packages --upgrade --target build/pylibs yt-dlp yt-dlp-ejs podcastparser mygpoclient
   sysroot: python3 scripts/fetch_sysroot.py
   cpp_hello: mkdir -p build && scripts/maemo-gcc -O2 -o build/hello src/hello.c && file build/hello && qemu-arm -L /project/sysroot build/hello
   go_hello: mkdir -p build && scripts/maemo-go -o build/hello src/hello.go && file build/hello && qemu-arm -L /project/sysroot build/hello

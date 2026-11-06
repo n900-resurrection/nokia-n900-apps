@@ -5,8 +5,31 @@
 
 include mk/common.mk
 
-TARGETS := help up down status enter toolchain sysroot hello wordgrinder htop curl git cmatrix cbonsai tty-clock openssl ntp-sync go bash busybox jq mutt msmtp sfeed test mutt-hildon push clean distclean
+# Every directory apps/<app> with a Makefile is a target of the same name (make curl = make -C apps/curl build);
+# ACTION selects another target of the application: make curl ACTION=deb. Descriptions: variables below, or a default.
+APPS := $(sort $(notdir $(patsubst %/,%,$(dir $(wildcard apps/*/Makefile)))))
+ACTION ?= build
+TARGETS := help up down status enter toolchain sysroot hello $(APPS) debs repo test hildon-overlay hildon-run push clean distclean
 .PHONY: $(TARGETS)
+
+define APP_RULE
+$(call uc,$(1)) ?= Build $(1) (more: make -C apps/$(1))
+$(1):
+	$$(MAKE) -C apps/$(1) $$(ACTION)
+endef
+$(foreach a,$(APPS),$(eval $(call APP_RULE,$(a))))
+
+# `make debs` builds the .deb of every application that has a package.sh and skips the ones that are up to date (stamps in
+# build/stamps; the DEPS of apps/<app>/Makefile are brought up to date first). APP selects some: make debs APP="curl git"
+# Preview without building: make -n debs. With INSTALL=1 the packages are also installed on the phone.
+DEBAPPS := $(foreach a,$(or $(APP),$(APPS)),$(if $(wildcard apps/$(a)/package.sh),$(a)))
+DEBS := Build the .deb packages of all apps (APP="a b" selects; up to date ones are skipped; INSTALL=1 installs too)
+REPO := Build the apt repository in ./n900-repository from the current .deb of every app (runs make debs first; see DOC/apt-repo.md)
+repo: debs
+	$(INSIDE) /project/scripts/mkrepo.sh $(foreach a,$(DEBAPPS),build/deb/$(shell $(MAKE) --no-print-directory -s -C apps/$(a) debfile))
+
+debs:
+	@for a in $(DEBAPPS); do printf '\n$(BOLD)== %s$(RESET)\n' $$a; $(MAKE) --no-print-directory -C apps/$$a $(if $(INSTALL),install,deb) || exit 1; done
 
 UP := Create and start the workshop (first run)
 up:
@@ -37,78 +60,39 @@ hello:
 	$(WSRUN) hello
 
 WORDGRINDER := Build WordGrinder (more: make -C apps/wordgrinder)
-wordgrinder:
-	$(MAKE) -C apps/wordgrinder build
-
 HTOP := Build htop (more: make -C apps/htop)
-htop:
-	$(MAKE) -C apps/htop build
-
 CURL := Build curl with TLS 1.3 (more: make -C apps/curl)
-curl:
-	$(MAKE) -C apps/curl build
-
 GIT := Build git with HTTPS (needs curl, more: make -C apps/git)
-git:
-	$(MAKE) -C apps/git build
-
 CMATRIX := Build cmatrix (more: make -C apps/cmatrix)
-cmatrix:
-	$(MAKE) -C apps/cmatrix build
-
 CBONSAI := Build cbonsai (more: make -C apps/cbonsai)
-cbonsai:
-	$(MAKE) -C apps/cbonsai build
-
 SFEED := Build sfeed (more: make -C apps/sfeed)
-sfeed:
-	$(MAKE) -C apps/sfeed build
-
 MUTT := Build Mutt (more: make -C apps/mutt)
-mutt:
-	$(MAKE) -C apps/mutt build
-
 MUTT-HILDON := Package the Hildon GUI over Mutt (more: make -C apps/mutt-hildon)
-mutt-hildon:
-	$(MAKE) -C apps/mutt-hildon build
+CAMEL-LITE := Build camel-lite (Modest mail library) with OpenSSL 3 (more: make -C apps/camel-lite)
+PYTHON3 := Cross-build Python 3.11 (more: make -C apps/python3)
+HILDON-OVERLAY := Copy the Hildon theme, fonts and icons from the phone into ./sysroot (once; for hildon-run)
+hildon-overlay:
+	DEVICE=$(DEVICE) scripts/hildon-overlay.sh
 
+HILDON-RUN := Show a Python 3 GTK2/Hildon program on a virtual 800x480 screen: make hildon-run SCRIPT=src/python3/hildon/proof.py [SHOT=build/shot.png] [VNC=1] [PY2=1 for Python 2.5]
+hildon-run:
+	@test -n "$(SCRIPT)" || { printf '$(RED)Set SCRIPT=path/to/script.py$(RESET)\n'; exit 1; }
+	$(INSIDE) env SHOT=$(SHOT) VNC=$(VNC) PY2=$(PY2) /project/scripts/hildon-run.sh /project/$(SCRIPT)
+
+QUICKJS := Cross-build QuickJS, JavaScript runtime for yt-dlp (more: make -C apps/quickjs)
 MSMTP := Build msmtp (more: make -C apps/msmtp)
-msmtp:
-	$(MAKE) -C apps/msmtp build
-
 JQ := Build jq (more: make -C apps/jq)
-jq:
-	$(MAKE) -C apps/jq build
-
 TEST := Run the tests of all apps on the N900 (apps/*/test.sh); the packages must be installed
 test:
 	@fail=0; for t in $(ROOT)/apps/*/test.sh; do a=$$(basename $$(dirname $$t)); printf '\n$(BOLD)== %s$(RESET)\n' $$a; $(MAKE) --no-print-directory -C apps/$$a test || fail=$$((fail+1)); done; \
 	if [ $$fail -eq 0 ]; then printf '\n$(GREEN)All test suites passed$(RESET)\n'; else printf '\n$(RED)%s test suite(s) failed$(RESET)\n' $$fail; exit 1; fi
 
 TTY-CLOCK := Build tty-clock (more: make -C apps/tty-clock)
-tty-clock:
-	$(MAKE) -C apps/tty-clock build
-
 OPENSSL := Build static OpenSSL 3 (dependency) (more: make -C apps/openssl)
-openssl:
-	$(MAKE) -C apps/openssl build
-
 NTP-SYNC := Check the ntp-sync script (more: make -C apps/ntp-sync)
-ntp-sync:
-	$(MAKE) -C apps/ntp-sync build
-
 GO := Download Go and build the Go hello example (more: make -C apps/go)
-go:
-	$(MAKE) -C apps/go build
-
 BASH := Build Bash 5 (more: make -C apps/bash)
-bash:
-	$(MAKE) -C apps/bash build
-
 BUSYBOX := Build BusyBox 1.37 (more: make -C apps/busybox)
-busybox:
-	$(MAKE) -C apps/busybox build
-
 PUSH := Copy FILE to the N900 (creates the target dir): make push [DEVICE=n900] [FILE=build/hello]
 push:
 	@test -n "$(DEVICE)" || { printf '$(RED)Set DEVICE=user@ip (in .env or on the command line)$(RESET)\n'; exit 1; }
