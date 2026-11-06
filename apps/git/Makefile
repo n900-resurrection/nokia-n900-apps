@@ -4,6 +4,7 @@
 # "make emu" only runs git itself: under qemu /proc/self/exe is the emulator, so the RUNTIME_PREFIX
 # lookup of the helper programs (git-core) does not work there.
 APP     := git
+DEPS    := curl
 VERSION ?= 2.56.0
 RUN_CMD := /usr/bin/git --version && /usr/bin/git ls-remote https://github.com/octocat/Hello-World.git HEAD
 EMU_BIN := /project/build/out/git-$(VERSION)/root/opt/git/bin/git

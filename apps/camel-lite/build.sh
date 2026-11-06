@@ -31,6 +31,8 @@ mkdir -p "$SRCDIR/camel-lite-$VERSION" "$OUT/root"
 tar -C "$SRCDIR/camel-lite-$VERSION" --strip-components=3 -xzf "$DL/$f" "tinymail-$COMMIT/libtinymail-camel/camel-lite"
 cd "$SRCDIR/camel-lite-$VERSION"
 patch -p1 < "$PROJ/apps/camel-lite/openssl3.patch" > "$OUT/patch.log"
+# busyloop.patch: the reads polled with a zero timeout and fatal SSL errors were mapped to EINTR (retried forever): 100% CPU in Modest
+patch -p1 < "$PROJ/apps/camel-lite/busyloop.patch" >> "$OUT/patch.log"
 
 export MAEMO_DEPS="$SSLDEP"
 export PKG_CONFIG_SYSROOT_DIR="$SR"

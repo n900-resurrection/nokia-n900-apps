@@ -1,0 +1,58 @@
+--- a/camel/camel-tcp-stream-openssl.c
++++ b/camel/camel-tcp-stream-openssl.c
+@@ -274,15 +274,22 @@
+ 	case SSL_ERROR_WANT_WRITE:  /* non-fatal; retry */
+ 		d(printf ("ssl_errno: SSL_ERROR_WANT_[READ,WRITE]\n"));
+ 		return EAGAIN;
+-	case SSL_ERROR_SYSCALL:
++	case SSL_ERROR_SYSCALL: {
++		/* a fatal socket error (or EOF without close_notify): EINTR here made the retry loops of
++		 * stream_read/stream_write spin forever at 100% CPU */
++		int e = errno;
++		ERR_clear_error ();
+ 		d(printf ("ssl_errno: SSL_ERROR_SYSCALL\n"));
+-		return EINTR;
++		return (e == 0 || e == EINTR || e == EAGAIN || e == EWOULDBLOCK) ? ECONNRESET : e;
++	}
+ 	case SSL_ERROR_SSL:
+-		d(printf ("ssl_errno: SSL_ERROR_SSL  <-- very useful error...riiiiight\n"));
+-		return EINTR;
++		ERR_clear_error ();
++		d(printf ("ssl_errno: SSL_ERROR_SSL\n"));
++		return EIO;
+ 	default:
++		ERR_clear_error ();
+ 		d(printf ("ssl_errno: default error\n"));
+-		return EINTR;
++		return EIO;
+ 	}
+ }
+ 
+@@ -407,10 +414,8 @@
+ 			FD_ZERO (&rdset);
+ 			FD_SET (openssl->priv->sockfd, &rdset);
+ 
+-			timeout.tv_sec = 0;
+-			timeout.tv_usec = 0;
+-
+-			select (fdmax, &rdset, 0, 0, &timeout);
++			if (!(ssl && SSL_pending (ssl)))
++				select (fdmax, &rdset, 0, 0, NULL);
+ 
+ 			do {
+ 				if (ssl) {
+@@ -442,10 +447,10 @@
+ 			FD_SET (openssl->priv->sockfd, &rdset);
+ 			FD_SET (cancel_fd, &rdset);
+ 
+-			timeout.tv_sec = 0;
+-			timeout.tv_usec = 0;
+-
+-			select (fdmax, &rdset, 0, 0, &timeout);
++			/* block until the socket is readable or the operation is cancelled: a zero timeout made this a busy loop;
++			 * data that OpenSSL has already decrypted is not visible to select() */
++			if (!(ssl && SSL_pending (ssl)))
++				select (fdmax, &rdset, 0, 0, NULL);
+ 			if (FD_ISSET (cancel_fd, &rdset)) {
+ 				fcntl (openssl->priv->sockfd, F_SETFL, flags);
+ 				errno = EINTR;
