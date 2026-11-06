@@ -1,3 +1,6 @@
 [submodule "apps/mutt-hildon"]
 	path = apps/mutt-hildon
 	url = https://github.com/n900-resurrection/mutt-hildon.git
+[submodule "n900-repository"]
+	path = n900-repository
+	url = https://github.com/n900-resurrection/n900-repository.git
