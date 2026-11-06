@@ -31,6 +31,7 @@ cd "$OBJ"
 # Options:
 #  - linux-armv4: 32-bit ARM target (uses NEON assembler when the CPU has it, runtime-detected).
 #  - no-shared: static libraries only. no-tests/no-docs: faster build.
+#  - -fPIC: the static libraries can then also be linked into shared libraries (libcamel-lite).
 #  - no-afalgeng: needs linux/if_alg.h, newer than the 2.6.28 kernel headers of the SDK.
 #  - no-async: avoids ucontext code that glibc 2.5 on ARM may not have.
 #  - no-secure-memory: no mlock/mmap tricks, simpler on a small system.
@@ -41,7 +42,7 @@ CC="$PROJ/scripts/maemo-gcc" AR=arm-linux-gnueabi-ar RANLIB=arm-linux-gnueabi-ra
 "$SRCDIR/openssl-$VERSION/Configure" linux-armv4 \
     --prefix="$PREFIX" --openssldir=/opt/openssl/etc/ssl \
     no-shared no-tests no-docs no-afalgeng no-async no-ktls no-secure-memory no-dso \
-    --with-rand-seed=devrandom -Os \
+    --with-rand-seed=devrandom -Os -fPIC \
     > "$PROJ/build/openssl-configure.log" 2>&1 || { tail -30 "$PROJ/build/openssl-configure.log"; exit 1; }
 make -j"$(nproc)" build_libs > "$PROJ/build/openssl-build.log" 2>&1 \
     || { grep -E 'error|Error' "$PROJ/build/openssl-build.log" | head -20; tail -15 "$PROJ/build/openssl-build.log"; exit 1; }

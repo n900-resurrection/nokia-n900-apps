@@ -27,3 +27,8 @@ repository served by `python3 -m http.server` from the PC (`apt-get update`, `ap
   and against github.com; a real repository on GitHub Pages has not been tried yet. The first installation (bootstrap) is done by hand
   with `dpkg -i` or over HTTP.
 - The version of a package follows `VERSION` and `REV` in `apps/<app>/Makefile`; raise `REV` to make an update visible to users.
+
+## Verified on GitHub Pages (2026-11-06)
+`https://n900-resurrection.github.io/n900-repository` (Pages from branch `main`): `apt-get update`, `apt-cache policy` and the download of a
+package work on the phone through `apt-transport-curl` (TLS 1.3). The Application Manager catalogue can be added with
+`n900-repository/n900-repository.install` (`[install]` with `catalogues` and `package`, a section with `name`, `uri`, `dist`, `components`).

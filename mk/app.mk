@@ -7,6 +7,9 @@
 #   REV      ?= 1maemo1                        # optional, package revision
 #   RUN_CMD  := TERM=xterm /usr/bin/tty-clock  # command run on the device by `make run`
 #   EMU_BIN  := /project/build/out/...         # optional, binary for `make emu` (default: build/out/<APP>-<VERSION>/<APP>)
+#   DEPS     := openssl curl                   # optional, apps (apps/<dep>) that must be built first; a rebuilt dependency
+#                                              # makes this application out of date
+#   DEBFILE  := name_1.0-1maemo1_armel.deb     # optional, when the package file name differs from PKG_VERSION-REV_armel.deb
 #   include ../../mk/app.mk
 #
 # See common.mk for the conventions (description variables, colours, .env).
@@ -15,30 +18,50 @@ include $(dir $(lastword $(MAKEFILE_LIST)))common.mk
 
 PKG     ?= $(APP)
 REV     ?= 1maemo1
-DEBFILE := $(PKG)_$(VERSION)-$(REV)_armel.deb
+DEBFILE ?= $(PKG)_$(VERSION)-$(REV)_armel.deb
+DEPS    ?=
 
-TARGETS := help build deb info push install remove run test emu clean
-.PHONY: $(TARGETS)
+TARGETS := help build deb debfile info push install remove run test emu clean
+.PHONY: $(TARGETS) stamp FORCE
+FORCE:
 
 # Build stamp: `make deb` (and so push/install) rebuilds only when the build inputs are newer than
-# the last successful build: build.sh and any other file in the app directory except package.sh,
-# docs and the Makefile. `make build` always rebuilds.
-STAMP := $(ROOT)/build/stamps/$(APP)-$(VERSION).built
-SRCS  := $(filter-out %/package.sh %.md %/Makefile,$(wildcard $(ROOT)/apps/$(APP)/*))
+# the last successful build: build.sh and any other file in the app directory except package.sh, test.sh,
+# docs and the Makefile, and the stamps of the DEPS applications. `make build` always rebuilds.
+# build/stamps/<app>.built (without version) is the stamp other applications depend on.
+STAMP  := $(ROOT)/build/stamps/$(APP)-$(VERSION).built
+ASTAMP := $(ROOT)/build/stamps/$(APP).built
+SRCS   := $(filter-out %/package.sh %/test.sh %/LICENSE %.md %/Makefile,$(wildcard $(ROOT)/apps/$(APP)/*))
+DEPSTAMPS := $(foreach d,$(DEPS),$(ROOT)/build/stamps/$(d).built)
 
 BUILD := Build $(APP) $(VERSION) in the workshop into build/out/ (always)
 build:
 	$(INSIDE) bash -c 'VERSION=$(VERSION) /project/apps/$(APP)/build.sh'
-	@mkdir -p $(dir $(STAMP)) && touch $(STAMP)
+	@mkdir -p $(dir $(STAMP)) && touch $(STAMP) $(ASTAMP)
 
-$(STAMP): $(SRCS)
+# A dependency is brought up to date by a sub-make on every run (FORCE); the stamp file changes only when it was rebuilt,
+# and only then are the applications depending on it rebuilt.
+$(DEPSTAMPS): $(ROOT)/build/stamps/%.built: FORCE
+	@$(MAKE) --no-print-directory -C $(ROOT)/apps/$* stamp
+
+$(STAMP): $(SRCS) $(DEPSTAMPS)
 	$(MAKE) build
 
-DEB := Create the .deb (armel) in build/deb/ (builds first when out of date)
-deb: $(STAMP)
+stamp: $(STAMP)
+
+# Package stamp: package.sh runs when the build is newer, package.sh changed or the .deb is missing.
+PSTAMP := $(ROOT)/build/stamps/$(APP)-$(VERSION)-$(REV).packaged
+$(PSTAMP): $(STAMP) $(wildcard $(ROOT)/apps/$(APP)/package.sh) $(if $(wildcard $(ROOT)/build/deb/$(DEBFILE)),,FORCE)
 	$(INSIDE) bash -c 'VERSION=$(VERSION) REV=$(REV) /project/apps/$(APP)/package.sh'
+	@touch $(PSTAMP)
+
+DEB := Create the .deb (armel) in build/deb/ (builds first when out of date)
+deb: $(PSTAMP)
 
 INFO := Show the package metadata and contents (builds the .deb first)
+debfile:
+	@echo $(DEBFILE)
+
 info: deb
 	dpkg-deb -I $(ROOT)/build/deb/$(DEBFILE)
 	dpkg-deb -c $(ROOT)/build/deb/$(DEBFILE)
@@ -79,4 +102,4 @@ emu:
 
 CLEAN := Remove the outputs of this application from build/
 clean:
-	rm -rf $(ROOT)/build/stamps/$(APP)-* $(ROOT)/build/out/$(APP)-* $(ROOT)/build/obj/$(APP)-* $(ROOT)/build/deb/stage-$(PKG) $(ROOT)/build/deb/$(PKG)_*
+	rm -rf $(ROOT)/build/stamps/$(APP)-* $(ASTAMP) $(ROOT)/build/out/$(APP)-* $(ROOT)/build/obj/$(APP)-* $(ROOT)/build/deb/stage-$(PKG) $(ROOT)/build/deb/$(PKG)_*
