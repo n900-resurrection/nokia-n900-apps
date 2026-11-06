@@ -13,6 +13,8 @@ Stav k 2026-11-04. Odškrtnuté = hotovo a ověřeno, neodškrtnuté = zbývá.
   pro repozitář `n900dev`, později kopie `maemo.plan9.de`. Návrh viz [DOC/packaging.md](DOC/packaging.md),
   sekce 5, a [DOC/mirror.md](DOC/mirror.md).
 
+- [ ] **Emulátor Fremantle pro vývoj** (`make emulator`, `make hildon-run APP=...`): aplikace z našich balíčků se spouští na PC jako na N900 bez HW. Hotovo (2026-11-06): fáze 1 (matchbox + lišta + launcher + Menu/Back, spouští se `make emulator` nebo `make hildon-run APP=<app>`; viz [DOC/hildon-python3.md](DOC/hildon-python3.md)). Hotovo i: automatické načítání aplikací z `build/deb/*.deb` (jméno a ikona z `.desktop`), spouštění balíčků (htop, CMatrix, gPodder do `com.nokia.icd`). Zbývá: ikony pro terminálové balíčky (`Icon=` + hicolor/48x48 v `package.sh` cbonsai, cmatrix, htop, mutt, sfeed, tty-clock, wordgrinder), D-Bus mocky (osso, `com.nokia.icd`), kontrola, že Menu/Back fungují u gPodderu. Plán: (1) správce oken matchbox + horní lišta 800x56 (hostitelský GTK3 `scripts/hildon-shell.py`: Menu = výběr aplikace, seznam běžících úloh a přepínání, Back, menu aplikace), spouštěč z `apps/*/hildon-run.sh`; (2) aplikace nainstalované z `.deb` do sysrootu (rozbalení balíčků + `.desktop` z `/usr/share/applications/hildon`) místo vývojových kopií; (3) D-Bus mocky (osso, `com.nokia.icd`, systémová sběrnice) kvůli gPodderu a dalším; (4) virtuální klávesnice a vstupní metoda. Skutečný hildon-desktop nejde (clutter + OpenGL ES).
+
 ## Z rozboru (k potvrzení)
 
 - [ ] Pozdější import `.deb` do repa (`reprepro includedeb`) a přidání katalogu `n900dev` v telefonu přes HTTP.

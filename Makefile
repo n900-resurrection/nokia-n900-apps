@@ -9,7 +9,7 @@ include mk/common.mk
 # ACTION selects another target of the application: make curl ACTION=deb. Descriptions: variables below, or a default.
 APPS := $(sort $(notdir $(patsubst %/,%,$(dir $(wildcard apps/*/Makefile)))))
 ACTION ?= build
-TARGETS := help up down status enter toolchain sysroot hello $(APPS) debs repo test hildon-overlay hildon-run push clean distclean
+TARGETS := help up down status enter toolchain sysroot hello $(APPS) debs repo test hildon-overlay hildon-run emulator push clean distclean
 .PHONY: $(TARGETS)
 
 define APP_RULE
@@ -74,10 +74,25 @@ HILDON-OVERLAY := Copy the Hildon theme, fonts and icons from the phone into ./s
 hildon-overlay:
 	DEVICE=$(DEVICE) scripts/hildon-overlay.sh
 
-HILDON-RUN := Show a Python 3 GTK2/Hildon program on a virtual 800x480 screen: make hildon-run SCRIPT=src/python3/hildon/proof.py [SHOT=build/shot.png] [VNC=1] [PY2=1 for Python 2.5]
+EMULATOR := Start the emulated Fremantle desktop (top bar, launcher, task switching): make emulator (VNC on port 5999 of the Workshop, address is printed)
+emulator:
+	$(INSIDE) env VNC=$(or $(VNC),1) FRESH=1 FOREGROUND=1 /project/scripts/hildon-session.sh
+
+EMULATOR-STOP := End a running emulator session (screen, VNC, window manager, bar, programs)
+emulator-stop:
+	$(INSIDE) env STOP=1 /project/scripts/hildon-session.sh
+
+HILDON-RUN := Show a GTK2/Hildon program on a virtual 800x480 screen: make hildon-run [APP=mutt-hildon | SCRIPT=src/python3/hildon/proof.py] [SHOT=build/shot.png] [VNC=1] [PY2=1 for Python 2.5]
+SCRIPT ?= src/python3/hildon/proof.py
+# SCRIPT=apps/<app>/... of an application that has apps/<app>/hildon-run.sh means APP=<app> (it needs the demo home)
+ifeq ($(APP),)
+SCRIPTAPP := $(word 2,$(subst /, ,$(SCRIPT)))
+ifneq ($(and $(filter apps/%,$(SCRIPT)),$(wildcard apps/$(SCRIPTAPP)/hildon-run.sh)),)
+APP := $(SCRIPTAPP)
+endif
+endif
 hildon-run:
-	@test -n "$(SCRIPT)" || { printf '$(RED)Set SCRIPT=path/to/script.py$(RESET)\n'; exit 1; }
-	$(INSIDE) env SHOT=$(SHOT) VNC=$(VNC) PY2=$(PY2) /project/scripts/hildon-run.sh /project/$(SCRIPT)
+	$(INSIDE) env SHOT=$(SHOT) VNC=$(VNC) PY2=$(PY2) APP=$(APP) HILDON_DEVSHELL_SCRIPT=$(DEVSHELL_SCRIPT) HILDON_DEVSHELL_DEBUG=$(DEVSHELL_DEBUG) /project/scripts/hildon-run.sh $(if $(APP),,/project/$(SCRIPT))
 
 QUICKJS := Cross-build QuickJS, JavaScript runtime for yt-dlp (more: make -C apps/quickjs)
 MSMTP := Build msmtp (more: make -C apps/msmtp)

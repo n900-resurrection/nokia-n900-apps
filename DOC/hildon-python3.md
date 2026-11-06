@@ -26,6 +26,24 @@ make hildon-run SCRIPT=... VNC=1         # obraz navíc přes VNC
   Z hostitele: `remmina` nebo `vncviewer 10.226.106.34:5999` (display `:99`). Okno běží, dokud skript neskončí (proof.py po 30 s), běžící aplikace zůstane otevřená.
 - **mutt-hildon na PC (vyzkoušeno):** `sysroot/opt/mutt-hildon` je vývojová kopie (soubory z `apps/mutt-hildon`), `HOME=build/fakehome` má vlastní `.muttrc` a naplněnou cache.
   Spuštění: `HOME=/project/build/fakehome PY2=1 SHOT=... scripts/hildon-run.sh /opt/mutt-hildon/mutt-hildon`. Seznam zpráv se vykreslil stejně jako na telefonu.
+- **Emulated desktop (`make emulator`, `make hildon-run APP=<app>`):** `scripts/hildon-session.sh` starts the virtual screen (Xvfb 800x480), the window manager
+  `matchbox-window-manager` and the top bar `scripts/hildon-shell.py` (host GTK3, 800x56; applications get 800x424 below it, like on the N900).
+  The bar: **Apps** (launcher: every `apps/<app>/hildon-run.sh` is an application, first lines `# Name: Mail`), buttons of the running windows (switching,
+  the active one is highlighted), **Menu** (application menu of the active window) and **Back** (closes the active window like the Back button).
+  `make emulator` shows the empty desktop (VNC is on, the address is printed; `make emulator-stop` ends a session left behind, a new start does it itself) and you pick an application; `make hildon-run APP=mutt-hildon` starts the desktop with that application.
+  Ctrl-C ends the session. Closing the last window leaves the emulator running.
+- **Why Menu works:** `scripts/hildon-stubs/sitecustomize.py` (loaded by Python 2.5 itself when `HILDON_DEVSHELL=1`) handles F4 and Escape inside the program. `HildonAppMenu.popup()`
+  shows nothing without hildon-desktop, so the items of the menu are shown in a window of our own and a tap calls the original button. Without the bar
+  (`make hildon-run SCRIPT=...` with `PY2=1`) the same module draws two small Menu/Back buttons in the corner.
+  `DEVSHELL_SCRIPT=22:menu,30:back` runs actions after N seconds, `DEVSHELL_DEBUG=1` logs to `/tmp/hildon-devshell.log` (inside the Workshop).
+- **Applications are found automatically:** *Apps* lists (1) development copies `apps/<app>/hildon-run.sh` and (2) every package in `build/deb/*.deb` (newest of each) that has a
+  `/usr/share/applications/hildon/*.desktop`: name and icon (`hicolor/48x48` and others) come from the package. A package is unpacked into `sysroot` on its first start (like an installation)
+  and runs as on the phone: ARM programs through qemu-user and `binfmt_misc` (registered by `hildon-session.sh` with sudo), wrapper scripts in the host shell, `exec /opt/<app>/...` works
+  because `sysroot/opt` is bind-mounted on `/opt` (qemu-user does not translate the path of `execve`; the mount is removed by `emulator-stop`). `osso-xterm -e CMD` entries open in a host xterm,
+  Python 2.5 scripts (gPodder) run through the interpreter of the sysroot with the Menu/Back helper. Works: htop, CMatrix; gPodder starts and stops at the missing `com.nokia.icd` (D-Bus mocks are next).
+  `make debs` first, so that the packages exist. Icons: terminal packages have none yet (TODO).
+- **Adding an application:** `apps/<app>/hildon-run.sh` (see mutt-hildon): sets `RUN_SCRIPT`, `PY2`, `HOME` and prepares demo data. Network features end with an error banner (no curl, no IMAP server).
+- Not emulated: the title bar and status area, widgets, the on-screen keyboard (use the host keyboard), D-Bus services (osso is stubbed, gPodder stops at `com.nokia.icd`).
 
 Omezení:
 - **`hildon-desktop` na PC nejde.** Je postavený na clutteru s EGL/OpenGL ES (`libclutter-eglx`, `libGLESv2`, `libIMGegl` s ovladačem PowerVR), který pod qemu-user a Xvfb nemá co použít.

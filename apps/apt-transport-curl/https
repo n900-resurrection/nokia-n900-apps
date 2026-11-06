@@ -9,7 +9,9 @@
 CURL=${CURL:-/usr/bin/curl}
 CAINFO=; PROXY=; INSECURE=; TIMEOUT=60
 
-# APT_CURL_DEBUG=/path/file writes the whole conversation with apt to that file.
+# APT_CURL_DEBUG=/path/file writes the whole conversation with apt to that file. The Application Manager starts the methods
+# without our environment: creating the file /etc/apt/apt-transport-curl.debug turns the log on (to /tmp/apt-transport-curl.log).
+[ -n "${APT_CURL_DEBUG:-}" ] || ! [ -f /etc/apt/apt-transport-curl.debug ] || APT_CURL_DEBUG=/tmp/apt-transport-curl.log
 dbg() { [ -z "${APT_CURL_DEBUG:-}" ] || printf '%s\n' "$*" >> "$APT_CURL_DEBUG"; }
 # one write() per message: the old apt does not cope with a message that arrives in pieces
 send() { local m; dbg ">> $*"; m=$(printf '%s\n' "$@"; printf x); printf '%s\n' "${m%x}"; }
@@ -17,7 +19,7 @@ send() { local m; dbg ">> $*"; m=$(printf '%s\n' "$@"; printf x); printf '%s\n' 
 # The apt 0.7 of the phone misses the first message when the method answers at once (the compiled methods are slower to start
 # because of dynamic linking): a short pause is needed, found by experiment (an immediate printf hangs apt for ever).
 sleep 0.2 2>/dev/null || /bin/true
-send "100 Capabilities" "Version: 1.2" "Pipeline: true" "Send-Config: true"
+send "100 Capabilities" "Version: 1.2" "Pipeline: true"
 
 failure() { # uri message
     send "400 URI Failure" "URI: $1" "Message: $2"
@@ -61,6 +63,19 @@ config() { # Acquire::https::CaInfo=/path ...
     esac
 }
 
+# Send-Config is NOT requested: the apt-worker of the Application Manager reads our "100 Capabilities" and then never sends the
+# "601 Configuration" (verified on the phone: nothing in the pipe, both sides waiting for ever). The few settings we use are read
+# with apt-config at the first request instead.
+loadconfig() {
+    local k v
+    [ -z "${CONFIG_LOADED:-}" ] || return 0
+    CONFIG_LOADED=1
+    while IFS= read -r line; do
+        k=${line%% *}; v=${line#* }
+        config "${k}=${v%;}"
+    done < <(apt-config dump 2>/dev/null | grep '^Acquire::https::\(CaInfo\|Proxy\|Timeout\|Curl-Insecure\) ')
+}
+
 first=; uri=; file=
 while IFS= read -r line; do
     line=${line%$'\r'}
@@ -75,7 +90,7 @@ while IFS= read -r line; do
         continue
     fi
     case $first in
-        600*) acquire "$uri" "$file" ;;
+        600*) loadconfig; acquire "$uri" "$file" ;;
     esac
     first=; uri=; file=
 done
