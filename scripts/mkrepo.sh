@@ -6,7 +6,9 @@
 #   n900-repository/dists/fremantle/main/binary-armel/Packages, Packages.gz
 #   n900-repository/dists/fremantle/Release   (MD5Sum, SHA1 and SHA256: the apt 0.7 of the phone verifies only MD5/SHA1)
 # The old apt of Fremantle reads only Packages.gz (no xz) and no InRelease; signing (Release.gpg) is in TODO.md.
-# Everything is regenerated from the files given, so a package that is no longer listed disappears from the repository.
+# pool/ is kept: the given .deb files are added to it (a file of the same name is replaced), so older versions of every package stay in
+# the repository for downgrades (apt-get install pkg=version). Only dists/ is regenerated, from everything in pool/ (dpkg-scanpackages -m lists all
+# versions; apt installs the highest). Nothing is pruned for now; to drop a package or an old version, delete its file from pool/main by hand.
 set -euo pipefail
 PROJ=/project
 R="$PROJ/${REPO_DIR:-n900-repository}"
@@ -14,11 +16,11 @@ SUITE="${SUITE:-fremantle}"
 [ $# -gt 0 ] || { echo "usage: $0 file.deb ..."; exit 1; }
 B="dists/$SUITE/main/binary-armel"
 mkdir -p "$R"
-rm -rf "$R/pool" "$R/dists"
+rm -rf "$R/dists"
 mkdir -p "$R/pool/main" "$R/$B"
 cp -- "$@" "$R/pool/main/"
 cd "$R"
-dpkg-scanpackages --arch armel pool 2>"$PROJ/build/mkrepo.log" > "$B/Packages"
+dpkg-scanpackages -m --arch armel pool 2>"$PROJ/build/mkrepo.log" > "$B/Packages"
 gzip -9nc "$B/Packages" > "$B/Packages.gz"
 {
     echo "Origin: N900 community packages"

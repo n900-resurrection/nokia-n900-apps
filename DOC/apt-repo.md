@@ -9,7 +9,10 @@ n900-repository/pool/main/*.deb
 n900-repository/dists/fremantle/main/binary-armel/Packages, Packages.gz
 n900-repository/dists/fremantle/Release        (MD5Sum, SHA1, SHA256)
 ```
-Script: [scripts/mkrepo.sh](../scripts/mkrepo.sh). The old apt of the phone reads only `Packages.gz` (no xz) and knows only MD5/SHA1,
+Script: [scripts/mkrepo.sh](../scripts/mkrepo.sh). `pool/` is **kept** between builds: a new `.deb` is added to it and older versions of
+every package stay, so the user can go back (`apt-get install gpodder=2.20.3-2maemo2`); only `dists/` is regenerated, from all of `pool/`
+(`dpkg-scanpackages -m` lists every version, apt installs the highest). Nothing is pruned for now; a package or an old version is removed by
+deleting its file from `pool/main`. Whether to keep only the last few versions is to be decided later (size limit of GitHub Pages about 1 GB). The old apt of the phone reads only `Packages.gz` (no xz) and knows only MD5/SHA1,
 so `Release` carries all three sums.
 
 ## Use on the phone
