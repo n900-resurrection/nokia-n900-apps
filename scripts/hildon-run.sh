@@ -24,6 +24,9 @@ else
     pgrep -x Xvfb >/dev/null || { Xvfb "$D" -screen 0 800x480x24 >/tmp/xvfb.log 2>&1 & sleep 1.5; }
     [ -z "${VNC:-}" ] || pgrep -x x11vnc >/dev/null || x11vnc -display "$D" -rfbport 5999 -forever -nopw -shared -bg -q >/dev/null 2>&1
 fi
+# private D-Bus bus with the mocked Maemo services (icd, MAFW); programs use it as session and system bus
+"$PROJ/scripts/hildon-dbus.sh"
+export DBUS_SESSION_BUS_ADDRESS=unix:path=/tmp/hildon-emu-bus DBUS_SYSTEM_BUS_ADDRESS=unix:path=/tmp/hildon-emu-bus
 if [ -n "${APP:-}" ]; then
     # apps/<app>/hildon-run.sh may set PY2, HOME, RUN_SCRIPT and prepare data
     [ -f "$PROJ/apps/$APP/hildon-run.sh" ] || { echo "apps/$APP/hildon-run.sh does not exist"; exit 1; }

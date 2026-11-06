@@ -42,6 +42,11 @@ make hildon-run SCRIPT=... VNC=1         # obraz navíc přes VNC
   because `sysroot/opt` is bind-mounted on `/opt` (qemu-user does not translate the path of `execve`; the mount is removed by `emulator-stop`). `osso-xterm -e CMD` entries open in a host xterm,
   Python 2.5 scripts (gPodder) run through the interpreter of the sysroot with the Menu/Back helper. Works: htop, CMatrix; gPodder starts and stops at the missing `com.nokia.icd` (D-Bus mocks are next).
   `make debs` first, so that the packages exist. Icons: terminal packages have none yet (TODO).
+- **D-Bus mocks:** `scripts/hildon-dbus.sh` starts a private bus (`/tmp/hildon-emu-bus`, used as session and system bus by the programs) and `scripts/hildon-dbus-mocks.py` registers the
+  services of the Maemo system on it: `com.nokia.icd` (connection daemon) and the MAFW media renderer (idle player). More services: one class per service in that file. The Python 2.5 module `conic`
+  is replaced by `scripts/hildon-stubs/conic.py` (network is always "WLAN"). Calls are logged to `/tmp/hildon-dbus-mocks.log`. gPodder 2.20.3 starts with it.
+- **yt-dlp in the emulator:** the launcher creates `~/.local/bin/yt-dlp` in the emulator home (`build/emu/home`) as a wrapper of the host yt-dlp (`build/pylibs`, `make pylibs`), because the ARM Python 3 under qemu is far too slow; QuickJS is the ARM binary of the `quickjs` package.
+  Dependencies of a package that are our own packages (e.g. `curl`, `quickjs` of gPodder) are unpacked into the sysroot too.
 - **Adding an application:** `apps/<app>/hildon-run.sh` (see mutt-hildon): sets `RUN_SCRIPT`, `PY2`, `HOME` and prepares demo data. Network features end with an error banner (no curl, no IMAP server).
 - Not emulated: the title bar and status area, widgets, the on-screen keyboard (use the host keyboard), D-Bus services (osso is stubbed, gPodder stops at `com.nokia.icd`).
 

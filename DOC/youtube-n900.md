@@ -29,3 +29,12 @@ Extrakci dělá **yt-dlp**, který se aktualizuje několikrát týdně, a na tel
 2. ~~Přeložit QuickJS~~ hotovo (`make quickjs`).
 3. Přehrání 480p přes mpv/mplayer s kontrolou plynulosti.
 4. Hildon rozhraní přes ctypes ([hildon-python3.md](hildon-python3.md)).
+
+
+## gPodder 2.20.3 with yt-dlp (2026-11-06)
+The old YouTube code of gPodder (get_video_info) no longer works and the Python 2.5 of the N900 speaks TLS 1.0 only, so `apps/gpodder/ytdlp.patch` adds the module `gpodder/ytdlp.py`:
+- **HTTPS through curl 8** (`/opt/curl/bin/curl`, package `curl`): feeds (`feedcore.py`) and downloads of episodes (`download.py`, with resume and progress for the GUI). Plain HTTP stays with urllib.
+- **YouTube through yt-dlp** (`~/.local/bin/yt-dlp --js-runtimes quickjs:/usr/bin/qjs`, format `18/b[height<=480][ext=mp4]/...`): `youtube.py` resolves a watch link to the direct URL; a download then goes through curl. Links with `https://`, `youtu.be`, `shorts` are recognised.
+- yt-dlp writes temporary files while it solves the JavaScript challenge; the `/tmp` of the phone is a 1 MB tmpfs ("No space left on device"), so `TMPDIR=~/.gpodder/tmp` is set for it.
+- Checked on the phone (Python 2.5, without installing the package): the https feed of a YouTube channel (atom10, parsed by feedparser), resolving a video and downloading it (MP4, 629 kB). Checked in the emulator (`make emulator`) the same plus the GUI start.
+- Not done: streaming (the media player cannot use the https URL, so download first and then play), playing the downloaded file (MAFW is mocked in the emulator, so only the real phone can tell), the "Add podcast" dialog with a YouTube URL in the GUI.

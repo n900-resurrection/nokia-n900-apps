@@ -97,7 +97,7 @@ Stav k 2026-11-04. Odškrtnuté = hotovo a ověřeno, neodškrtnuté = zbývá.
 - [x] QuickJS 2026-06-04 přeloženo (`make quickjs`, balíček `quickjs`, `apps/quickjs`), běží pod qemu ve Workshopu (BigInt, pojmenované skupiny, soukromá pole); na telefon zatím neinstalováno (`make -C apps/quickjs install test`).
 - [x] yt-dlp 2026.10.26 + QuickJS ve Workshopu: formáty i stažení fungují (ověřeno, viz [DOC/youtube-n900.md](DOC/youtube-n900.md)).
 - [x] yt-dlp 2026.10.26 + QuickJS nainstalovány na telefonu (`~/.local/bin/yt-dlp --js-runtimes quickjs:/usr/bin/qjs`), `-F` funguje. [ ] Zkusit stažení a přehrání; pak Hildon GUI (hledání, seznam, stažení do `~/MyDocs`) a přehrávání mpv/mplayer.
-- [x] gPodder 2.20.3 postaven (`make -C apps/gpodder deb`, 628 kB). [x] Nainstalováno na telefon 2026-11-06 (záloha `build/backup/gpodder-config-2.20.2-*.tgz`). [ ] Ověřit v GUI; zvážit jádro 3.11 na Pythonu 3 ([DOC/gpodder-n900.md](DOC/gpodder-n900.md)).
+- [x] gPodder 2.20.3 s `ytdlp.patch` (HTTPS přes curl, YouTube přes yt-dlp; ověřeno na telefonu i v emulátoru na úrovni modulů, balíček `gpodder_2.20.3-2maemo1` postaven). [ ] Nainstalovat na telefon (`make -C apps/gpodder install`, až bude zavřený Správce aplikací, drží zámek dpkg), v GUI přidat YouTube kanál, stáhnout epizodu a přehrát; streamování YouTube zatím nejde (přehrávač neumí https).\n- [x] gPodder 2.20.3 postaven (`make -C apps/gpodder deb`, 628 kB). [x] Nainstalováno na telefon 2026-11-06 (záloha `build/backup/gpodder-config-2.20.2-*.tgz`). [ ] Ověřit v GUI; zvážit jádro 3.11 na Pythonu 3 ([DOC/gpodder-n900.md](DOC/gpodder-n900.md)).
 - [x] `make hildon-run` (Python 3 i Python 2.5 + PyGTK, VNC, snímky), mutt-hildon běží na PC. hildon-desktop nejde (clutter + OpenGL ES).
 
 

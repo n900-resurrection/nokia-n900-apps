@@ -1,0 +1,388 @@
+--- a/src/gpodder/download.py	2012-12-22 12:32:24.000000000 +0100
++++ b/src/gpodder/download.py	2026-11-06 17:50:15.196868921 +0100
+@@ -30,6 +30,7 @@
+ from gpodder.liblogger import log
+ from gpodder import util
+ from gpodder import youtube
++from gpodder import ytdlp
+ import gpodder
+ 
+ import threading
+@@ -720,9 +721,17 @@
+             # Resolve URL and start downloading the episode
+             url = youtube.get_real_download_url(self.__episode.url, \
+                     self._config.youtube_preferred_fmt_id)
+-            downloader =  DownloadURLOpener(self.__episode.channel)
+-            headers, real_url = downloader.retrieve_resume(url, \
+-                    self.tempname, reporthook=self.status_updated)
++            if ytdlp.needs_curl(url):
++                # Python 2.5 speaks TLS 1.0 only: HTTPS goes through curl 8
++                try:
++                    headers, real_url = ytdlp.retrieve(url, self.tempname, \
++                            reporthook=self.status_updated, user_agent=gpodder.user_agent)
++                except ytdlp.FetchError, fe:
++                    raise Exception(str(fe))
++            else:
++                downloader =  DownloadURLOpener(self.__episode.channel)
++                headers, real_url = downloader.retrieve_resume(url, \
++                        self.tempname, reporthook=self.status_updated)
+ 
+             new_mimetype = headers.get('content-type', self.__episode.mimetype)
+             old_mimetype = self.__episode.mimetype
+--- a/src/gpodder/feedcore.py	2012-12-22 12:32:24.000000000 +0100
++++ b/src/gpodder/feedcore.py	2026-11-06 17:50:15.197140125 +0100
+@@ -24,6 +24,8 @@
+ 
+ import feedparser
+ 
++from gpodder import ytdlp
++
+ def patch_feedparser():
+     """Monkey-patch the Universal Feed Parser"""
+     # Detect the 'plain' content type as 'text/plain'
+@@ -237,11 +239,22 @@
+         else:
+             is_local = False
+ 
+-        feed = feedparser.parse(url,
+-                agent=self.user_agent,
+-                modified=modified,
+-                etag=etag,
+-                handlers=self._get_handlers())
++        if not is_local and ytdlp.needs_curl(url):
++            # Python 2.5 speaks TLS 1.0 only: HTTPS feeds are fetched by curl 8 (no ETag / If-Modified-Since)
++            try:
++                data, status, headers = ytdlp.fetch(url, self.user_agent)
++            except ytdlp.FetchError:
++                raise Offline()
++            feed = feedparser.parse(data)
++            feed.status = status
++            feed.headers = headers
++            feed.href = url
++        else:
++            feed = feedparser.parse(url,
++                    agent=self.user_agent,
++                    modified=modified,
++                    etag=etag,
++                    handlers=self._get_handlers())
+ 
+         if is_local:
+             if feed.version:
+--- a/src/gpodder/youtube.py	2012-12-22 12:32:24.000000000 +0100
++++ b/src/gpodder/youtube.py	2026-11-06 17:50:15.197305127 +0100
+@@ -24,6 +24,7 @@
+ import gpodder
+ 
+ from gpodder import util
++from gpodder import ytdlp
+ from gpodder.liblogger import log
+ 
+ import re
+@@ -51,94 +52,22 @@
+ class YouTubeError(Exception): pass
+ 
+ def get_real_download_url(url, preferred_fmt_id=18):
+-    vid = get_youtube_id(url)
+-    if vid is not None:
+-        page = None
+-        url = 'http://www.youtube.com/get_video_info?&el=detailpage&video_id=' + vid
+-
+-        while page is None:
+-            req = util.http_request(url, method='GET')
+-            if 'location' in req.msg:
+-                url = req.msg['location']
+-            else:
+-                page = req.read()
+-
+-        # Try to find the best video format available for this video
+-        # (http://forum.videohelp.com/topic336882-1800.html#1912972)
+-        def find_urls(page):
+-            r4 = re.search('.*&url_encoded_fmt_stream_map=([^&]+)&.*', page)
+-            if r4 is not None:
+-                fmt_url_map = urllib.unquote(r4.group(1))
+-                for fmt_url_encoded in fmt_url_map.split(','):
+-                    video_info = parse_qs(fmt_url_encoded)
+-                    yield int(video_info['itag'][0]), video_info['url'][0] + "&signature=" + video_info['sig'][0]
+-            else:
+-                error_info = parse_qs(page)
+-                error_message = util.remove_html_tags(error_info['reason'][0])
+-                raise YouTubeError('Cannot download video: %s' % error_message)
+-
+-        fmt_id_url_map = sorted(find_urls(page), reverse=True)
+-        # Default to the highest fmt_id if we don't find a match below
+-        if fmt_id_url_map:
+-            default_fmt_id, default_url = fmt_id_url_map[0]
+-        else:
+-            raise YouTubeError('fmt_url_map not found for video ID "%s"' % vid)
+-
+-        formats_available = set(fmt_id for fmt_id, url in fmt_id_url_map)
+-        fmt_id_url_map = dict(fmt_id_url_map)
+-
+-        if gpodder.ui.diablo:
+-            # Hardcode fmt_id 5 for Maemo (for performance reasons) - we could
+-            # also use 13 and 17 here, but the quality is very low then. There
+-            # seems to also be a 6, but I could not find a video with that yet.
+-            fmt_id = 5
+-        elif gpodder.ui.fremantle:
+-            # This provides good quality video, seems to be always available
+-            # and is playable fluently in Media Player
+-            if preferred_fmt_id == 5:
+-                fmt_id = 5
+-            else:
+-                fmt_id = 18
+-        else:
+-            # As a fallback, use fmt_id 18 (seems to be always available)
+-            fmt_id = 18
+-
+-            # This will be set to True if the search below has already "seen"
+-            # our preferred format, but has not yet found a suitable available
+-            # format for the given video.
+-            seen_preferred = False
+-
+-            for id, wanted, description in supported_formats:
+-                # If we see our preferred format, accept formats below
+-                if id == preferred_fmt_id:
+-                    seen_preferred = True
+-
+-                # If the format is available and preferred (or lower),
+-                # use the given format for our fmt_id
+-                if id in formats_available and seen_preferred:
+-                    log('Found available YouTube format: %s (fmt_id=%d)', \
+-                            description, id)
+-                    fmt_id = id
+-                    break
+-
+-        url = fmt_id_url_map.get(fmt_id, None)
+-        if url is None:
+-            url = default_url
+-
+-    return url
++    """Direct media URL of a YouTube page, found by yt-dlp (the get_video_info interface of the old code is gone)."""
++    if get_youtube_id(url) is None:
++        return url
++    try:
++        return ytdlp.resolve(url)
++    except ytdlp.YtdlpError, e:
++        raise YouTubeError('Cannot download video: %s' % e)
+ 
+ def get_youtube_id(url):
+-    r = re.compile('http://(?:[a-z]+\.)?youtube\.com/v/(.*)\.swf', re.IGNORECASE).match(url)
+-    if r is not None:
+-        return r.group(1)
+-
+-    r = re.compile('http://(?:[a-z]+\.)?youtube\.com/watch\?v=([^&]*)', re.IGNORECASE).match(url)
+-    if r is not None:
+-        return r.group(1)
+-
+-    r = re.compile('http://(?:[a-z]+\.)?youtube\.com/v/(.*)[?]', re.IGNORECASE).match(url)
+-    if r is not None:
+-        return r.group(1)
++    for pattern in (r'https?://(?:[a-z]+\.)?youtube\.com/v/([^?&#]+?)(?:\.swf)?(?:[?&#].*)?$',
++                    r'https?://(?:[a-z]+\.)?youtube\.com/watch\?(?:.*&)?v=([^&#]+)',
++                    r'https?://(?:[a-z]+\.)?youtube\.com/(?:shorts|embed|live)/([^?&#/]+)',
++                    r'https?://youtu\.be/([^?&#/]+)'):
++        r = re.compile(pattern, re.IGNORECASE).match(url)
++        if r is not None:
++            return r.group(1)
+ 
+     return None
+ 
+@@ -146,11 +75,11 @@
+     return (get_youtube_id(url) is not None)
+ 
+ def get_real_channel_url(url):
+-    r = re.compile('http://(?:[a-z]+\.)?youtube\.com/user/([a-z0-9]+)', re.IGNORECASE)
++    r = re.compile('https?://(?:[a-z]+\.)?youtube\.com/user/([a-z0-9]+)', re.IGNORECASE)
+     m = r.match(url)
+ 
+     if m is not None:
+-        next = 'http://www.youtube.com/rss/user/'+ m.group(1) +'/videos.rss'
++        next = 'https://www.youtube.com/feeds/videos.xml?user='+ m.group(1)
+         log('YouTube link resolved: %s => %s', url, next)
+         return next
+ 
+@@ -158,7 +87,7 @@
+     m = r.match(url)
+ 
+     if m is not None:
+-        next = 'http://www.youtube.com/rss/user/'+ m.group(1) +'/videos.rss'
++        next = 'https://www.youtube.com/feeds/videos.xml?user='+ m.group(1)
+         log('YouTube link resolved: %s => %s', url, next)
+         return next
+ 
+--- a/src/gpodder/ytdlp.py	1970-01-01 01:00:00.000000000 +0100
++++ b/src/gpodder/ytdlp.py	2026-11-06 17:57:03.299722626 +0100
+@@ -0,0 +1,173 @@
++# -*- coding: utf-8 -*-
++#
++# gpodder.ytdlp - external helpers for the Maemo 5 port: yt-dlp (YouTube) and curl (HTTPS)
++#
++# The Python 2.5 of the N900 speaks TLS 1.0 only, which today's servers refuse, and the old YouTube code of gPodder is gone for good.
++# So HTTPS goes through curl 8 (package "curl", mbedTLS, TLS 1.3) and YouTube links are resolved by yt-dlp (+ QuickJS).
++#
++# Plain HTTP stays with urllib; only the https:// URLs of feeds, enclosures and YouTube videos come here.
++
++import os
++import re
++import subprocess
++import tempfile
++import time
++
++CURL_CANDIDATES = ('/opt/curl/bin/curl', '/usr/bin/curl')
++CACERT_CANDIDATES = ('/opt/curl/etc/ssl/cacert.pem', '/etc/ssl/certs/ca-certificates.crt')
++YTDLP_CANDIDATES = (os.path.expanduser('~/.local/bin/yt-dlp'), '/opt/yt-dlp/bin/yt-dlp', '/usr/local/bin/yt-dlp', '/usr/bin/yt-dlp')
++QJS_CANDIDATES = ('/usr/bin/qjs', '/opt/quickjs/bin/qjs')
++
++# Format for the Maemo media player: small progressive MP4 (itag 18, 360p), otherwise the best file up to 480p that holds audio and video
++YTDLP_FORMAT = '18/b[height<=480][ext=mp4]/b[height<=480]/b'
++
++
++class FetchError(Exception):
++    pass
++
++
++class YtdlpError(Exception):
++    pass
++
++
++def _first(paths):
++    for p in paths:
++        if os.path.exists(p):
++            return p
++    return None
++
++
++def needs_curl(url):
++    return url.lower().startswith('https://')
++
++
++def curl_command(url, extra=()):
++    curl = _first(CURL_CANDIDATES)
++    if curl is None:
++        raise FetchError('curl is not installed (package "curl")')
++    cmd = [curl, '-sS', '-L', '--max-redirs', '10', '--connect-timeout', '30']
++    cacert = _first(CACERT_CANDIDATES)
++    if cacert:
++        cmd += ['--cacert', cacert]
++    return cmd + list(extra) + [url]
++
++
++def _read_headers(path):
++    """Headers of the last response in a curl -D file as a dict with lower case names."""
++    headers = {}
++    try:
++        f = open(path)
++        try:
++            text = f.read()
++        finally:
++            f.close()
++    except IOError:
++        return headers
++    blocks = [b for b in re.split(r'\r?\n\r?\n', text) if b.strip()]
++    if blocks:
++        for line in blocks[-1].splitlines()[1:]:
++            if ':' in line:
++                k, v = line.split(':', 1)
++                headers[k.strip().lower()] = v.strip()
++    return headers
++
++
++def fetch(url, user_agent=None):
++    """Download a small document (a feed). Returns (data, http status, headers dict)."""
++    fd, hdr = tempfile.mkstemp(prefix='gpodder-curl-')
++    os.close(fd)
++    try:
++        extra = ['-D', hdr, '-w', '\n%{http_code}']
++        if user_agent:
++            extra += ['-A', user_agent]
++        p = subprocess.Popen(curl_command(url, extra), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
++        out, err = p.communicate()
++        if p.returncode != 0:
++            raise FetchError(err.strip() or ('curl exit status %d' % p.returncode))
++        body, _, code = out.rpartition('\n')
++        return body, int(code or 0), _read_headers(hdr)
++    finally:
++        try:
++            os.remove(hdr)
++        except OSError:
++            pass
++
++
++def retrieve(url, filename, reporthook=None, user_agent=None):
++    """Download url to filename (resumes a partial file). reporthook(count, blocksize, totalsize) is called every
++    0.3 s and may raise to stop the transfer (cancel, pause). Returns (headers, url). Errors: FetchError, IOError."""
++    block = 8192
++    fd, hdr = tempfile.mkstemp(prefix='gpodder-curl-')
++    os.close(fd)
++    start = os.path.exists(filename) and os.path.getsize(filename) or 0
++    extra = ['-D', hdr, '-C', '-', '--fail', '-o', filename]
++    if user_agent:
++        extra += ['-A', user_agent]
++    p = subprocess.Popen(curl_command(url, extra), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
++    try:
++        total = 0
++        while p.poll() is None:
++            time.sleep(0.3)
++            if not total:
++                length = _read_headers(hdr).get('content-length')
++                if length and length.isdigit():
++                    total = start + int(length)
++            size = os.path.exists(filename) and os.path.getsize(filename) or 0
++            if reporthook is not None:
++                reporthook(size // block, block, total)
++        err = p.stderr.read().strip()
++        if p.returncode == 33:
++            # the server cannot resume (a complete file is already there): start again
++            os.remove(filename)
++            return retrieve(url, filename, reporthook, user_agent)
++        if p.returncode != 0:
++            raise FetchError(err or ('curl exit status %d' % p.returncode))
++        headers = _read_headers(hdr)
++        size = os.path.getsize(filename)
++        if reporthook is not None:
++            reporthook(size // block + 1, block, size)
++        return headers, url
++    finally:
++        if p.poll() is None:
++            p.kill()
++            p.wait()
++        try:
++            os.remove(hdr)
++        except OSError:
++            pass
++
++
++def ytdlp_command():
++    exe = _first(YTDLP_CANDIDATES) or os.environ.get('GPODDER_YTDLP')
++    if not exe:
++        raise YtdlpError('yt-dlp is not installed (~/.local/bin/yt-dlp)')
++    cmd = [exe, '--no-playlist', '--no-warnings', '--no-cache-dir']
++    qjs = _first(QJS_CANDIDATES)
++    if qjs:
++        cmd += ['--js-runtimes', 'quickjs:' + qjs]
++    return cmd
++
++
++def _tmp_env():
++    """The /tmp of the phone is tiny and yt-dlp writes temporary files while it solves the JavaScript challenge of YouTube
++    ("No space left on device"): use a directory in the home of the user."""
++    env = dict(os.environ)
++    tmp = os.path.expanduser('~/.gpodder/tmp')
++    try:
++        if not os.path.isdir(tmp):
++            os.makedirs(tmp)
++        env['TMPDIR'] = tmp
++    except OSError:
++        pass
++    return env
++
++
++def resolve(url, fmt=YTDLP_FORMAT):
++    """Direct media URL of a YouTube (or other yt-dlp supported) page."""
++    cmd = ytdlp_command() + ['-f', fmt, '-g', url]
++    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=_tmp_env())
++    out, err = p.communicate()
++    lines = [l for l in out.splitlines() if l.strip()]
++    if p.returncode != 0 or not lines:
++        raise YtdlpError(err.strip().splitlines()[-1] if err.strip() else ('yt-dlp exit status %d' % p.returncode))
++    return lines[0]

@@ -26,6 +26,10 @@ tar -C "$SRC" --strip-components=1 -xzf "$DL/$f"
 cd "$SRC"
 grep -q "^__version__ *= *'$VERSION'" src/gpodder/__init__.py || { echo "Source version is not $VERSION"; exit 1; }
 
+# ytdlp.patch: HTTPS through curl 8 (Python 2.5 has TLS 1.0 only: feeds, downloads) and YouTube through yt-dlp (new module gpodder/ytdlp.py,
+# changes in youtube.py, download.py, feedcore.py; the old YouTube interface does not exist any more)
+patch -p1 < "$PROJ/apps/gpodder/ytdlp.patch" > "$OUT/patch.log"
+
 inst() { install -D -m "$1" "$2" "$R$P/$3"; }          # inst <mode> <file> <target relative to prefix>
 # 1. Python packages (setup.py: packages, target maemo; only the *.py of each package directory)
 SP="lib/python2.5/site-packages"

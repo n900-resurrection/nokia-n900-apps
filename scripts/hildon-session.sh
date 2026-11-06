@@ -16,6 +16,7 @@ if [ -n "${FRESH:-}${STOP:-}" ]; then
     for n in qemu-arm xterm matchbox-window x11vnc Xvfb; do pkill -x "$n" || true; done
     pkill -f '[h]ildon-shell.py' || true
     sleep 1
+    STOP=1 "$PROJ/scripts/hildon-dbus.sh"
     mountpoint -q /opt && sudo umount /opt || true
     [ -z "${STOP:-}" ] || exit 0
 fi
@@ -28,6 +29,7 @@ if [ -e $BINFMT/register ] && [ ! -e $BINFMT/qemu-arm ]; then
     printf ':qemu-arm:M::\\x7fELF\\x01\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x28\\x00:\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\x00\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff:/usr/bin/qemu-arm:F\n' \
         | sudo tee $BINFMT/register >/dev/null || true
 fi
+"$PROJ/scripts/hildon-dbus.sh"
 mountpoint -q /opt || sudo mount --bind "$PROJ/sysroot/opt" /opt || true
 pgrep -x Xvfb >/dev/null || { Xvfb "$D" -screen 0 800x480x24 >/tmp/xvfb.log 2>&1 & sleep 1.5; }
 if [ -n "${VNC:-}" ]; then

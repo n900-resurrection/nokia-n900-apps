@@ -21,12 +21,12 @@ install -m 755 "$OUT/postinst" "$STAGE/DEBIAN/postinst"
 
 SECTION=user/multimedia
 # The same dependencies as the upstream package (python-feedparser >= 5.0.1 and python-mygpoclient >= 1.4 are on the phone).
-DEPENDS="python (>= 2.5), python-gobject, python-gtk2 (>= 2.12.1-6maemo10), python-hildon (>= 0.9.0-1maemo12), python-feedparser (>= 5.0.1), python-dbus, python-osso, python-simplejson, python-mygpoclient (>= 1.4), python-conic"
+DEPENDS="python (>= 2.5), python-gobject, python-gtk2 (>= 2.12.1-6maemo10), python-hildon (>= 0.9.0-1maemo12), python-feedparser (>= 5.0.1), python-dbus, python-osso, python-simplejson, python-mygpoclient (>= 1.4), python-conic, curl, quickjs"
 DISPLAY_NAME="gPodder Podcast Client"
 SHORT_DESC="A podcast aggregator for the Nokia N900"
 LONG_DESC="gPodder is a podcast receiver/catcher with a specialized UI that has been optimized for Maemo 5 and the N900.
 Podcasts are like short radio shows that you can download from the Internet and subscribe to like blogs or news feeds.
-Version 2.20.3 \"The Odd Pod\" (YouTube download fixes) built from the upstream git tag obsolete/maemo5.
+Version 2.20.3 \"The Odd Pod\" built from the upstream git tag obsolete/maemo5, with HTTPS through curl and YouTube through yt-dlp.
 Upstream: http://gpodder.org/"
 MAINTAINER="elPytel (build of upstream gPodder by Thomas Perl)"
 debpack_build
