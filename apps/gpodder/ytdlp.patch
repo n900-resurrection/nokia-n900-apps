@@ -1,5 +1,6 @@
+diff -ruN a/src/gpodder/download.py b/src/gpodder/download.py
 --- a/src/gpodder/download.py	2012-12-22 12:32:24.000000000 +0100
-+++ b/src/gpodder/download.py	2026-11-06 17:50:15.196868921 +0100
++++ b/src/gpodder/download.py	2026-11-06 18:00:55.687181155 +0100
 @@ -30,6 +30,7 @@
  from gpodder.liblogger import log
  from gpodder import util
@@ -29,8 +30,9 @@
  
              new_mimetype = headers.get('content-type', self.__episode.mimetype)
              old_mimetype = self.__episode.mimetype
+diff -ruN a/src/gpodder/feedcore.py b/src/gpodder/feedcore.py
 --- a/src/gpodder/feedcore.py	2012-12-22 12:32:24.000000000 +0100
-+++ b/src/gpodder/feedcore.py	2026-11-06 17:50:15.197140125 +0100
++++ b/src/gpodder/feedcore.py	2026-11-06 18:00:55.687451861 +0100
 @@ -24,6 +24,8 @@
  
  import feedparser
@@ -68,8 +70,33 @@
  
          if is_local:
              if feed.version:
+diff -ruN a/src/gpodder/gui.py b/src/gpodder/gui.py
+--- a/src/gpodder/gui.py	2012-12-22 12:32:24.000000000 +0100
++++ b/src/gpodder/gui.py	2026-11-06 22:19:19.636998025 +0100
+@@ -73,6 +73,7 @@
+ from gpodder import download
+ from gpodder import my
+ from gpodder import youtube
++from gpodder import ytdlp
+ from gpodder import player
+ from gpodder.liblogger import log
+ 
+@@ -2214,6 +2215,12 @@
+                     if gpodder.ui.fremantle:
+                         fmt_id = 5
+                     filename = youtube.get_real_download_url(filename, fmt_id)
++                    stream_ext = 'mp4'
++                else:
++                    stream_ext = os.path.splitext(filename.split('?')[0])[1].lstrip('.') or 'mp3'
++                if ytdlp.needs_curl(filename):
++                    # the Nokia media player cannot open https:// URLs: stream through the local curl proxy
++                    filename = ytdlp.stream_url(filename, stream_ext, episode.title)
+ 
+             # Determine the playback resume position - if the file
+             # was played 100%, we simply start from the beginning
+diff -ruN a/src/gpodder/youtube.py b/src/gpodder/youtube.py
 --- a/src/gpodder/youtube.py	2012-12-22 12:32:24.000000000 +0100
-+++ b/src/gpodder/youtube.py	2026-11-06 17:50:15.197305127 +0100
++++ b/src/gpodder/youtube.py	2026-11-06 18:00:55.687608282 +0100
 @@ -24,6 +24,7 @@
  import gpodder
  
@@ -210,9 +237,10 @@
          log('YouTube link resolved: %s => %s', url, next)
          return next
  
+diff -ruN a/src/gpodder/ytdlp.py b/src/gpodder/ytdlp.py
 --- a/src/gpodder/ytdlp.py	1970-01-01 01:00:00.000000000 +0100
-+++ b/src/gpodder/ytdlp.py	2026-11-06 17:57:03.299722626 +0100
-@@ -0,0 +1,173 @@
++++ b/src/gpodder/ytdlp.py	2026-11-06 22:19:19.636529786 +0100
+@@ -0,0 +1,303 @@
 +# -*- coding: utf-8 -*-
 +#
 +# gpodder.ytdlp - external helpers for the Maemo 5 port: yt-dlp (YouTube) and curl (HTTPS)
@@ -222,10 +250,17 @@
 +#
 +# Plain HTTP stays with urllib; only the https:// URLs of feeds, enclosures and YouTube videos come here.
 +
++import BaseHTTPServer
++import SocketServer
++import md5
 +import os
 +import re
++import signal
++import socket
 +import subprocess
++import threading
 +import tempfile
++import urllib
 +import time
 +
 +CURL_CANDIDATES = ('/opt/curl/bin/curl', '/usr/bin/curl')
@@ -250,6 +285,18 @@
 +        if os.path.exists(p):
 +            return p
 +    return None
++
++
++def _kill(p):
++    """Popen.kill() does not exist in Python 2.5."""
++    try:
++        os.kill(p.pid, signal.SIGKILL)
++    except OSError:
++        pass
++    try:
++        p.wait()
++    except OSError:
++        pass
 +
 +
 +def needs_curl(url):
@@ -344,8 +391,7 @@
 +        return headers, url
 +    finally:
 +        if p.poll() is None:
-+            p.kill()
-+            p.wait()
++            _kill(p)
 +        try:
 +            os.remove(hdr)
 +        except OSError:
@@ -386,3 +432,115 @@
 +    if p.returncode != 0 or not lines:
 +        raise YtdlpError(err.strip().splitlines()[-1] if err.strip() else ('yt-dlp exit status %d' % p.returncode))
 +    return lines[0]
++
++
++# ---------------------------------------------------------------------------------------------------------------------
++# Streaming: the Nokia media player (MAFW/GStreamer) cannot open https:// URLs. A tiny HTTP server on 127.0.0.1 hands it
++# http://127.0.0.1:PORT/<id>.<ext> and fetches the real https URL with curl (Range requests pass through, so seeking works).
++
++PROXY_HEADERS = ('content-type', 'content-length', 'content-range', 'accept-ranges', 'last-modified')
++
++_proxy_lock = threading.Lock()
++_proxy = None
++_targets = {}
++
++
++class _ProxyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
++    protocol_version = 'HTTP/1.0'
++
++    def log_message(self, *args):
++        pass
++
++    def do_HEAD(self):
++        self._serve(True)
++
++    def do_GET(self):
++        self._serve(False)
++
++    def _read_block(self, f):
++        """Header lines of one response (status line + headers) read from the curl pipe; None at EOF."""
++        lines = []
++        while True:
++            line = f.readline()
++            if not line:
++                return None
++            line = line.rstrip('\r\n')
++            if not line:
++                if lines:
++                    return lines
++                continue
++            lines.append(line)
++
++    def _serve(self, head):
++        url = _targets.get(self.path.lstrip('/').split('/')[0].split('.')[0])
++        if url is None:
++            self.send_error(404)
++            return
++        extra = ['-i']
++        if head:
++            extra = ['-I']
++        if self.headers.get('Range'):
++            extra += ['-H', 'Range: ' + self.headers.get('Range')]
++        try:
++            p = subprocess.Popen(curl_command(url, extra), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
++        except (OSError, FetchError):
++            self.send_error(502)
++            return
++        try:
++            # with -L curl prints the headers of every redirect first: skip blocks with a 3xx status
++            while True:
++                block = self._read_block(p.stdout)
++                if block is None:
++                    self.send_error(502)
++                    return
++                try:
++                    status = int(block[0].split()[1])
++                except (IndexError, ValueError):
++                    status = 502
++                if not 300 <= status < 400:
++                    break
++            self.send_response(status)
++            for line in block[1:]:
++                if ':' in line:
++                    k, v = line.split(':', 1)
++                    if k.strip().lower() in PROXY_HEADERS:
++                        self.send_header(k.strip(), v.strip())
++            self.end_headers()
++            if head:
++                return
++            while True:
++                data = os.read(p.stdout.fileno(), 65536)
++                if not data:
++                    break
++                self.wfile.write(data)
++        except (socket.error, IOError):
++            pass    # the player closed the connection (seek, stop)
++        finally:
++            if p.poll() is None:
++                _kill(p)
++
++
++class _ProxyServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
++    daemon_threads = True
++    allow_reuse_address = True
++
++
++def stream_url(url, ext='mp3', title=None):
++    """http://127.0.0.1 URL through which the media player can stream the https URL. The media player shows the last part
++    of the path as the name of the track, so it carries the title (the first part is the key of the stream)."""
++    global _proxy
++    key = md5.new(url).hexdigest()[:16]
++    _proxy_lock.acquire()
++    try:
++        if _proxy is None:
++            _proxy = _ProxyServer(('127.0.0.1', 0), _ProxyHandler)
++            t = threading.Thread(target=_proxy.serve_forever)
++            t.setDaemon(True)
++            t.start()
++        _targets[key] = url
++        name = re.sub(r'[\\/?#%:*"<>|\x00-\x1f]+', ' ', title or '').strip()[:100].strip()
++        if isinstance(name, unicode):
++            name = name.encode('utf-8')
++        return 'http://127.0.0.1:%d/%s/%s.%s' % (_proxy.server_address[1], key, urllib.quote(name or 'stream'), ext)
++    finally:
++        _proxy_lock.release()
