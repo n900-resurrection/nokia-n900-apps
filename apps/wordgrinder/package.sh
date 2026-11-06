@@ -32,7 +32,7 @@ gzip -9n -c "$SRC/wordgrinder.man" > "$STAGE/opt/$PKG/share/man/man1/$PKG.1.gz"
 ln -s "../../opt/$PKG/bin/$PKG" "$STAGE/usr/bin/$PKG"
 
 # Menu launcher. A console application needs a terminal.
-debpack_desktop "WordGrinder" "/usr/bin/$PKG"
+debpack_desktop "WordGrinder" "/usr/bin/$PKG" "$PROJ/build/upstream/wordgrinder/extras/icon.png"
 
 SECTION=user/office
 DEPENDS="libc6 (>= 2.5), zlib1g"

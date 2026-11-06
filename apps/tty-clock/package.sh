@@ -21,7 +21,7 @@ gzip -9n -c "$SRC/tty-clock.1" > "$STAGE/opt/$PKG/share/man/man1/$PKG.1.gz"
 # tty-clock has no license file; the BSD 3-clause text is the comment at the top of ttyclock.c.
 sed -n '/^ \*      TTY-CLOCK/,/^ \*\//p' "$SRC/ttyclock.c" | sed 's/^ \*\/\?//' > "$STAGE/opt/$PKG/share/doc/$PKG/LICENSE"
 install -m 644 "$SRC/README" "$STAGE/opt/$PKG/share/doc/$PKG/README"
-debpack_desktop "tty-clock" "/usr/bin/$PKG"
+debpack_desktop "tty-clock" "/usr/bin/$PKG" "$PROJ/apps/tty-clock/icon.png"
 
 SECTION=user/utilities
 # Plain ncurses is enough, and the device already ships libncurses5, so it is a normal dependency.

@@ -13,7 +13,7 @@ STAGE="$PROJ/build/deb/stage-$PKG"
 
 rm -rf "$STAGE"; mkdir -p "$STAGE"
 cp -a "$OUT/root/." "$STAGE/"
-debpack_desktop "Ranger" "/usr/bin/ranger"
+debpack_desktop "Ranger" "/usr/bin/ranger" "$PROJ/apps/ranger/icon.png"
 
 SECTION=user/utilities
 DEPENDS="python3.11"

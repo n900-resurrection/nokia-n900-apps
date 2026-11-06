@@ -20,11 +20,13 @@
 
 PROJ="${PROJ:-/project}"
 
-# debpack_desktop <name> <exec>
+# debpack_desktop <name> <exec> [icon.png]
 # Adds a Hildon menu entry that starts a console program in the terminal (osso-xterm -e <exec>).
 # Only a single command without arguments is verified to work with osso-xterm -e (see WordGrinder).
+# With an icon (a square PNG, 48 px or larger): it is installed as hicolor/48x48 and 64x64 apps/$PKG.png, the entry gets Icon=$PKG and
+# debpack_build adds XB-Maemo-Icon-26 (the icon of the Application Manager list). Needs ImageMagick (convert) in the Workshop.
 debpack_desktop() {
-    local name=$1 exec_cmd=$2
+    local name=$1 exec_cmd=$2 icon=${3:-}
     mkdir -p "$STAGE/usr/share/applications/hildon"
     cat > "$STAGE/usr/share/applications/hildon/$PKG.desktop" <<EOF
 [Desktop Entry]
@@ -35,6 +37,16 @@ Name=$name
 Exec=/usr/bin/osso-xterm -e $exec_cmd
 X-Osso-Type=application/x-executable
 EOF
+    if [ -n "$icon" ]; then
+        [ -s "$icon" ] || { echo "debpack_desktop: missing icon $icon"; return 1; }
+        local sz
+        for sz in 48 64; do
+            mkdir -p "$STAGE/usr/share/icons/hicolor/${sz}x${sz}/apps"
+            convert "$icon" -resize "${sz}x${sz}" "$STAGE/usr/share/icons/hicolor/${sz}x${sz}/apps/$PKG.png"
+        done
+        echo "Icon=$PKG" >> "$STAGE/usr/share/applications/hildon/$PKG.desktop"
+        DEBPACK_ICON=$icon
+    fi
 }
 
 # debpack_build: write DEBIAN/control, normalise permissions and build the .deb.
@@ -57,6 +69,12 @@ debpack_build() {
         echo "Depends: $DEPENDS"
         echo "Maintainer: $maint"
         echo "XB-Maemo-Display-Name: $DISPLAY_NAME"
+        if [ -n "${DEBPACK_ICON:-}" ]; then
+            # the icon of the Application Manager list: 26x26 PNG in base64, continuation lines start with one space
+            echo "XB-Maemo-Icon-26:"
+            convert "$DEBPACK_ICON" -resize 26x26 png:- | base64 -w 0 | fold -w 76 | sed 's/^/ /'
+            echo
+        fi
         echo "Description: $SHORT_DESC"
         # Continuation lines of the description start with one space.
         printf '%s\n' "$LONG_DESC" | sed 's/^/ /'

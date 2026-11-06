@@ -30,7 +30,7 @@ EOT
 # Point it to the bundle of the curl package.
 mkdir -p "$STAGE/opt/openssl/etc/ssl"
 ln -s ../../../curl/etc/ssl/cacert.pem "$STAGE/opt/openssl/etc/ssl/cert.pem"
-debpack_desktop "Mutt" "/usr/bin/$PKG"
+debpack_desktop "Mutt" "/usr/bin/$PKG" "$PROJ/apps/mutt/icon.png"
 
 SECTION=user/network
 DEPENDS="libc6 (>= 2.5), curl, msmtp"

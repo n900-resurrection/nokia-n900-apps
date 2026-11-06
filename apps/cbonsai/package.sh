@@ -34,7 +34,7 @@ cat > "$STAGE/usr/bin/cbonsai-live" <<'WRAP'
 exec /opt/cbonsai/bin/cbonsai -l -i "$@"
 WRAP
 chmod 755 "$STAGE/usr/bin/cbonsai-live"
-debpack_desktop "cbonsai" "/usr/bin/cbonsai-live"
+debpack_desktop "cbonsai" "/usr/bin/cbonsai-live" "$PROJ/apps/cbonsai/icon.png"
 
 SECTION=user/other
 # cbonsai draws wide characters, which the device's libncurses5 cannot do: ncursesw and panelw are

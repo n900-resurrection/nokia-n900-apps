@@ -72,7 +72,7 @@ diff -ruN a/src/gpodder/feedcore.py b/src/gpodder/feedcore.py
              if feed.version:
 diff -ruN a/src/gpodder/gui.py b/src/gpodder/gui.py
 --- a/src/gpodder/gui.py	2012-12-22 12:32:24.000000000 +0100
-+++ b/src/gpodder/gui.py	2026-11-06 22:19:19.636998025 +0100
++++ b/src/gpodder/gui.py	2026-11-06 23:05:02.972916830 +0100
 @@ -73,6 +73,7 @@
  from gpodder import download
  from gpodder import my
@@ -81,13 +81,30 @@ diff -ruN a/src/gpodder/gui.py b/src/gpodder/gui.py
  from gpodder import player
  from gpodder.liblogger import log
  
-@@ -2214,6 +2215,12 @@
-                     if gpodder.ui.fremantle:
-                         fmt_id = 5
-                     filename = youtube.get_real_download_url(filename, fmt_id)
-+                    stream_ext = 'mp4'
-+                else:
-+                    stream_ext = os.path.splitext(filename.split('?')[0])[1].lstrip('.') or 'mp3'
+@@ -2185,6 +2186,13 @@
+     def playback_episodes_for_real(self, episodes):
+         groups = collections.defaultdict(list)
+         for episode in episodes:
++            local = episode.local_filename(create=False)
++            if (local is None or not os.path.exists(local)) and youtube.is_video_link(episode.url):
++                # yt-dlp needs minutes on the N900 to solve the JavaScript challenge of YouTube and would freeze the window:
++                # the video has to be downloaded first (the download runs in the background)
++                self.show_message(_('Resolving a YouTube link takes several minutes on this device. Please download the video first and play it afterwards.'), \
++                        _('YouTube streaming'))
++                continue
+             file_type = episode.file_type()
+             if file_type == 'video' and self.config.videoplayer and \
+                     self.config.videoplayer != 'default':
+@@ -2209,11 +2217,10 @@
+             filename = episode.local_filename(create=False)
+             if filename is None or not os.path.exists(filename):
+                 filename = episode.url
+-                if youtube.is_video_link(filename):
+-                    fmt_id = self.config.youtube_preferred_fmt_id
+-                    if gpodder.ui.fremantle:
+-                        fmt_id = 5
+-                    filename = youtube.get_real_download_url(filename, fmt_id)
++                stream_ext = os.path.splitext(filename.split('?')[0])[1].lstrip('.') or 'mp3'
 +                if ytdlp.needs_curl(filename):
 +                    # the Nokia media player cannot open https:// URLs: stream through the local curl proxy
 +                    filename = ytdlp.stream_url(filename, stream_ext, episode.title)

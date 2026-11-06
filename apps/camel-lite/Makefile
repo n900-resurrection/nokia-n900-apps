@@ -1,5 +1,5 @@
 # camel-lite (mail library of Modest) with OpenSSL 3, test install into /opt/camel-lite3. Conventions: ../../mk/app.mk
-APP     := camel-lite
+override APP     := camel-lite
 DEPS    := openssl
 VERSION ?= 1.1.92cssu7
 PKG     := camel-lite-ssl3

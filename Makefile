@@ -22,6 +22,7 @@ $(foreach a,$(APPS),$(eval $(call APP_RULE,$(a))))
 # `make debs` builds the .deb of every application that has a package.sh and skips the ones that are up to date (stamps in
 # build/stamps; the DEPS of apps/<app>/Makefile are brought up to date first). APP selects some: make debs APP="curl git"
 # Preview without building: make -n debs. With INSTALL=1 the packages are also installed on the phone.
+# (The command line APP="a b" reaches the sub-makes too; the Makefiles of the applications use `override APP :=` so that it cannot change their APP.)
 DEBAPPS := $(foreach a,$(or $(APP),$(APPS)),$(if $(wildcard apps/$(a)/package.sh),$(a)))
 DEBS := Build the .deb packages of all apps (APP="a b" selects; up to date ones are skipped; INSTALL=1 installs too)
 REPO := Build the apt repository in ./n900-repository from the current .deb of every app (runs make debs first; see DOC/apt-repo.md)
@@ -66,6 +67,7 @@ GIT := Build git with HTTPS (needs curl, more: make -C apps/git)
 CMATRIX := Build cmatrix (more: make -C apps/cmatrix)
 CBONSAI := Build cbonsai (more: make -C apps/cbonsai)
 SFEED := Build sfeed (more: make -C apps/sfeed)
+RANGER := Package ranger, the console file manager (needs python3, more: make -C apps/ranger)
 MUTT := Build Mutt (more: make -C apps/mutt)
 MUTT-HILDON := Package the Hildon GUI over Mutt (more: make -C apps/mutt-hildon)
 CAMEL-LITE := Build camel-lite (Modest mail library) with OpenSSL 3 (more: make -C apps/camel-lite)

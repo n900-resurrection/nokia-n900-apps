@@ -27,7 +27,7 @@ sfeed $VERSION built for Maemo 5 (armel, glibc 2.5). Upstream: https://codemadne
 Run: sfeed-reader (updates the feeds and opens the reader). Configuration: ~/.sfeed/sfeedrc (example in this directory).
 Feeds are downloaded with curl (package curl), parsing and reading are done by the sfeed tools.
 EOT
-debpack_desktop "Feeds" "/usr/bin/sfeed-reader"
+debpack_desktop "Feeds" "/usr/bin/sfeed-reader" "$PROJ/apps/sfeed/icon.png"
 
 SECTION=user/network
 DEPENDS="libc6 (>= 2.5), libncurses5 (>= 5.7), curl"

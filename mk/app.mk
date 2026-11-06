@@ -1,7 +1,8 @@
 # Generic Makefile for an application in apps/<app>/. The app Makefile only sets variables and
 # includes this file:
 #
-#   APP      := tty-clock                      # directory name under apps/ (build.sh, package.sh)
+#   override APP := tty-clock                  # directory name under apps/ (build.sh, package.sh); `override` keeps the APP="a b" of
+#                                              # the root Makefile (make debs APP="a b") from changing it
 #   VERSION  ?= 2.3                            # upstream version, passed to the scripts as VERSION
 #   PKG      := tty-clock                      # optional, package name (default: APP)
 #   REV      ?= 1maemo1                        # optional, package revision
@@ -26,12 +27,12 @@ TARGETS := help build deb debfile info push install remove run test emu clean
 FORCE:
 
 # Build stamp: `make deb` (and so push/install) rebuilds only when the build inputs are newer than
-# the last successful build: build.sh and any other file in the app directory except package.sh, test.sh,
+# the last successful build: build.sh and any other file in the app directory except package.sh, test.sh, icon.png,
 # docs and the Makefile, and the stamps of the DEPS applications. `make build` always rebuilds.
 # build/stamps/<app>.built (without version) is the stamp other applications depend on.
 STAMP  := $(ROOT)/build/stamps/$(APP)-$(VERSION).built
 ASTAMP := $(ROOT)/build/stamps/$(APP).built
-SRCS   := $(filter-out %/package.sh %/test.sh %/LICENSE %.md %/Makefile,$(wildcard $(ROOT)/apps/$(APP)/*))
+SRCS   := $(filter-out %/package.sh %/test.sh %/LICENSE %.md %/Makefile %/icon.png,$(wildcard $(ROOT)/apps/$(APP)/*))
 DEPSTAMPS := $(foreach d,$(DEPS),$(ROOT)/build/stamps/$(d).built)
 
 BUILD := Build $(APP) $(VERSION) in the workshop into build/out/ (always)
@@ -51,7 +52,7 @@ stamp: $(STAMP)
 
 # Package stamp: package.sh runs when the build is newer, package.sh changed or the .deb is missing.
 PSTAMP := $(ROOT)/build/stamps/$(APP)-$(VERSION)-$(REV).packaged
-$(PSTAMP): $(STAMP) $(wildcard $(ROOT)/apps/$(APP)/package.sh) $(if $(wildcard $(ROOT)/build/deb/$(DEBFILE)),,FORCE)
+$(PSTAMP): $(STAMP) $(ROOT)/scripts/debpack.sh $(wildcard $(ROOT)/apps/$(APP)/package.sh $(ROOT)/apps/$(APP)/icon.png) $(if $(wildcard $(ROOT)/build/deb/$(DEBFILE)),,FORCE)
 	$(INSIDE) bash -c 'VERSION=$(VERSION) REV=$(REV) /project/apps/$(APP)/package.sh'
 	@touch $(PSTAMP)
 

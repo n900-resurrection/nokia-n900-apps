@@ -1,5 +1,5 @@
 # Python 3.11 for Maemo 5 (own OpenSSL 3 for ssl, own SQLite). Targets and conventions: ../../mk/app.mk
-APP     := python3
+override APP     := python3
 DEPS    := openssl curl mutt
 VERSION ?= 3.11.18
 PKG     := python3.11

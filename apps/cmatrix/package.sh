@@ -20,7 +20,7 @@ ln -s "../../opt/$PKG/bin/$PKG" "$STAGE/usr/bin/$PKG"
 gzip -9n -c "$SRC/cmatrix.1" > "$STAGE/opt/$PKG/share/man/man1/$PKG.1.gz"
 install -m 644 "$SRC/COPYING" "$STAGE/opt/$PKG/share/doc/$PKG/COPYING"
 install -m 644 "$SRC/README" "$STAGE/opt/$PKG/share/doc/$PKG/README"
-debpack_desktop "CMatrix" "/usr/bin/$PKG"
+debpack_desktop "CMatrix" "/usr/bin/$PKG" "$PROJ/apps/cmatrix/icon.png"
 
 SECTION=user/other
 # Plain ncurses is enough, and the device already ships libncurses5, so it is a normal dependency.

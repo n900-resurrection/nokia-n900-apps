@@ -38,3 +38,12 @@ The old YouTube code of gPodder (get_video_info) no longer works and the Python 
 - yt-dlp writes temporary files while it solves the JavaScript challenge; the `/tmp` of the phone is a 1 MB tmpfs ("No space left on device"), so `TMPDIR=~/.gpodder/tmp` is set for it.
 - Checked on the phone (Python 2.5, without installing the package): the https feed of a YouTube channel (atom10, parsed by feedparser), resolving a video and downloading it (MP4, 629 kB). Checked in the emulator (`make emulator`) the same plus the GUI start.
 - Not done: streaming (the media player cannot use the https URL, so download first and then play), playing the downloaded file (MAFW is mocked in the emulator, so only the real phone can tell), the "Add podcast" dialog with a YouTube URL in the GUI.
+
+## Decision: YouTube on the phone stays minimal (2026-11-06)
+Measured on the N900 (256 MB RAM, ARM Cortex-A8): yt-dlp needs **257 s and 260 s** to resolve one video, because QuickJS solves the JavaScript challenge of YouTube and holds over 110 MB (the phone swaps).
+A cache (`--cache-dir`) does not help: the second run took as long and no cache files appeared. Clients that need no JavaScript do not work today (checked on the PC with yt-dlp 2026.10.26):
+`android_vr` returns a URL (itag 18) that YouTube refuses with HTTP 403, even for yt-dlp itself; `ios`, `mweb`, `web_safari` return "No video formats found"; `tv` returns "page needs to be reloaded".
+So the phone does not stream YouTube any more: the stream through the local curl proxy works for podcasts and any https media, but resolving a YouTube link would freeze gPodder for minutes.
+- **gPodder 2.20.3-2maemo4:** playing a YouTube episode that is not downloaded shows "Resolving a YouTube link takes several minutes on this device. Please download the video first and play it afterwards." and does nothing else.
+- **Downloading works** in the background (download threads of gPodder); slow, but it needs no attention. The downloaded MP4 plays in the media player.
+- **Further plan:** no more YouTube development on the phone. YouTube goes to a server (yt-dlp downloads channels into the Jellyfin library) and the phone plays from Jellyfin, see [TODO.md](../TODO.md).

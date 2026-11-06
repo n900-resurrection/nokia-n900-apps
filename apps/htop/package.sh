@@ -66,7 +66,7 @@ EOF
 chmod 755 "$STAGE/usr/bin/htop3"
 
 # Menu launcher. Same mechanism as for WordGrinder (osso-xterm -e), verified to work there.
-debpack_desktop "htop 3" "/usr/bin/htop3"
+debpack_desktop "htop 3" "/usr/bin/htop3" "$PROJ/build/upstream/htop/htop.png"
 
 SECTION=user/system
 DEPENDS="libc6 (>= 2.5)"
