@@ -1,0 +1,6 @@
+" System-wide vim settings of the Maemo 5 package vim9 (a personal ~/.vimrc is read in addition).
+" The defaults of Vim 9 (incsearch, wildmenu, scrolloff, ...), instead of the strict vi compatible ones.
+source $VIMRUNTIME/defaults.vim
+set encoding=utf-8
+" defaults.vim turns the mouse on; the touch screen makes selecting by accident easy, so it stays off.
+set mouse=
