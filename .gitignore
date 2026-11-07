@@ -12,3 +12,6 @@ build/
 # Python
 *.pyc
 *__pycache__/
+
+# Screenshots of the phone (personal, copied by make screenshots)
+screenshots/

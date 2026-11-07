@@ -10,6 +10,7 @@
 #   EMU_BIN  := /project/build/out/...         # optional, binary for `make emu` (default: build/out/<APP>-<VERSION>/<APP>)
 #   DEPS     := openssl curl                   # optional, apps (apps/<dep>) that must be built first; a rebuilt dependency
 #                                              # makes this application out of date
+#   (icon: if apps/<app>/make-icon.sh exists, `make icon` draws apps/<app>/icon.png and the package depends on it)
 #   DEBFILE  := name_1.0-1maemo1_armel.deb     # optional, when the package file name differs from PKG_VERSION-REV_armel.deb
 #   include ../../mk/app.mk
 #
@@ -50,9 +51,23 @@ $(STAMP): $(SRCS) $(DEPSTAMPS)
 
 stamp: $(STAMP)
 
+# Menu icon: an application that has apps/<app>/make-icon.sh (the tool, draws the PNG with ImageMagick, shared look in
+# scripts/icon-lib.sh) gets the target `icon` = apps/<app>/icon.png; the package depends on it, so the icon is redrawn when the
+# script changes. Applications without the script just use a committed icon.png or take the icon of their sources (package.sh).
+ICONPNG := $(ROOT)/apps/$(APP)/icon.png
+ICONSH  := $(wildcard $(ROOT)/apps/$(APP)/make-icon.sh)
+ifneq ($(ICONSH),)
+TARGETS += icon
+.PHONY: icon
+ICON := Draw the menu icon apps/$(APP)/icon.png with make-icon.sh (when the script is newer)
+icon: $(ICONPNG)
+$(ICONPNG): $(ICONSH) $(ROOT)/scripts/icon-lib.sh
+	$(INSIDE) /project/apps/$(APP)/make-icon.sh
+endif
+
 # Package stamp: package.sh runs when the build is newer, package.sh changed or the .deb is missing.
 PSTAMP := $(ROOT)/build/stamps/$(APP)-$(VERSION)-$(REV).packaged
-$(PSTAMP): $(STAMP) $(ROOT)/scripts/debpack.sh $(wildcard $(ROOT)/apps/$(APP)/package.sh $(ROOT)/apps/$(APP)/icon.png) $(if $(wildcard $(ROOT)/build/deb/$(DEBFILE)),,FORCE)
+$(PSTAMP): $(STAMP) $(ROOT)/scripts/debpack.sh $(wildcard $(ROOT)/apps/$(APP)/package.sh) $(if $(ICONSH),$(ICONPNG),$(wildcard $(ICONPNG))) $(if $(wildcard $(ROOT)/build/deb/$(DEBFILE)),,FORCE)
 	$(INSIDE) bash -c 'VERSION=$(VERSION) REV=$(REV) /project/apps/$(APP)/package.sh'
 	@touch $(PSTAMP)
 
