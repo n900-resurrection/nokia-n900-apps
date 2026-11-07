@@ -24,6 +24,11 @@ tar -C "$SRCDIR" -xzf "$DL/$f"
 mkdir -p "$OUT/root"
 cd "$SRCDIR/sfeed-$VERSION"
 
+# sfeed_update downloads the feeds in parallel with `xargs -P`, which the busybox 1.23 of the phone does not have
+# ("xargs: invalid option -- P": no feed was ever downloaded and sfeed_curses closed at once). The feeds are fetched one by one.
+grep -q 'xargs -x -0 -P "${maxjobs}" -n 1' sfeed_update || { echo "sfeed_update changed upstream, fix the xargs patch"; exit 1; }
+sed -i 's/xargs -x -0 -P "${maxjobs}" -n 1/xargs -x -0 -n 1/' sfeed_update
+
 CC="$PROJ/scripts/maemo-gcc"
 # - -D_GNU_SOURCE: glibc 2.5 does not know _XOPEN_SOURCE=700 (set by the upstream Makefile) and then does not define ssize_t in <stdio.h>; sys/types.h is included first.
 # - sfeed_curses uses the plain libcurses (device: libncurses5).

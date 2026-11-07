@@ -18,6 +18,19 @@ contains plain-output "Prvni epizoda" sh -c 'sfeed < /tmp/sfeed-test.xml | sfeed
 ok example-config test -r /opt/sfeed/share/doc/sfeed/sfeedrc.example
 ok desktop-entry test -r /usr/share/applications/hildon/sfeed.desktop
 # Real download through curl (TLS 1.3) and parse: needs the network.
+# sfeed_update with a local "feed" (the busybox xargs of the phone has no -P: the update must still work)
+cat > /tmp/sfeed-test.rc <<'EOT'
+sfeedpath="/tmp/sfeed-test-feeds"
+fetch() { cat /tmp/sfeed-test.xml; }
+feeds() { feed "test" "http://example.com/feed.xml"; }
+EOT
+rm -rf /tmp/sfeed-test-feeds; mkdir -p /tmp/sfeed-test-feeds
+ok update-downloads-feed sh -c 'sfeed_update /tmp/sfeed-test.rc >/dev/null 2>&1; grep -q "Prvni epizoda" /tmp/sfeed-test-feeds/test'
+rm -rf /tmp/sfeed-test.rc /tmp/sfeed-test-feeds
+
+# no feed downloaded: the reader explains it and waits for Enter (stdin is closed here) instead of closing the terminal window
+ok reader-explains-no-feeds sh -c 'rm -rf /tmp/sfeed-home; mkdir -p /tmp/sfeed-home/.sfeed; echo "sfeedpath=/tmp/sfeed-home/.sfeed/feeds; fetch() { :; }; feeds() { :; }" > /tmp/sfeed-home/.sfeed/sfeedrc; HOME=/tmp/sfeed-home sfeed-reader -n </dev/null 2>&1 | grep -q "Press Enter"; rm -rf /tmp/sfeed-home'
+
 ok fetch-and-parse sh -c 'curl -sf -m 60 --cacert /opt/curl/etc/ssl/cacert.pem https://codemadness.org/atom.xml | sfeed | grep -q .'
 rm -f /tmp/sfeed-test.xml
 summary

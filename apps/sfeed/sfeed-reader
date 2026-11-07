@@ -10,4 +10,9 @@ fi
 if [ "$1" != "-n" ]; then
     sfeed_update "$HOME/.sfeed/sfeedrc"
 fi
-exec sfeed_curses "$HOME/.sfeed/feeds/"*
+
+# The terminal window closes when this script ends: on an error wait for Enter so that the message can be read.
+pause() { printf '\n%s\nPress Enter to close. ' "$1"; read dummy; exit 1; }
+set -- "$HOME/.sfeed/feeds/"*
+[ -f "$1" ] || pause "No feed was downloaded (check the network and the feeds in ~/.sfeed/sfeedrc; see the FAIL lines above)."
+sfeed_curses "$@" || pause "sfeed_curses ended with an error."
