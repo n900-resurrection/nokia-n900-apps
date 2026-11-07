@@ -29,7 +29,7 @@ N900/
 │   ├── patches/           # záplaty proti upstreamu (pokud jsou)
 │   ├── debian/            # metadata pro .deb (control, postinst, ikona…) – později
 │   └── README.md          # co to je, verze, co se muselo řešit
-├── src/                   # vlastní zdrojáky (hello.c)
+├── src/                   # vlastní zdrojáky podle jazyka: c/, go/, python3/, rust/ (hello.c ve c/hello)
 ├── scripts/               # společné: maemo-gcc, fetch_sysroot.py, (později) mkdeb.sh
 ├── DOC/                   # poznámky a rozbory
 ├── repo/                  # APT repozitář pro naše balíčky (v .gitignore, generované)

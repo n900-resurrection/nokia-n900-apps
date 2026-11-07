@@ -110,7 +110,7 @@ Přímé `arm-linux-gnueabi-gcc --sysroot=...` **nestačí**, našel jsem dva pr
 1. Ubuntu cross-gcc 13.3 hledá svoji vlastní libc (glibc 2.39) v `/usr/arm-linux-gnueabi/lib` **dřív** než sysroot. Binárka pak chtěla `GLIBC_2.34` (`__libc_start_main`), která na Maemo 5 není.
 2. S objekty z glibc 2.5 padá `ld.bfd` 2.42 na `assertion fail ../../bfd/elf32-arm.c:14837`.
 
-Řešení je ve wrapperu [../scripts/maemo-gcc](../scripts/maemo-gcc): vynutí cesty `-B/-L` a `-nostdinc -isystem` na sysroot a použije `-fuse-ld=gold`. Výsledek `src/hello.c`:
+Řešení je ve wrapperu [../scripts/maemo-gcc](../scripts/maemo-gcc): vynutí cesty `-B/-L` a `-nostdinc -isystem` na sysroot a použije `-fuse-ld=gold`. Výsledek `src/c/hello/hello.c`:
 
 - `ELF 32-bit LSB executable, ARM, EABI5`, interpreter `/lib/ld-linux.so.3`, kernel 2.6.8,
 - ARMv7 s NEON (`Tag_CPU_arch: v7`, `Tag_Advanced_SIMD_arch: NEONv1`),

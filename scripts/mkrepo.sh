@@ -41,11 +41,17 @@ gzip -9nc "$B/Packages" > "$B/Packages.gz"
         done
     done
 } > "dists/$SUITE/Release"
-echo "$(grep -c '^Package:' "$B/Packages") packages in $R"
+# Output colours come from the Makefile (C_* variables, empty when the script is run by hand)
+cb="${C_BOLD:-}" cg="${C_GREEN:-}" cc="${C_CYAN:-}" cy="${C_YELLOW:-}" cp="${C_PURPLE:-}" cn="${C_RESET:-}"
+for f in "$@"; do
+    d="$(cd "$PROJ" && readlink -f "$f")"
+    echo "${cg}+${cn} ${cb}$(dpkg-deb -f "$d" Package)${cn} $(dpkg-deb -f "$d" Version)  ${cp}$(du -h "$d" | cut -f1)${cn}"
+done
+echo "${cg}${cb}$(grep -c '^Package:' "$B/Packages") packages${cn} in $R"
 # Size overview (GitHub Pages: the published site should stay below about 1 GB, the repository below a few GB)
 nd=$(find pool -name '*.deb' | wc -l)
-echo "size: $(du -sh pool | cut -f1) pool ($nd .deb files in $(find pool -mindepth 2 -maxdepth 2 -type d | wc -l) directories), $(du -sh dists | cut -f1) dists, $(du -sh --exclude=.git . | cut -f1) total without git"
+echo "${cc}size:${cn} $(du -sh pool | cut -f1) pool ($nd .deb files in $(find pool -mindepth 2 -maxdepth 2 -type d | wc -l) directories), $(du -sh dists | cut -f1) dists, $(du -sh --exclude=.git . | cut -f1) total without git"
 if git -C . rev-parse --git-dir >/dev/null 2>&1; then
     # history that is already committed (packed + loose objects); the files of this working tree come on top until they are committed
-    echo "git:  $(git count-objects -vH 2>/dev/null | awk -F': ' '/^size-pack/ {p=$2} /^size:/ {l=$2} END {printf "history %s packed + %s loose objects", p, l}')"
+    echo "${cy}git:${cn}  $(git count-objects -vH 2>/dev/null | awk -F': ' '/^size-pack/ {p=$2} /^size:/ {l=$2} END {printf "history %s packed + %s loose objects", p, l}')"
 fi

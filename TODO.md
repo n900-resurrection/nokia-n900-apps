@@ -48,7 +48,7 @@ Základ je hotový, viz [DOC/hildon-python3.md](DOC/hildon-python3.md) (hildon-d
 - [ ] Audiobookshelf klient (terminál): shell skript s curl + jq proti `http://192.168.1.101:13378` (login, seznam knih, stažení). Potřebuje účet od uživatele. Přehrávání: telefon má `mplayer`, `gst-launch-0.10` a `mediaplayer`
   (přehrávání z gPodderu funguje), nový přehrávač tedy asi není potřeba; vyzkoušet MP3, M4B (AAC) a Opus staženém přes curl.
 - [ ] Instant messaging (Signal, WhatsApp, Messenger): rešerše je v [DOC/messengers.md](DOC/messengers.md). Telefon má Pidgin 2.7.7, libpurple a telepathy-haze, takže nový protokol = libpurple plugin. Zbývá ověřit TLS vrstvu libpurple,
-  přeložit purple-facebook / purple-gowhatsapp, vyzkoušet Rust (gurk-rs) a Go (whatsmeow), BitlBee jako terminálovou bránu; později GUI nebo vlastní Hildon aplikace.
+  přeložit purple-facebook / purple-gowhatsapp, Rust už na telefonu běží (hello, vlákna, TCP; `apps/rust`, statický musl), TLS 1.3 přes rustls na telefonu funguje (`src/rust/tls`), tokio s HTTPS (`src/rust/async`) také běží a `gurk-rs` 0.10.2 (Signal) se přeložil a spustil (`apps/gurk`, 23 MB statický musl); propojení s osobním Signal účtem a příjem zprávy ověřeny (RAM ~7 MB, po prvním spojení CPU v klidu); `gurk 0.10.2-1maemo1` zabalený (9,7 MB, menu „Signal (gurk)“, ikona přes `make icon`, 7 testů), nainstalovaný, práva databáze v `/root` opravena (700/600); zbývá spustit z menu jako `user` (nové propojení zařízení, staré v `/root` odebrat v Signalu), ověřit odesílání a přílohy, rozhodnout o přidání do repa (9,7 MB); vyzkoušet Go (whatsmeow), BitlBee jako terminálovou bránu; později GUI nebo vlastní Hildon aplikace.
 
 ## E-mail
 
@@ -60,6 +60,7 @@ Základ je hotový, viz [DOC/hildon-python3.md](DOC/hildon-python3.md) (hildon-d
 - [ ] Nízká priorita: Mutt hlavičková cache (`-USE_HCACHE` s GDBM/lmdb), Cyrus SASL nebo SMTP přes curl, jen pokud msmtp nebo IMAP nestačí. TUL odloženo.
 
 ## Systém a sítě
+- [ ] **Zabezpečení telefonu na mobilních datech** (zjištěno 2026-11-07): `sshd` (OpenSSH 5.1 z roku 2008) naslouchá na `0.0.0.0:22` s `PermitRootLogin yes` a heslem; dále `avahi-daemon` (UDP 5353) a UPnP/DLNA `mafw` (UDP 1900). Firewall nejde: stock jádro 2.6.28-omap1 nemá netfilter moduly a v telefonu není `iptables` (jen kernel-power by je přidal). Návrh: `PermitRootLogin without-password` a `PasswordAuthentication no` (klíče v `/root/.ssh/authorized_keys` už jsou), `ListenAddress` jen na Wi-Fi nebo zastavit `sshd` při mobilním připojení (hook icd2 jako u `ntp-sync`), vypnout `avahi`; ověřit, zda operátor dává veřejnou IP. Větší riziko než příchozí spojení je klientské: starý MicroB, Modest a TLS 1.0, proto otevírat jen důvěryhodné stránky a používat naše nové komponenty (curl s TLS 1.3). Úpravy dělat se souhlasem uživatele, ať se nezamkne přístup.
 
 - [ ] **Čas:** hodiny telefonu bývají špatně (při testu 1. 1. 2009). GUI volba automatického času používá čas operátora (NITZ, clockd), ne NTP, takže bez SIM nefunguje. Balíček `ntp-sync` je nainstalovaný a ověřený ručně (posun 300 s opraven, RTC zapsáno);
   neověřeno, že hook icd2 spustí skript při skutečném připojení Wi-Fi. Správný čas je podmínka ověření certifikátů. Man stránka se na N900 nezobrazí (chybí nroff), hlavní nápověda je `ntp-sync -h`.
