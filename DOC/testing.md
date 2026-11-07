@@ -32,6 +32,13 @@ Pomocné funkce a jejich popis jsou v [tests/lib.sh](../tests/lib.sh).
 - Síťové testy potřebují Wi-Fi a správný čas (`ntp-sync`), jinak selže ověření certifikátu.
 - Nejdřív `need_pkg`, ať je hned vidět, že chybí instalace, a ne desítky dalších chyb.
 
+## Screenshots of the phone
+
+The built-in screenshot of Fremantle (the shortcut the user presses on the phone) saves PNG files, 800x480, into
+`/home/user/MyDocs/.images/Screenshots/Screenshot-YYYYMMDD-HHMMSS.png` (on the PC: `scp n900:/home/user/MyDocs/.images/Screenshots/<file> .`).
+They show what the user sees (menu, Application Manager, running tasks), which logs do not. They are personal: keep them out of the repository
+(scratchpad only), and use anonymized data when a screenshot is meant for the docs.
+
 ## Stav (2026-11-05)
 | Aplikace | Testů | Výsledek |
 |---|---|---|

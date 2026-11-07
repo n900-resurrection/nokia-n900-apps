@@ -262,6 +262,7 @@ Vhodné jsou malé aplikace v C/C++ s minimem závislostí (terminálové nástr
 - [Maemo Leste – Nokia N900](https://leste.maemo.org/Nokia_N900)
 - [Maemo Leste – Virtual Machine](https://leste.maemo.org/Virtual_Machine)
 - [Maemo 5 Final SDK Installation](https://wiki.maemo.org/Documentation/Maemo_5_Final_SDK_Installation)
+- [Maemo SDK: vyvíjíme pro mobilní Linux (root.cz, Martin Malý, 26. 11. 2009)](https://www.root.cz/clanky/maemo-sdk-vyvijime-pro-mobilni-linux/): úvod do Maemo 5 SDK (Scratchbox, Xephyr, `af-sb-init.sh`, `run-standalone`, GTK+ Hello World). Odkazy z článku: [Maemo 5 Developer Guide](https://wiki.maemo.org/Documentation/Maemo_5_Developer_Guide), [Maemo SDK Virtual Images](https://wiki.maemo.org/Documentation/Maemo_5_Developer_Guide/Development_Environment/Maemo_SDK_Virtual_Images), [spouštíme SDK](https://wiki.maemo.org/Documentation/Maemo_5_Developer_Guide/Development_Environment/Maemo_SDK), [PyMaemo: Hello world](https://wiki.maemo.org/PyMaemo/UITutorial/Getting_started), [maemo.org](https://maemo.org), [Maemo Wiki](https://wiki.maemo.org/Main_Page), [maemo-guru.com](http://www.maemo-guru.com), [maemo-freak.com](http://www.maemo-freak.com), [maemo-apps.org](http://www.maemo-apps.org).
 - [Devuan on N900 (wiki.maemo.org)](https://wiki.maemo.org/Devuan_on_N900)
 - [debian900](https://github.com/dderby/debian900)
 - [Ubuntu Workshop – blog](https://ubuntu.com/blog/introducing-workshop-sandboxed-development-environments)

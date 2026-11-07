@@ -5,14 +5,15 @@ that is up to date is skipped). The directory is meant to become a separate git 
 `n900-resurrection` organisation); the main project only produces its content.
 
 ```
-n900-repository/pool/main/*.deb
+n900-repository/pool/main/<package>/<package>_<version>_armel.deb
 n900-repository/dists/fremantle/main/binary-armel/Packages, Packages.gz
 n900-repository/dists/fremantle/Release        (MD5Sum, SHA1, SHA256)
 ```
-Script: [scripts/mkrepo.sh](../scripts/mkrepo.sh). `pool/` is **kept** between builds: a new `.deb` is added to it and older versions of
+Script: [scripts/mkrepo.sh](../scripts/mkrepo.sh). One directory per package holds all its versions, only `.deb` files (sources stay in the main repository;
+the layout follows the Maemo repositories, without the one-letter directories and the free/non-free split). `pool/` is **kept** between builds: a new `.deb` is added to it and older versions of
 every package stay, so the user can go back (`apt-get install gpodder=2.20.3-2maemo2`); only `dists/` is regenerated, from all of `pool/`
 (`dpkg-scanpackages -m` lists every version, apt installs the highest). Nothing is pruned for now; a package or an old version is removed by
-deleting its file from `pool/main`. Whether to keep only the last few versions is to be decided later (size limit of GitHub Pages about 1 GB). The old apt of the phone reads only `Packages.gz` (no xz) and knows only MD5/SHA1,
+deleting its file from `pool/main/<package>`. Whether to keep only the last few versions is to be decided later (size limit of GitHub Pages about 1 GB). The old apt of the phone reads only `Packages.gz` (no xz) and knows only MD5/SHA1,
 so `Release` carries all three sums.
 
 ## Use on the phone
@@ -24,6 +25,9 @@ then `apt-get update` and `apt-get install quickjs`. The Application Manager lis
 repository served by `python3 -m http.server` from the PC (`apt-get update`, `apt-cache policy`, `apt-get install --force-yes camel-lite-ssl3`).
 
 ## Known limits
+- **Install with `apt-get` in a terminal, not with the Application Manager.** On the phone the Application Manager hangs (2026-11-07) while refreshing the
+  lists and while preparing an installation ("Preparing installation, please wait", `apt-worker` idle, dpkg lock held, nothing installed). `apt-get update && apt-get upgrade`
+  works. Investigation and fix: [TODO.md](../TODO.md).
 - **No signature yet** (`Release.gpg` is missing: apt prints `Ign ... Release.gpg` and needs `--force-yes` to install). Plan: [TODO.md](../TODO.md).
 - **HTTPS:** the apt of the phone speaks TLS 1.0 only, GitHub (Pages and raw) requires TLS 1.2. Solution: the package `apt-transport-curl`
   ([description](../apps/apt-transport-curl/apt-transport-curl.md)), whose `https` method runs curl 8. Verified against an HTTPS server on the PC

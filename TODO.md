@@ -4,11 +4,10 @@ Stav k 2026-11-06. Odškrtnuté = hotovo a ověřené, neodškrtnuté = zbývá.
 
 ## Teď
 
-- [ ] **Správce aplikací zamrzá při obnově seznamu repozitářů.** `apt-get update` v terminálu s repozitářem `n900-resurrection.github.io` funguje (náš transport `apt-transport-curl`),
+- [ ] **Správce aplikací na telefonu má velké problémy: balíčky z našeho repozitáře se musí instalovat přes `apt-get` v terminálu.** Zamrzá při obnově seznamu repozitářů a také při instalaci aktualizací (2026-11-07: oznámil 7 aktualizací, zůstal na „Příprava instalace, prosím čekejte“, `apt-worker` i `hildon-application-manager` jen čekaly, nic se nenainstalovalo, držel zámek dpkg a bylo ho nutné ukončit). `apt-get update` a `apt-get install` s `n900-resurrection.github.io` fungují (náš transport `apt-transport-curl`). **Investigovat a opravit:** zaseknutý `apt-worker` v `select` a nečinná metoda `https` (zapnout `/etc/apt/apt-transport-curl.debug`, log `/tmp/apt-transport-curl.log`), porovnat s původními zdroji Nokie (`apt-transport-https` s TLS 1.0 funguje?), zkusit katalog přes `.install`/`/etc/apt/sources.list.d` a jen HTTP zdroj z PC, zda se zasekává i bez našeho transportu; na telefonu chybí `strace`, zvážit jeho zabalení. Do opravy: aktualizovat z terminálu `apt-get update && apt-get upgrade`.
   ale ve Správci aplikací `apt-worker` čeká v `select` a transportu nepošle žádný požadavek (log `/tmp/apt-transport-curl.log` má jen úvodní handshake). Stejný zásek byl i s původním http mirrorem,
   takže problém není v transportu. Další krok: porovnat konfiguraci apt-workeru (jiné `Dir::*`, seznam repozitářů, katalogy v `/var/lib/hildon-application-manager/`) a zkusit `apt-worker` ručně.
   Zamrzlý Správce drží zámek dpkg, proto se balíčky zatím instalují přes `dpkg -i` / `make -C apps/<app> install` (po ukončení Správce).
-- [ ] **`rifle.conf` pro ranger** (otevírání souborů v Media Playeru a prohlížeči obrázků místo mplayeru/vimu, náhledy bez `file`).
 - [ ] **Podpis repozitáře** (viz [DOC/apt-repo.md](DOC/apt-repo.md)): vlastní GPG klíč, `Release.gpg` (odpojený podpis, ne InRelease), klíč do `apt-key` na telefonu (`gnupg 1.4.6` a `gpgv` tam jsou; ověřit formát starého apt-key a chování apt 0.7.20 k nepodepsanému),
   cíl `make repo-key`; podpis jen `Release`, ne každého `.deb`. Dnes apt hlásí `Ign Release.gpg` a instalace chce `--force-yes`.
 - [ ] **Jellyfin na N900** (nahrazuje živé YouTube; server na LAN už běží). 1) Zkouška bez kódu: zapnout na serveru DLNA plugin a ověřit, jestli se server objeví v přehrávači N900 (Média, sdílená média/UPnP) a jestli video přehraje
@@ -28,6 +27,7 @@ Stav k 2026-11-06. Odškrtnuté = hotovo a ověřené, neodškrtnuté = zbývá.
 - [ ] Testy: automatické spuštění po `make install`; testy pod qemu-user bez telefonu; kontrola velikosti a závislostí balíčků.
 
 ## Emulátor Fremantle (`make emulator`, `make hildon-run APP=...`)
+- [ ] **Emulátor podle screenshotů telefonu** (`make screenshots`, vzor v `screenshots/Screenshot-20261107-1048*.png`): (1) přepínač úloh = 3 sloupce karet s tmavým rámečkem, titulek vlevo, oranžový křížek vpravo, živý náhled okna; vlevo nahoře oranžová ikona „všechny aplikace“ (mřížka 3x3), (2) plocha = tapeta + widgety (Konverzace s počty, panel zpráv, zkratky kontakty/telefon/zprávy) a nahoře hodiny a stavové ikony, vlevo nahoře ikona přepínače, (3) všechny aplikace = mřížka 5 sloupců ikon s popiskem přímo nad tapetou (bez karet/rámečků), (4) ikona přepínače v liště mění tvar podle režimu (plocha/aplikace).
 
 Základ je hotový, viz [DOC/hildon-python3.md](DOC/hildon-python3.md) (hildon-desktop jako takový nejde: clutter + OpenGL ES). Zbývá:
 - [ ] **Widgety plochy** (hodiny, kalendář, přehrávač, zkratky): náhrada za hildon-desktop. Plocha je dnes jen tapeta a horní lišta. Rozmyslet jednoduchý model (okna GTK3 bez rámu nad tapetou, nebo vykreslení do kořenového okna),
@@ -75,6 +75,10 @@ Základ je hotový, viz [DOC/hildon-python3.md](DOC/hildon-python3.md) (hildon-d
 - [ ] Roadmapa ([DOC/roadmap.md](DOC/roadmap.md)): čeká na odpovědi (sekce 9): adresa a formáty Audiobookshelfu, přihlášení TUL, pořadí uvnitř e-mailu. Kalendář a kontakty i „brána na domácím serveru“ jsou z plánu vypuštěné.
 
 ## Hotovo
+- [x] `vim9 9.2.1302-1maemo1` (příkaz `vim9`, `/opt/vim9`, vim 7.2 a `vi` zůstávají) a `nano 9.3-1maemo1` (`/opt/nano`, ncursesw staticky, UTF-8, kolem 2 MB): `apps/vim9`, `apps/nano`, ikony přes `make icon`, testy na telefonu (vim9 11, nano 9), obě aplikace kreslí v terminálu (ověřeno v pty). Oba balíčky a `sfeed 2.4-1maemo3` jsou v `n900-repository`, čekají na commit a `apt-get update && apt-get upgrade`. Nápad: ranger `EDITOR=vim9`.
+- [x] Feeds z menu padalo kvůli `xargs -P` v `sfeed_update` (busybox 1.23): opraveno v `sfeed 2.4-1maemo3`, pauza při chybě v `sfeed-reader`, 13 testů projde; zbývá potvrdit z menu na telefonu.
+- [x] Repo: `pool/main/<balíček>/<balíček>_<verze>_armel.deb` (jeden adresář na balíček, bez písmen a bez free/non-free, jen `.deb`); `mkrepo.sh` při běhu přesune i soubory ze starého plochého uspořádání, `dists` se vygenerovalo znovu (36 balíčků, beze změny obsahu).
+- [x] `make screenshots` kopíruje snímky z telefonu (`MyDocs/.images/Screenshots`) do `screenshots/` (v `.gitignore`).
 
 **Základ a prostředí**
 - [x] Workshop `n900`, cross-toolchain armel, sysroot z Fremantle SDK (`maemo.plan9.de`), `hello` na N900, SSH klíčem přes alias `n900`, `make push`.
@@ -82,7 +86,8 @@ Základ je hotový, viz [DOC/hildon-python3.md](DOC/hildon-python3.md) (hildon-d
 - [x] OpenSSL 3 staticky; Python 3.11.18 ([apps/python3/python3.md](apps/python3/python3.md), balíček `python3.11`, readline, ctypes, bz2, lzma, pip; chybí `uuid`, `dbm`, tkinter); QuickJS 2026-06-04 (`quickjs`).
 
 **Balíčky pro N900** (všechny nainstalované na telefonu)
-- [x] Ikony menu a Správce aplikací (`1maemo2`, čeká na ověření po `apt-get upgrade`): cbonsai, cmatrix, mutt, ranger, sfeed, tty-clock mají vlastní ikony (`scripts/make-terminal-icons.sh` → `apps/<app>/icon.png`), htop3 a WordGrinder ikonu svého projektu;
+- [x] ranger `rifle.conf` pro telefon (`1maemo3`): obrázky, PDF, HTML, audio a video se otevírají v aplikacích telefonu přes D-Bus `mime_open` (`hildon-open`), náhrada `file(1)` (telefon ho nemá, starý busybox bez `od -t`), 21 testů prošlo. Ověřeno: Image Viewer; Media Player a PDF Viewer zkusit ručně (stejné volání).
+- [x] Ikony menu a Správce aplikací (`1maemo2`, čeká na ověření po `apt-get upgrade`): cbonsai, cmatrix, mutt, ranger, sfeed, tty-clock mají vlastní ikony (`make icon` v aplikaci: nástroj `apps/<app>/make-icon.sh` → `icon.png`, balíček na něm závisí, společný vzhled v `scripts/icon-lib.sh`), htop3 a WordGrinder ikonu svého projektu;
   `debpack_desktop` je instaluje do `hicolor/48x48` a `64x64`, přidá `Icon=` a `XB-Maemo-Icon-26`. Opraveno: `make debs APP="a b"` předávalo `APP` do podřízených make (`override APP :=` v Makefilech aplikací).
 - [x] curl 8.23 a git 2.56 s moderním HTTPS (klon přes HTTPS, 19 příkazů gitu OK), wget 1.25, jq 1.8.2 ([apps/curl/curl.md](apps/curl/curl.md), [apps/git/git.md](apps/git/git.md)).
 - [x] Bash 5.3 (`bash5`), BusyBox 1.37 (`busybox37`); WordGrinder 0.8; htop3 3.5.3; cmatrix, cbonsai, tty-clock; sfeed 2.4; ranger 1.9.4 ([apps/ranger/ranger.md](apps/ranger/ranger.md), 8 testů prošlo, běží pěkně).

@@ -9,7 +9,7 @@ include mk/common.mk
 # ACTION selects another target of the application: make curl ACTION=deb. Descriptions: variables below, or a default.
 APPS := $(sort $(notdir $(patsubst %/,%,$(dir $(wildcard apps/*/Makefile)))))
 ACTION ?= build
-TARGETS := help up down status enter toolchain sysroot hello $(APPS) debs repo test hildon-overlay hildon-run emulator push clean distclean
+TARGETS := help up down status enter toolchain sysroot hello $(APPS) debs repo test hildon-overlay hildon-run emulator push screenshots clean distclean
 .PHONY: $(TARGETS)
 
 define APP_RULE
@@ -115,6 +115,11 @@ push:
 	@test -n "$(DEVICE)" || { printf '$(RED)Set DEVICE=user@ip (in .env or on the command line)$(RESET)\n'; exit 1; }
 	ssh $(DEVICE) mkdir -p $(DEST)
 	scp $(FILE) $(DEVICE):$(DEST)
+
+SCREENSHOTS := Copy new screenshots from the phone into ./screenshots (not in git): make screenshots [DEVICE=n900]
+screenshots:
+	@test -n "$(DEVICE)" || { printf '$(RED)Set DEVICE=user@ip (in .env or on the command line)$(RESET)\n'; exit 1; }
+	scripts/screenshots.sh $(DEVICE) screenshots
 
 CLEAN := Remove ./build
 clean:
