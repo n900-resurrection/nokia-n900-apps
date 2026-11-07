@@ -1,0 +1,5 @@
+# System-wide nano settings of the Maemo 5 package (a personal ~/.nanorc is read in addition).
+# Syntax highlighting for the file types that nano knows.
+include "/opt/nano/share/nano/*.nanorc"
+set tabsize 4
+set smarthome
