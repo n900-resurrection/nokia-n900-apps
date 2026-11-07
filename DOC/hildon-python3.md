@@ -27,12 +27,15 @@ make hildon-run SCRIPT=... VNC=1         # obraz navíc přes VNC
 - **mutt-hildon na PC (vyzkoušeno):** `sysroot/opt/mutt-hildon` je vývojová kopie (soubory z `apps/mutt-hildon`), `HOME=build/fakehome` má vlastní `.muttrc` a naplněnou cache.
   Spuštění: `HOME=/project/build/fakehome PY2=1 SHOT=... scripts/hildon-run.sh /opt/mutt-hildon/mutt-hildon`. Seznam zpráv se vykreslil stejně jako na telefonu.
 - **Emulated desktop (`make emulator`, `make hildon-run APP=<app>`):** `scripts/hildon-session.sh` starts the virtual screen (Xvfb 800x480), the window manager
-  `matchbox-window-manager` and the top bar `scripts/hildon-shell.py` (host GTK3, 800x56; applications get 800x424 below it, like on the N900).
-  The bar has stock icons of the phone (`general_applications`, `keyboard_menu`, `general_back`, `general_close` from the copied icon theme; text if the overlay is missing):
-  **Apps** (application switcher like on the phone: *Running applications* with a thumbnail of each window, the current one highlighted, a close button under each;
-  below it *Installed applications*, a scrollable grid with the icons of the packages; every `apps/<app>/hildon-run.sh` is an application, first lines `# Name: Mail`),
-  buttons of the running windows (switching, the active one is highlighted), **Menu** (application menu of the active window) and **Back** (closes the active window like the Back button).
-  Thumbnails are taken from the visible window (an obscured X window cannot be captured), every 4 s for the active one and 2.5 s after a window first comes forward.
+  `matchbox-window-manager` and the top bar `scripts/hildon-shell.py` (host GTK3, 800x56; applications get 800x424 below it, like on the N900; the orange symbols are drawn in the code, no cairo bindings needed).
+  The bar follows the screenshots of the phone (`make screenshots`): `[windows] | clock + battery | title of the application v | [back]`.
+  The orange button on the left cycles: current application -> **switcher** (the symbol turns into the grid) -> **all applications** (the symbol is "windows" again) -> current application.
+  The switcher shows over the darkened wallpaper a card per running application, three per row, scrollable: title, orange X (closes it) and the picture of the window
+  (the current one has a brighter border); a tap on the free wallpaper goes back to the desktop. The launcher shows all installed applications, five icons with a label per row, no frames
+  (every `apps/<app>/hildon-run.sh` is an application, first lines `# Name: Mail`). The whole title area is the **Menu** button (application menu of the active window); the orange arrow on the right is
+  **Back** (closes the active window, in the switcher it leaves the switcher). A tap on the clock opens the status panel (battery, date, network: a simplified copy of the status menu of the phone).
+  The symbols are drawn with cairo (`python3-gi-cairo` is in the `toolchain` action of `.workshop/n900.yaml`).
+  Thumbnails are taken from the visible window (an obscured X window cannot be captured): every 2.5 s for the active one, 1.5 s and 4 s after a window first comes forward, and fresh when the switcher opens; they stay while another window covers it.
   The desktop has the stock wallpaper of the phone (`background-1.png`, 800x480, copied into `sysroot/usr/share/hildon-emu` by `make hildon-overlay`, not part of the repository; `HILDON_BG=file.png` or `HILDON_BG=none` changes it).
   `make emulator` shows the empty desktop (VNC is on, the address is printed; `make emulator-stop` ends a session left behind, a new start does it itself) and you pick an application; `make hildon-run APP=mutt-hildon` starts the desktop with that application.
   Ctrl-C ends the session. Closing the last window leaves the emulator running.

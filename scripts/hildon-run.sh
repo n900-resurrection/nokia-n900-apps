@@ -12,7 +12,7 @@ set -euo pipefail
 PROJ=/project
 SR="$PROJ/sysroot"
 D="${XDISPLAY:-:99}"
-# DESKTOP=1 (the default with APP=): window manager + top bar with launcher, running tasks, Menu and Back (hildon-session.sh)
+# DESKTOP=1 (the default with APP=): window manager + top bar with the application switcher, launcher, clock, Menu and Back (hildon-session.sh)
 if [ "${DESKTOP:-${APP:+1}}" = 1 ]; then
     export HILDON_SHELL=1
     XDISPLAY="$D" FRESH=1 NOSHELL=1 "$PROJ/scripts/hildon-session.sh"

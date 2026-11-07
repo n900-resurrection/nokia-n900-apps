@@ -33,7 +33,7 @@ FORCE:
 # build/stamps/<app>.built (without version) is the stamp other applications depend on.
 STAMP  := $(ROOT)/build/stamps/$(APP)-$(VERSION).built
 ASTAMP := $(ROOT)/build/stamps/$(APP).built
-SRCS   := $(filter-out %/package.sh %/test.sh %/LICENSE %.md %/Makefile %/icon.png,$(wildcard $(ROOT)/apps/$(APP)/*))
+SRCS   := $(filter-out %/package.sh %/test.sh %/LICENSE %.md %/Makefile %/icon.png %/make-icon.sh %/icons,$(wildcard $(ROOT)/apps/$(APP)/*))
 DEPSTAMPS := $(foreach d,$(DEPS),$(ROOT)/build/stamps/$(d).built)
 
 BUILD := Build $(APP) $(VERSION) in the workshop into build/out/ (always)
@@ -54,7 +54,9 @@ stamp: $(STAMP)
 # Menu icon: an application that has apps/<app>/make-icon.sh (the tool, draws the PNG with ImageMagick, shared look in
 # scripts/icon-lib.sh) gets the target `icon` = apps/<app>/icon.png; the package depends on it, so the icon is redrawn when the
 # script changes. Applications without the script just use a committed icon.png or take the icon of their sources (package.sh).
-ICONPNG := $(ROOT)/apps/$(APP)/icon.png
+# ICON_OUT: the file make-icon.sh writes (relative to apps/<app>); the Makefile of an app can name another one
+ICON_OUT ?= icon.png
+ICONPNG := $(ROOT)/apps/$(APP)/$(ICON_OUT)
 ICONSH  := $(wildcard $(ROOT)/apps/$(APP)/make-icon.sh)
 ifneq ($(ICONSH),)
 TARGETS += icon
