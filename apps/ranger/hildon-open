@@ -1,0 +1,26 @@
+#!/bin/sh
+# hildon-open APP FILE: open FILE in an application of the phone through the D-Bus method of the application (mime_open, the call
+# that libhildonmime and the file manager make), so that the file opens in the running Media Player, Image Viewer, ...
+#   hildon-open image_viewer photo.jpg      com.nokia.image_viewer      /com/nokia/image_viewer  mime_open
+#   hildon-open mediaplayer song.mp3        com.nokia.mediaplayer       mime_open
+#   hildon-open osso_pdfviewer book.pdf     com.nokia.osso_pdfviewer    mime_open
+#   hildon-open browser page.html           com.nokia.osso_browser      load_url
+# HILDON_OPEN_DRY=1 only prints the command (used by the tests).
+[ $# -eq 2 ] || { echo "usage: hildon-open image_viewer|mediaplayer|osso_pdfviewer|browser FILE" >&2; exit 2; }
+app=$1
+f=$2
+case $f in /*) ;; *) f=$PWD/$f ;; esac
+# the URI: percent-encode the characters that break it (UTF-8 letters stay as they are)
+uri=file://$(printf '%s' "$f" | sed -e 's/%/%25/g' -e 's/ /%20/g' -e 's/#/%23/g' -e 's/?/%3F/g' -e "s/'/%27/g" -e 's/"/%22/g')
+case $app in
+    browser) dest=com.nokia.osso_browser; method=load_url ;;
+    *)       dest=com.nokia.$app; method=mime_open ;;
+esac
+path=/$(echo "$dest" | tr . /)
+# started from a terminal of the phone the session bus is known; over ssh it is in this file
+[ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ] || { [ -r /tmp/session_bus_address.user ] && . /tmp/session_bus_address.user; export DBUS_SESSION_BUS_ADDRESS; }
+if [ -n "${HILDON_OPEN_DRY:-}" ]; then
+    echo "dbus-send --session --type=method_call --dest=$dest $path $dest.$method string:$uri"
+    exit 0
+fi
+exec dbus-send --session --type=method_call --dest="$dest" "$path" "$dest.$method" "string:$uri"

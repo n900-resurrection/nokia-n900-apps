@@ -1,0 +1,29 @@
+#!/bin/sh
+# A minimal stand-in for file(1), which the phone does not have: it answers what ranger and rifle ask,
+#   file --mime-type -Lb FILE
+# (the last argument is the file). Directories, empty and text files and the common media formats by their first bytes; everything else is
+# application/octet-stream. /opt/ranger/libexec is at the END of the PATH of ranger, so a real file(1) is preferred.
+# Only what the old busybox of the phone has: od -b (octal bytes), tr, head, wc.
+for f; do :; done
+if [ -d "$f" ]; then echo inode/directory; exit 0; fi
+[ -e "$f" ] || { echo "cannot open '$f'" >&2; exit 1; }
+[ -s "$f" ] || { echo inode/x-empty; exit 0; }
+oct=$(head -c 12 "$f" 2>/dev/null | od -b | sed -n '1s/^[0-9]* *//p' | tr -s ' ' ' ')
+case $oct in
+    '377 330 377'*)                echo image/jpeg ;;
+    '211 120 116 107'*)            echo image/png ;;
+    '107 111 106 070'*)            echo image/gif ;;
+    '045 120 104 106'*)            echo application/pdf ;;
+    '111 104 063'*|'377 373'*|'377 363'*|'377 372'*) echo audio/mpeg ;;
+    '117 147 147 123'*)            echo audio/ogg ;;
+    '146 114 141 103'*)            echo audio/flac ;;
+    [0-7][0-7][0-7]' '[0-7][0-7][0-7]' '[0-7][0-7][0-7]' '[0-7][0-7][0-7]' 146 164 171 160'*) echo video/mp4 ;;
+    '120 113 003 004'*)            echo application/zip ;;
+    '037 213'*)                    echo application/gzip ;;
+    *)
+        # text = no NUL and no control characters (other than tab, newline, carriage return, form feed, backspace) in the first 8 kB;
+        # the bytes of UTF-8 letters are fine
+        all=$(head -c 8192 "$f" | wc -c)
+        txt=$(head -c 8192 "$f" | tr -d '\000-\010\016-\037' | wc -c)
+        if [ "$all" = "$txt" ]; then echo text/plain; else echo application/octet-stream; fi ;;
+esac

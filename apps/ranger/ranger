@@ -3,6 +3,8 @@
 # Defaults for the phone: UTF-8 mode of Python (glibc 2.5 has no C.UTF-8), vim and less as editor and pager.
 export PYTHONPATH=/opt/ranger/lib${PYTHONPATH:+:$PYTHONPATH}
 export PYTHONUTF8=1
+# hildon-open (opens files in the applications of the phone) and a stand-in of file(1): at the end of the PATH, a real file(1) wins
+export PATH="$PATH:/opt/ranger/libexec"
 : "${EDITOR:=vim}" "${PAGER:=less}"
 export EDITOR PAGER
 exec /opt/python3/bin/python3.11 /opt/ranger/bin/ranger "$@"

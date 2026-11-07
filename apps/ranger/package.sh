@@ -20,7 +20,7 @@ DEPENDS="python3.11"
 DISPLAY_NAME="Ranger"
 SHORT_DESC="ranger $VERSION console file manager"
 LONG_DESC="ranger $VERSION, a console file manager with VI key bindings, for Maemo 5. It runs on the Python 3.11 of the package python3.11.
-Run ranger in the terminal (arrow keys or h j k l, q quits). Opening files uses vim and mplayer of the phone; the previews of files need the tool file, which the phone does not have, so only directories and plain text are previewed.
+Run ranger in the terminal (arrow keys or h j k l, q quits). Images, PDF, HTML, audio and video open in the applications of the phone (Image Viewer, PDF Viewer, Browser, Media Player), text in vim; only directories and plain text are previewed.
 Upstream: https://ranger.fm/"
 MAINTAINER="elPytel (build of upstream ranger by Roman Zimbelmann and contributors)"
 debpack_build

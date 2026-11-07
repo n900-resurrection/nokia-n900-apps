@@ -2,7 +2,7 @@
 # Prepare ranger 1.9.4 (console file manager, pure Python 3) for Maemo 5. Run INSIDE the Workshop: make -C apps/ranger build
 # Nothing is compiled for ARM: the sources are copied and byte-compiled with the ARM Python 3.11 under qemu-user (needs: make -C apps/python3 build),
 # because /opt is not writable for the user of the phone and a ranger without .pyc files would take many seconds to start on the Cortex-A8.
-# Output: /project/build/out/ranger-$VERSION/root/opt/ranger/{lib/ranger,bin/ranger,share/doc/ranger}
+# Output: /project/build/out/ranger-$VERSION/root/opt/ranger/{lib/ranger,bin/ranger,libexec,share/doc/ranger}
 set -euo pipefail
 
 VERSION="${VERSION:-1.9.4}"
@@ -30,6 +30,10 @@ cp -a ranger "$R/lib/ranger"
 install -m 755 build_scripts/ranger "$R/bin/ranger"
 sed -i '1s|^#!.*|#!/opt/python3/bin/python3.11|' "$R/bin/ranger"
 install -m 644 LICENSE AUTHORS README.md CHANGELOG.md "$R/share/doc/ranger/"
+# rifle.conf for the phone (Media Player, Image Viewer, ... through D-Bus) replaces the default; hildon-open and the stand-in of file(1) are in libexec
+install -m 644 "$PROJ/apps/ranger/rifle.conf" "$R/lib/ranger/config/rifle.conf"
+mkdir -p "$R/libexec"
+install -m 755 "$PROJ/apps/ranger/hildon-open" "$PROJ/apps/ranger/file" "$R/libexec/"
 install -m 755 "$PROJ/apps/ranger/ranger" "$OUT/root/usr/bin/ranger"
 chmod 755 "$R/lib/ranger/data/scope.sh"
 find "$R/lib" -name '__pycache__' -prune -exec rm -rf {} +
