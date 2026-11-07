@@ -1,0 +1,51 @@
+#!/bin/sh
+# wg-n900 up|down <config.conf>: start or stop a WireGuard tunnel with wireguard-go on the N900 (busybox ip, ifconfig; no wg-quick).
+# The interface is named after the file (/home/user/wg0.conf -> wg0). The config is the usual WireGuard one:
+#   [Interface] PrivateKey, Address (IPv4 only here) ; [Peer] PublicKey, Endpoint (an IP address, not a name), AllowedIPs, PersistentKeepalive
+# AllowedIPs = 0.0.0.0/0 sends all IPv4 traffic through the tunnel (two /1 routes plus a route to the endpoint via the old gateway).
+# DNS is not changed: use the IP addresses or set resolv.conf yourself. Must run as root (the tun device).
+set -e
+WG=/opt/wireguard-go/bin
+cmd=${1:-}; conf=${2:-}
+[ -n "$conf" ] && [ -r "$conf" ] || { echo "usage: wg-n900 up|down /path/to/wg0.conf" >&2; exit 2; }
+IF=$(basename "$conf" .conf)
+STATE=/var/run/wg-n900-$IF.state
+
+case "$cmd" in
+up)
+    [ ! -e "$STATE" ] || { echo "$IF is already up (wg-n900 down $conf first)" >&2; exit 1; }
+    $WG/wireguard-go "$IF"
+    sleep 1
+    grep -v -i -E '^[[:space:]]*(Address|DNS|MTU|Table|PreUp|PostUp|PreDown|PostDown|SaveConfig)[[:space:]]*=' "$conf" > "/var/run/wg-n900-$IF.conf"
+    chmod 600 "/var/run/wg-n900-$IF.conf"
+    $WG/wg setconf "$IF" "/var/run/wg-n900-$IF.conf"
+    rm -f "/var/run/wg-n900-$IF.conf"
+    for a in $(grep -i '^[[:space:]]*Address' "$conf" | cut -d= -f2 | tr ',' ' '); do
+        case "$a" in *:*) ;; *) ip addr add "$a" dev "$IF" ;; esac
+    done
+    ip link set "$IF" mtu "${MTU:-1280}" up
+    : > "$STATE"
+    gw=$(ip route | awk '/^default/ {print $3; exit}')
+    for a in $($WG/wg show "$IF" allowed-ips | cut -f2- | tr ' ' '\n'); do
+        case "$a" in *:*|'') continue ;; esac
+        if [ "$a" = 0.0.0.0/0 ]; then
+            ep=$($WG/wg show "$IF" endpoints | awk 'NR==1 {sub(/:[0-9]+$/, "", $2); print $2}')
+            [ -n "$gw" ] && [ -n "$ep" ] && ip route add "$ep/32" via "$gw" && echo "$ep/32" >> "$STATE"
+            ip route add 0.0.0.0/1 dev "$IF"; ip route add 128.0.0.0/1 dev "$IF"
+        else
+            ip route add "$a" dev "$IF"
+        fi
+    done
+    echo "$IF is up"
+    ;;
+down)
+    [ -e "$STATE" ] || echo "$IF: no state file, stopping anyway" >&2
+    for r in $(cat "$STATE" 2>/dev/null); do ip route del "$r" 2>/dev/null || true; done
+    # wireguard-go ends (and the interface with it) when its control socket disappears
+    rm -f "/var/run/wireguard/$IF.sock"
+    rm -f "$STATE"
+    echo "$IF is down"
+    ;;
+*)
+    echo "usage: wg-n900 up|down /path/to/wg0.conf" >&2; exit 2 ;;
+esac
