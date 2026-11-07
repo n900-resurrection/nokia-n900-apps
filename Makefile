@@ -27,7 +27,8 @@ DEBAPPS := $(foreach a,$(or $(APP),$(APPS)),$(if $(wildcard apps/$(a)/package.sh
 DEBS := Build the .deb packages of all apps (APP="a b" selects; up to date ones are skipped; INSTALL=1 installs too)
 REPO := Build the apt repository in ./n900-repository from the current .deb of every app (runs make debs first; see DOC/apt-repo.md)
 repo: debs
-	$(INSIDE) /project/scripts/mkrepo.sh $(foreach a,$(DEBAPPS),build/deb/$(shell $(MAKE) --no-print-directory -s -C apps/$(a) debfile))
+	@printf '\n$(BOLD)== repository$(RESET)\n'
+	$(INSIDE) env C_BOLD='$(BOLD)' C_GREEN='$(GREEN)' C_CYAN='$(CYAN)' C_YELLOW='$(YELLOW)' C_PURPLE='$(PURPLE)' C_RESET='$(RESET)' /project/scripts/mkrepo.sh $(foreach a,$(DEBAPPS),build/deb/$(shell $(MAKE) --no-print-directory -s -C apps/$(a) debfile))
 
 debs:
 	@for a in $(DEBAPPS); do printf '\n$(BOLD)== %s$(RESET)\n' $$a; $(MAKE) --no-print-directory -C apps/$$a $(if $(INSTALL),install,deb) || exit 1; done
@@ -58,7 +59,7 @@ sysroot:
 
 HELLO := Build and run hello.c (qemu-user, glibc 2.5)
 hello:
-	$(WSRUN) hello
+	$(WSRUN) cpp-hello
 
 WORDGRINDER := Build WordGrinder (more: make -C apps/wordgrinder)
 HTOP := Build htop (more: make -C apps/htop)
