@@ -82,6 +82,10 @@ on the phone and in the repository.
 (classic multiplexer, system `screenrc` with a status line, sockets in `~/.screen`) are built, tested and in the repository. **batcat** is only the Debian/Ubuntu name of
 bat (there `bat` is another program): the bat package installs the alias `/usr/bin/batcat` too.
 
+**dialog 1.3-20260721** (static ncursesw) and **whiptail 0.52.25** (newt; slang 2.3.3 and popt linked statically, the phone has a slang without headers) are built, tested on
+the phone (menu and checklist drawn in a pty) and in the repository. The upstream site of dialog refuses the default curl User-Agent, so both builds take the upstream
+tarballs from the Debian archive. **apt-n900** (`apps/apt-n900`, own repository and submodule) adds a friendly `apt` command over apt-get.
+
 **OpenSSH 10.6p2** (`apps/openssh`, client and server in `/opt/openssh`, the system 5.1 is untouched; `ssh-modern`, `scp-modern`, `sftp-modern`, `ssh-keygen-modern`
 in `/usr/bin`) is built and packaged, and tested **only under qemu-user** (`make -C apps/openssh qemu-test`: ssh key login with the shipped ARM client and with the host
 client, a refused wrong key, sftp transfer), **never on the phone** by agreement. Things to know when it is first installed:

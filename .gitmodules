@@ -4,3 +4,6 @@
 [submodule "n900-repository"]
 	path = n900-repository
 	url = https://github.com/n900-resurrection/n900-repository.git
+[submodule "apps/apt-n900"]
+	path = apps/apt-n900
+	url = https://github.com/n900-resurrection/apt-n900.git
