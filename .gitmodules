@@ -16,3 +16,9 @@
 [submodule "apps/libsignal-purple"]
 	path = apps/libsignal-purple
 	url = https://github.com/n900-resurrection/libsignal-purple.git
+[submodule "apps/microb-engine"]
+	path = apps/microb-engine
+	url = https://github.com/n900-resurrection/microb-engine.git
+[submodule "apps/microb-nss"]
+	path = apps/microb-nss
+	url = https://github.com/n900-resurrection/microb-nss.git

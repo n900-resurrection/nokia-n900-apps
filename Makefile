@@ -23,7 +23,10 @@ $(foreach a,$(APPS),$(eval $(call APP_RULE,$(a))))
 # build/stamps; the DEPS of apps/<app>/Makefile are brought up to date first). APP selects some: make debs APP="curl git"
 # Preview without building: make -n debs. With INSTALL=1 the packages are also installed on the phone.
 # (The command line APP="a b" reaches the sub-makes too; the Makefiles of the applications use `override APP :=` so that it cannot change their APP.)
-DEBAPPS := $(foreach a,$(or $(APP),$(APPS)),$(if $(wildcard apps/$(a)/package.sh),$(a)))
+# An app whose Makefile has a line starting with MANUAL (experimental, large or slow) is skipped by `make debs`, `make repo` and `make test` without APP;
+# APP="that-app" builds it.
+MANUALAPPS := $(foreach a,$(APPS),$(if $(shell grep -l '^MANUAL' apps/$(a)/Makefile 2>/dev/null),$(a)))
+DEBAPPS := $(foreach a,$(or $(APP),$(filter-out $(MANUALAPPS),$(APPS))),$(if $(wildcard apps/$(a)/package.sh),$(a)))
 DEBS := Build the .deb packages of all apps (APP="a b" selects; up to date ones are skipped; INSTALL=1 installs too)
 REPO := Build the apt repository in ./n900-repository from the current .deb of every app (runs make debs first; see DOC/apt-repo.md)
 repo: debs
@@ -106,9 +109,9 @@ hildon-run:
 QUICKJS := Cross-build QuickJS, JavaScript runtime for yt-dlp (more: make -C apps/quickjs)
 MSMTP := Build msmtp (more: make -C apps/msmtp)
 JQ := Build jq (more: make -C apps/jq)
-TEST := Run the tests of all apps on the N900 (apps/*/test.sh); the packages must be installed
+TEST := Run the tests of all apps on the N900 (apps/*/test.sh, not the MANUAL ones); the packages must be installed
 test:
-	@fail=0; for t in $(ROOT)/apps/*/test.sh; do a=$$(basename $$(dirname $$t)); printf '\n$(BOLD)== %s$(RESET)\n' $$a; $(MAKE) --no-print-directory -C apps/$$a test || fail=$$((fail+1)); done; \
+	@fail=0; for t in $(ROOT)/apps/*/test.sh; do a=$$(basename $$(dirname $$t)); case " $(MANUALAPPS) " in *" $$a "*) continue;; esac; printf '\n$(BOLD)== %s$(RESET)\n' $$a; $(MAKE) --no-print-directory -C apps/$$a test || fail=$$((fail+1)); done; \
 	if [ $$fail -eq 0 ]; then printf '\n$(GREEN)All test suites passed$(RESET)\n'; else printf '\n$(RED)%s test suite(s) failed$(RESET)\n' $$fail; exit 1; fi
 
 TTY-CLOCK := Build tty-clock (more: make -C apps/tty-clock)

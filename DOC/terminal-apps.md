@@ -91,6 +91,12 @@ terminfo entries and the stock terminal sets `TERM=xterm`. The package adds `xte
 `build.sh` in the legacy format that ncurses 5.7 reads; the `pairs#65536` of ncurses 6 is lowered to 32767). No system file is replaced. Its `postinst` also appends a marked
 block (`# BEGIN/END terminfo-256color`) to `/home/user/.bashrc` that switches `TERM=xterm` to `xterm-256color`; `postrm` removes the block. Tested on the phone (8 tests).
 
+**ca-certs-n900 1.0** (`apps/ca-certs-n900`) adds the current Mozilla root certificates (the list of the curl build, 118 certificates) to the private certificate domain `ssl-ca`
+of the user (`~/.maemosec-certs/ssl-ca`, Maemo certificate manager `cmcli`); the phone has only roots from 2010 in the read-only system domain `common-ca`, which is not touched.
+`ca-certs-n900 install|remove|status [user]`; the package runs install in `postinst` and remove (exactly its own certificates, ids in `/opt/ca-certs-n900/ids`) in `prerm`.
+Verified: the mechanism with a temporary test CA and an `openssl s_server -tls1` on the PC (`cmcli -v` fails without the CA and gives "Verified OK" with it; **MicroB opened
+the page without a warning**, the first load was slow). Also verified on a real public site: `https://tls-v1-0.badssl.com:1010/` (TLS 1.0, Let's Encrypt chain) loads in MicroB without a warning. MicroB (Gecko 1.9.2, NSS 3.12.6) speaks only TLS 1.0, so sites that disabled it still fail.
+
 **OpenSSH 10.6p2** (`apps/openssh`, client and server in `/opt/openssh`, the system 5.1 is untouched; `ssh-modern`, `scp-modern`, `sftp-modern`, `ssh-keygen-modern`
 in `/usr/bin`) is built and packaged, and tested **only under qemu-user** (`make -C apps/openssh qemu-test`: ssh key login with the shipped ARM client and with the host
 client, a refused wrong key, sftp transfer), **never on the phone** by agreement. Things to know when it is first installed:

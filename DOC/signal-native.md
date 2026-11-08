@@ -63,6 +63,8 @@ Not tested on the phone. Plan for the test, each point needs the user's agreemen
 Conversations application shows the chat with `echo-bot` and the answers `Echo: <text>`. So a third-party libpurple protocol plugin works in the stock
 messaging UI with just: the plugin `.so`, a block in `haze.manager`, an account profile and an icon. The architecture above stands; next is step 1 (signal-bridge).
 
+Screenshot of the echo chat in Conversations: [apps/purple-echo/docs/echo-chat.png](../apps/purple-echo/docs/echo-chat.png).
+
 ## Step 1: signal-bridge (2026-11-07)
 `apps/signal-bridge` (Rust, presage rev `94b3978` as in gurk, static musl, built into the target directory of gurk, 15 MB): subcommands `daemon`, `contacts`, `groups`,
 `whoami`. It opens the encrypted presage store of gurk (`~/.local/share/gurk/signal.sqlite`, passphrase read from `~/.config/gurk/gurk.toml`), so no second device link
@@ -90,3 +92,9 @@ Packages: `signal-bridge` (6.5 MB, daemon, `signal-bridge-start`, `sb-client`; i
 `[Protocol signal]` block in `haze.manager` with a backup `haze.manager.orig-signal`, profile, icon; depends on `signal-bridge`). `signal-bridge` refuses to start twice (checks the socket).
 Test in the UI (changes the phone: `haze.manager`, Mission Control restart): `make debs APP=libsignal-purple INSTALL=1`, reboot, Settings > Accounts > Signal, any name;
 write to "(Note to Self)" in Conversations. Gurk must not run at the same time. Remove `purple-echo` afterwards (`dpkg -r purple-echo`).
+
+## Fixes after the first UI test (2026-11-08)
+First test in the stock Conversations/Pidgin: the account connects, "(Note to Self)" appears, sending and receiving work. Two problems found and fixed in code (**not yet tested on the phone**):
+- **Login hang without network:** the plugin waited for `READY` forever (the daemon cannot become ready offline). Now `READY_TIMEOUT` (120 s) ends the connection attempt with an error message.
+- **`database is locked`** in the daemon log (a burst of incoming messages, slow flash, default busy timeout 5 s; the message was skipped): the store is now opened with `busy_timeout` 60 s.
+Group messages ("missing sender key") are still not supported.
