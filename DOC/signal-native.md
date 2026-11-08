@@ -98,3 +98,9 @@ First test in the stock Conversations/Pidgin: the account connects, "(Note to Se
 - **Login hang without network:** the plugin waited for `READY` forever (the daemon cannot become ready offline). Now `READY_TIMEOUT` (120 s) ends the connection attempt with an error message.
 - **`database is locked`** in the daemon log (a burst of incoming messages, slow flash, default busy timeout 5 s; the message was skipped): the store is now opened with `busy_timeout` 60 s.
 Group messages ("missing sender key") are still not supported.
+
+## History of old messages (2026-11-08)
+After the first login the contacts appear (contact sync) but the threads are empty. This is expected: Signal does not send the history of earlier messages to a linked device, the bridge
+store (`signal.sqlite`) holds only what the bridge received while it ran (5 messages, one thread), and the plugin shows only messages newer than the first login (`last-message-ts`) plus what
+arrived while offline. The history therefore builds up from now on (Conversations keeps its own log). The old history of gurk is in `gurk.sqlite` (about 60 kB, encrypted with the same passphrase,
+not readable with the plain `sqlite3`); importing it would need a new bridge command that opens it with the key. Not done, by decision of the user: wait and see how the messages accumulate.

@@ -79,7 +79,7 @@ half-configured: the old `dpkg-divert` has no `--listpackage` and cannot rename 
 `/usr/lib/microb-engine-orig` and drops a diversion that was recorded without the file being moved. The Makefile of the root has a `MANUAL` mechanism (an app whose Makefile has a
 line starting with `MANUAL` is skipped by `make debs`, `make repo` and `make test` without APP), unused for now: `microb-engine` has no Makefile and is never built.
 **Works in the real browser (2026-11-08):** after `/etc/init.d/tablet-browser-daemon.init restart` MicroB opens `https://www.seznam.cz/` with a verified certificate
-(screenshot `apps/microb-nss/docs/microb-seznam-tls12.png`). Note for the restart: a prestarted engine process `browserd -s ... -n browserui` that was started before the restart survives it
+(screenshot `apps/microb-nss/docs/microb-seznam-tls12.png`). A modern styled page works as well: `https://idos.cz/` (screenshot `apps/microb-nss/docs/microb-idos-tls12.png`), it takes about 20 seconds to load. Note for the restart: a prestarted engine process `browserd -s ... -n browserui` that was started before the restart survives it
 (the init script does not kill it), keeps the old libraries and the browser window then waits for it forever; it has to be killed (the window respawns by itself with a new engine).
 Google answers "your browser is not supported" (User-Agent sniffing, not TLS), Facebook asks for a newer browser.
 **Still to do:** the User-Agent (`general.useragent.override`) and the basic HTML pages (for example `https://www.google.com/search?q=...&gbv=1`), a real use test of more sites, and (https://www.google.com, Facebook, Seznam);
