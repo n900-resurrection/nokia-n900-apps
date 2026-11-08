@@ -86,6 +86,11 @@ bat (there `bat` is another program): the bat package installs the alias `/usr/b
 the phone (menu and checklist drawn in a pty) and in the repository. The upstream site of dialog refuses the default curl User-Agent, so both builds take the upstream
 tarballs from the Debian archive. **apt-n900** (`apps/apt-n900`, own repository and submodule) adds a friendly `apt` command over apt-get.
 
+**terminfo-256color 1.0** (`apps/terminfo-256color`) fixes `Color number is greater than COLORS-1 (7)` in ranger, cbonsai and similar programs: the phone has only 8-colour
+terminfo entries and the stock terminal sets `TERM=xterm`. The package adds `xterm-256color`, `screen-256color` and `tmux-256color` to `/usr/share/terminfo` (compiled by
+`build.sh` in the legacy format that ncurses 5.7 reads; the `pairs#65536` of ncurses 6 is lowered to 32767). No system file is replaced. Its `postinst` also appends a marked
+block (`# BEGIN/END terminfo-256color`) to `/home/user/.bashrc` that switches `TERM=xterm` to `xterm-256color`; `postrm` removes the block. Tested on the phone (8 tests).
+
 **OpenSSH 10.6p2** (`apps/openssh`, client and server in `/opt/openssh`, the system 5.1 is untouched; `ssh-modern`, `scp-modern`, `sftp-modern`, `ssh-keygen-modern`
 in `/usr/bin`) is built and packaged, and tested **only under qemu-user** (`make -C apps/openssh qemu-test`: ssh key login with the shipped ARM client and with the host
 client, a refused wrong key, sftp transfer), **never on the phone** by agreement. Things to know when it is first installed:
