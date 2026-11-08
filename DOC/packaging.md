@@ -180,3 +180,13 @@ Realisticky:
 - Chování starého apt/Application Manageru k nepodepsanému nebo samopodepsanému repu.
 - Které knihovny jsou skutečně na zařízení (`dpkg -l` na telefonu) a tedy co lze dát do `Depends`.
 - Hodiny na telefonu: nastavit a udržet (baterie RTC?).
+
+## Which packages have a newer upstream release (`make updates`)
+`make updates` runs `scripts/upstream-check.py` on the host: for every `apps/<app>` it reads the used version (`VERSION` in the Makefile) and asks the upstream
+source for the newest release, then prints a table sorted by what needs attention (`NEW`, errors, unknown, `ahead`, `pinned`, `ok`, own packages) and a summary.
+The sources (GitHub releases or tags, GitLab, crates.io, Go proxy, PyPI, directory listings of release servers) are listed in `scripts/upstream.conf`, one line per app,
+with optional `series=` (stay on a branch such as OpenSSL 3.5 or Python 3.11), `re=` (how to read the version from a tag or file name) and `note=` (why we stay behind).
+When a new app is added, add its line there (an app without a line is shown as unknown). `make updates APP="bat fd"` checks some apps,
+`ARGS="--only-new"` hides the rest, `ARGS="--json"` prints machine readable output, `ARGS="--refresh"` ignores the one hour cache in `build/upstream-cache.json`.
+GitHub allows 60 anonymous requests an hour: set `GITHUB_TOKEN` or run `gh auth login` for more. A `NEW` row only says that a release exists: whether it builds on
+Maemo (old kernel and glibc, for example age 1.3 needs Go 1.25) is for the person who updates the package; record such cases in `note=`.

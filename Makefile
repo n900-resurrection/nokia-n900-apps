@@ -9,7 +9,7 @@ include mk/common.mk
 # ACTION selects another target of the application: make curl ACTION=deb. Descriptions: variables below, or a default.
 APPS := $(sort $(notdir $(patsubst %/,%,$(dir $(wildcard apps/*/Makefile)))))
 ACTION ?= build
-TARGETS := help up down status enter toolchain sysroot hello $(APPS) debs repo test hildon-overlay hildon-run emulator push screenshots clean distclean
+TARGETS := help up down status enter toolchain sysroot hello $(APPS) debs repo updates test hildon-overlay hildon-run emulator push screenshots clean distclean
 .PHONY: $(TARGETS)
 
 define APP_RULE
@@ -29,6 +29,12 @@ REPO := Build the apt repository in ./n900-repository from the current .deb of e
 repo: debs
 	@printf '\n$(BOLD)== repository$(RESET)\n'
 	$(INSIDE) env C_BOLD='$(BOLD)' C_GREEN='$(GREEN)' C_CYAN='$(CYAN)' C_YELLOW='$(YELLOW)' C_PURPLE='$(PURPLE)' C_RESET='$(RESET)' /project/scripts/mkrepo.sh $(foreach a,$(DEBAPPS),build/deb/$(shell $(MAKE) --no-print-directory -s -C apps/$(a) debfile))
+
+# `make updates` compares the version of every application with the newest upstream release (sources: scripts/upstream.conf).
+# APP selects some applications, ARGS passes options: make updates APP="bat fd" ARGS="--only-new --refresh" (see scripts/upstream-check.py --help)
+UPDATES := Compare the used version of every app with its newest upstream release (APP="a b" selects; ARGS="--only-new --refresh --json")
+updates:
+	@python3 -I $(ROOT)/scripts/upstream-check.py $(if $(APP),--apps "$(APP)") $(ARGS)
 
 debs:
 	@for a in $(DEBAPPS); do printf '\n$(BOLD)== %s$(RESET)\n' $$a; $(MAKE) --no-print-directory -C apps/$$a $(if $(INSTALL),install,deb) || exit 1; done

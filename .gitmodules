@@ -7,3 +7,6 @@
 [submodule "apps/apt-n900"]
 	path = apps/apt-n900
 	url = https://github.com/n900-resurrection/apt-n900.git
+[submodule "apps/signal-bridge"]
+	path = apps/signal-bridge
+	url = https://github.com/n900-resurrection/signal-bridge.git
