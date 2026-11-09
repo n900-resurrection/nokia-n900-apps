@@ -9,7 +9,7 @@ include mk/common.mk
 # ACTION selects another target of the application: make curl ACTION=deb. Descriptions: variables below, or a default.
 APPS := $(sort $(notdir $(patsubst %/,%,$(dir $(wildcard apps/*/Makefile)))))
 ACTION ?= build
-TARGETS := help up down status enter toolchain sysroot hello $(APPS) debs repo updates test hildon-overlay hildon-run emulator push screenshots clean distclean
+TARGETS := help up down status enter toolchain sysroot hello $(APPS) debs repo updates test hildon-overlay locale-overlay qemu-smoke qemu-test emu-test hildon-run emulator push screenshots clean distclean
 .PHONY: $(TARGETS)
 
 define APP_RULE
@@ -82,6 +82,22 @@ MUTT := Build Mutt (more: make -C apps/mutt)
 MUTT-HILDON := Package the Hildon GUI over Mutt (more: make -C apps/mutt-hildon)
 CAMEL-LITE := Build camel-lite (Modest mail library) with OpenSSL 3 (more: make -C apps/camel-lite)
 PYTHON3 := Cross-build Python 3.11 (more: make -C apps/python3)
+QEMU-SMOKE := Smoke tests of the built programs under qemu-user, no phone (APP="jq rsync" selects; kernel 2.6.28, one CPU, 1 MB /tmp)
+qemu-smoke:
+	$(INSIDE) env APPS="$(APP)" /project/scripts/qemu-smoke.sh
+
+QEMU-TEST := Run the apps/*/qemu-test.sh emulation tests (tmux, openssh), no phone (APP="tmux" selects)
+qemu-test:
+	@fail=0; for t in $(if $(APP),$(foreach a,$(APP),$(ROOT)/apps/$(a)/qemu-test.sh),$(ROOT)/apps/*/qemu-test.sh); do a=$$(basename $$(dirname $$t)); printf '\n$(BOLD)== %s$(RESET)\n' $$a; $(MAKE) --no-print-directory -C apps/$$a qemu-test || fail=$$((fail+1)); done; if [ $$fail -eq 0 ]; then printf '\n$(GREEN)All emulation tests passed$(RESET)\n'; else printf '\n$(RED)%s emulation test(s) failed$(RESET)\n' $$fail; exit 1; fi
+
+EMU-TEST := Run apps/<app>/test.sh in the emulated phone (chroot under qemu-user, no phone): make emu-test APP="jq tmux" (default: all apps with test.sh); RESET=1 builds the root again
+emu-test:
+	$(INSIDE) bash -c '$(if $(RESET),/project/scripts/emu-root.sh --reset &&) /project/scripts/emu-test.sh $(if $(APP),$(APP),$(notdir $(patsubst %/,%,$(dir $(wildcard apps/*/test.sh)))))'
+
+LOCALE-OVERLAY := Copy the locale archive (UTF-8 locales, glibc 2.5) from the phone into ./sysroot (once; tmux and other programs need it under qemu-user)
+locale-overlay:
+	DEVICE=$(DEVICE) scripts/locale-overlay.sh
+
 HILDON-OVERLAY := Copy the Hildon theme, fonts and icons from the phone into ./sysroot (once; for hildon-run)
 hildon-overlay:
 	DEVICE=$(DEVICE) scripts/hildon-overlay.sh

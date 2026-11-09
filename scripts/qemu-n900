@@ -1,0 +1,42 @@
+#!/bin/bash
+# Run an ARM program of the phone under qemu-user so that it sees an environment closer to the N900. Run INSIDE the Workshop.
+#   scripts/qemu-n900 [options] PROGRAM [ARGS...]
+#
+# What is made like the phone (each one can be switched off):
+#   kernel version   QEMU_UNAME=2.6.28: uname() and /proc/version-like checks of the program report the kernel of the N900 (programs that test
+#                    the kernel version, or build their feature list from it, take the same branch as on the phone). Off: --no-uname
+#   one CPU          taskset -c 0: the N900 has a single core, so threads are interleaved, not parallel (this finds races and timing
+#                    assumptions that a 12-core PC hides). Off: --no-cpu
+#   small /tmp       a private 1 MB tmpfs over /tmp (the /tmp of the phone is a 1 MB tmpfs: "No space left on device" is a real problem there:
+#                    yt-dlp, gPodder). The mount lives in a private mount namespace (unshare -rm), nothing outside changes. Off: --no-tmp
+#   libc and locale  -L sysroot (glibc 2.5); the locale of the phone is available after `make locale-overlay` (LC_ALL defaults to C, set it to
+#                    cs_CZ.UTF-8 for programs that need UTF-8)
+# Not emulated: the amount of RAM (the phone has 256 MB; qemu-user cannot limit the resident memory of the guest) and the speed of the CPU.
+set -uo pipefail
+PROJ="${PROJ:-/project}"
+UNAME=1 CPU=1 TMP=1
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --no-uname) UNAME=0 ;;
+        --no-cpu)   CPU=0 ;;
+        --no-tmp)   TMP=0 ;;
+        --no-limits) UNAME=0 CPU=0 TMP=0 ;;
+        --) shift; break ;;
+        -*) echo "scripts/qemu-n900: unknown option $1" >&2; exit 2 ;;
+        *) break ;;
+    esac
+    shift
+done
+[ $# -gt 0 ] || { echo "usage: scripts/qemu-n900 [--no-uname] [--no-cpu] [--no-tmp] [--no-limits] PROGRAM [ARGS...]" >&2; exit 2; }
+
+[ "$UNAME" = 1 ] && export QEMU_UNAME="${QEMU_UNAME:-2.6.28}"
+export QEMU_LD_PREFIX="${QEMU_LD_PREFIX:-$PROJ/sysroot}"
+export LC_ALL="${LC_ALL:-C}"
+
+cmd=(qemu-arm "$@")
+[ "$CPU" = 1 ] && cmd=(taskset -c 0 "${cmd[@]}")
+if [ "$TMP" = 1 ]; then
+    # a private mount namespace (user namespace: no root needed); the working directory and the environment stay as they are
+    exec unshare -rm bash -c 'mount -t tmpfs -o size=1m,mode=1777 tmpfs /tmp && exec "$@"' bash "${cmd[@]}"
+fi
+exec "${cmd[@]}"

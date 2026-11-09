@@ -23,12 +23,7 @@ fi
 # Packages run like on the phone: the kernel starts ARM programs through qemu-user (binfmt_misc) and the sysroot /opt is bind-mounted on
 # /opt (qemu-user does not translate the path of execve, so wrapper scripts that `exec /opt/<app>/bin/<prog>` need the real path).
 # Needs sudo (the Workshop has it); the binfmt entry lives until the Workshop restarts.
-BINFMT=/proc/sys/fs/binfmt_misc
-[ -e $BINFMT/register ] || sudo mount -t binfmt_misc binfmt_misc $BINFMT 2>/dev/null || true
-if [ -e $BINFMT/register ] && [ ! -e $BINFMT/qemu-arm ]; then
-    printf ':qemu-arm:M::\\x7fELF\\x01\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x28\\x00:\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\x00\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff:/usr/bin/qemu-arm:F\n' \
-        | sudo tee $BINFMT/register >/dev/null || true
-fi
+"$PROJ/scripts/qemu-binfmt.sh" || true   # the static qemu-arm with the flag F (see the script)
 "$PROJ/scripts/hildon-dbus.sh"
 mountpoint -q /opt || sudo mount --bind "$PROJ/sysroot/opt" /opt || true
 pgrep -x Xvfb >/dev/null || { Xvfb "$D" -screen 0 800x480x24 >/tmp/xvfb.log 2>&1 & sleep 1.5; }

@@ -62,7 +62,7 @@ Omezení:
   Chybí tedy stavový řádek, přepínač oken a Maemo klávesnice; okno je celoobrazovkové. Úplnou emulaci uměl jen dřívější Maemo SDK (kompletní x86 sestavení s Mesa), to už není k dispozici.
 - Rychlost je emulovaná (qemu), start Pythonu trvá pár sekund. Na rychlost se spoléhat nedá, na správnost vzhledu a logiky ano.
 - Dotyk myší funguje přes VNC, kinetické posouvání (`PannableArea`) lze zkoušet jen přibližně.
-- `LC_ALL=C` je nutné: glibc 2.5 ze sysrootu neumí číst jazykové soubory hostitele.
+- `LC_ALL=C` je výchozí: glibc 2.5 ze sysrootu neumí číst jazykové soubory hostitele. UTF-8 locale (např. `cs_CZ.UTF-8`) jde zapnout jednou příkazem `make locale-overlay` (zkopíruje `locale-archive` z telefonu do sysrootu); pak lze pod qemu-user spouštět i programy, které UTF-8 vyžadují (tmux).
 - qemu-user překládá absolutní symlinky na hostitele, proto `hildon-overlay.sh` nahrazuje symlinky v `usr/lib/pymodules` skutečnými soubory.
 - Ve Workshopu je potřeba `sudo apt install xvfb x11vnc imagemagick` (nainstalováno ručně 2026-11-05, do skriptu `toolchain` zatím nepřidáno).
 

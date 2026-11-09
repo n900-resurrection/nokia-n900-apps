@@ -62,8 +62,9 @@ checked one by one: the estimates are marked as such. **Not built or tested yet*
 ## Status (2026-11-07)
 Built, packaged, tested in the emulator (qemu-user) and on the phone: **tmux 3.8** (libevent built without `eventfd`: the glibc 2.5 of the phone has no such wrapper),
 **ncdu 1.22**, **strace 6.19** (the bundled kernel headers must come before the 2.6.28 ones of the sysroot, see `apps/strace/build.sh`), **file 5.48** (needs a native
-`file` of the same version to compile the magic database). tmux refuses to start without a UTF-8 locale; the phone has `cs_CZ.UTF-8` and others, the emulator sysroot has none,
-so tmux is tested on the phone only. **rsync 3.5.2** is built and tested too (8 tests on the phone). All five are in the apt repository.
+`file` of the same version to compile the magic database). tmux refuses to start when the system has no UTF-8 locale at all (it tries `en_US.UTF-8` and `C.UTF-8` itself); the phone has them in its locale archive. The SDK sysroot has
+only empty placeholder files, so under qemu-user tmux used to be testable on the phone only. `make locale-overlay` (once) copies the locale archive of the phone into `./sysroot`, then
+`make -C apps/tmux qemu-test` (6 checks: sessions, UTF-8 text through `send-keys`/`capture-pane`, panes) runs under qemu-user without the phone (2026-11-09). **rsync 3.5.2** is built and tested too (8 tests on the phone). All five are in the apt repository.
 
 **links 2.30** (text browser, HTTPS through the static OpenSSL 3, so TLS 1.3 works; Mozilla CA bundle in `/opt/links/etc/cacert.pem` and the `/usr/bin/links`
 wrapper sets `SSL_CERT_FILE`) is built, packaged, tested on the phone (8 tests, including `links -dump https://example.org`) and in the repository.
@@ -90,6 +91,10 @@ tarballs from the Debian archive. **apt-n900** (`apps/apt-n900`, own repository 
 terminfo entries and the stock terminal sets `TERM=xterm`. The package adds `xterm-256color`, `screen-256color` and `tmux-256color` to `/usr/share/terminfo` (compiled by
 `build.sh` in the legacy format that ncurses 5.7 reads; the `pairs#65536` of ncurses 6 is lowered to 32767). No system file is replaced. Its `postinst` also appends a marked
 block (`# BEGIN/END terminfo-256color`) to `/home/user/.bashrc` that switches `TERM=xterm` to `xterm-256color`; `postrm` removes the block. Tested on the phone (8 tests).
+**Revision 1maemo2 (2026-11-09):** the first revision compiled `xterm-256color` from the modern ncurses entry, which draws line characters with `ESC ( 0`. The terminal of Maemo does not
+understand that: the frames of `dialog` (and so of `apt tui`) were broken. The stock `xterm` entry of the phone uses `SO`/`SI` (`smacs=^N`, `rmacs=^O`, `enacs=\E(B\E)0`), so
+`xterm-256color` is now generated from it (`apps/terminfo-256color/xterm-256color.src`: the phone entry with 256 colours and the 256-colour `setaf`/`setab`); `screen-256color` and `tmux-256color`
+still come from ncurses 6 (the multiplexer draws the frames itself). A test (`acs-shift-out`) guards it. Verified with the bytes dialog sends: identical to `TERM=xterm`.
 
 **ca-certs-n900 1.0** (`apps/ca-certs-n900`) adds the current Mozilla root certificates (the list of the curl build, 118 certificates) to the private certificate domain `ssl-ca`
 of the user (`~/.maemosec-certs/ssl-ca`, Maemo certificate manager `cmcli`); the phone has only roots from 2010 in the read-only system domain `common-ca`, which is not touched.
