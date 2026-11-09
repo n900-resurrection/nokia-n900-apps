@@ -9,7 +9,7 @@ include mk/common.mk
 # ACTION selects another target of the application: make curl ACTION=deb. Descriptions: variables below, or a default.
 APPS := $(sort $(notdir $(patsubst %/,%,$(dir $(wildcard apps/*/Makefile)))))
 ACTION ?= build
-TARGETS := help up down status enter toolchain sysroot hello $(APPS) debs repo updates test hildon-overlay locale-overlay qemu-smoke qemu-test emu-test hildon-run emulator push screenshots clean distclean
+TARGETS := help up down status enter toolchain sysroot hello $(APPS) debs repo updates test hildon-overlay locale-overlay qemu-smoke qemu-test emu-test emu-shots hildon-run emulator push screenshots clean distclean
 .PHONY: $(TARGETS)
 
 define APP_RULE
@@ -93,6 +93,10 @@ qemu-test:
 EMU-TEST := Run apps/<app>/test.sh in the emulated phone (chroot under qemu-user, no phone): make emu-test APP="jq tmux" (default: all apps with test.sh); RESET=1 builds the root again
 emu-test:
 	$(INSIDE) bash -c '$(if $(RESET),/project/scripts/emu-root.sh --reset &&) /project/scripts/emu-test.sh $(if $(APP),$(APP),$(notdir $(patsubst %/,%,$(dir $(wildcard apps/*/test.sh)))))'
+
+EMU-SHOTS := Take the screenshots of an application in the emulated desktop from the timeline apps/<app>/shots.txt into build/shots/<app>/ (APP="mutt-hildon"; COMPARE=dir compares with older images)
+emu-shots:
+	$(INSIDE) /project/scripts/emu-shots.sh $(if $(COMPARE),--compare $(COMPARE)) $(if $(APP),$(APP),$(notdir $(patsubst %/,%,$(dir $(wildcard apps/*/shots.txt)))))
 
 LOCALE-OVERLAY := Copy the locale archive (UTF-8 locales, glibc 2.5) from the phone into ./sysroot (once; tmux and other programs need it under qemu-user)
 locale-overlay:

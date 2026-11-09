@@ -86,3 +86,12 @@ also curl (TLS 1.3 to GitHub), git (clone over HTTPS), wget, sfeed, msmtp and nt
 Known limit of qemu-user: a local `rsync` copy fails in the receiver (`change_dir ... No such file or directory`), although the same copy passes on the phone.
 `make test` on the phone stays the reference; the emulation finds a program that does not start, a missing library or a broken feature before the package goes to the phone.
 `scripts/locale-overlay.sh` (`make locale-overlay`) copies the locale archive of the phone into the sysroot (UTF-8 locales for tmux and others). `scripts/qemu-binfmt.sh` makes sure that the kernel uses the static qemu-arm (flag F).
+
+## Batch screenshots of the emulated desktop (2026-11-09)
+`make emu-shots [APP=mutt-hildon]` (`scripts/emu-shots.sh`) takes a series of screenshots of an application in the emulated desktop (800x480 with the top bar) from a
+timeline `apps/<app>/shots.txt`, one line per step: `SECONDS ACTION [ARGS]` counted from the start of the program. Actions: `shot NAME` (to `build/shots/<app>/NAME.png`),
+`click X Y`, `key KEYSYM` (`F4` = Menu, `Escape` = Back), `type TEXT`. The program starts fresh for every run on the demo data of `apps/<app>/hildon-run.sh`, so the images are
+reproducible; `build/shots/<app>/contact-sheet.png` shows all of them at once. `COMPARE=dir` (or `--compare dir`) compares each image with `dir/<app>/<name>.png` and prints the number of
+differing pixels, so a changed look (broken frames, a moved button) is noticed. Used for the articles and READMEs, never with real data.
+Quirks of the emulator found on the way: the popup menu (a window of our own) is not closed by `Escape` or by a tap outside, only by choosing an item; the Back button of the bar closes the
+whole application. The example scenario is `apps/mutt-hildon/shots.txt` (list, menu, settings, message, list again; 40 s). Real screenshots of the phone stay `make screenshots`.
