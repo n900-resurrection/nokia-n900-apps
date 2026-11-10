@@ -22,3 +22,6 @@
 [submodule "apps/microb-nss"]
 	path = apps/microb-nss
 	url = https://github.com/n900-resurrection/microb-nss.git
+[submodule "apps/hildonlite"]
+	path = apps/hildonlite
+	url = https://github.com/n900-resurrection/hildonlite.git
