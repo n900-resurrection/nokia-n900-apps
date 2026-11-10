@@ -9,7 +9,14 @@ a obsluhuje signály. Nativní vazby pro Python 3 totiž neexistují:
 
 ctypes stačí na vše, co aplikace potřebuje: signály jsou zpětná volání (`CFUNCTYPE`), časovače `g_timeout_add`. Příklad: [src/python3/hildon/proof.py](../src/python3/hildon/proof.py).
 Cena: nejsou tam třídy, každé volání se píše ručně (typy argumentů a návratové hodnoty, `restype = c_void_p` u konstruktorů widgetů).
-Rozumný další krok je malá vrstva (`hildonlite.py`) s třídami Window, Button, Label, Box, PannableArea, TextView, AppMenu a EntryCompletion.
+Tuto práci dělá malá vrstva (vlastní subrepo [apps/hildonlite](../apps/hildonlite), instalace přes `apt-get install python3-hildonlite` nebo `pip install`, viz jeho README): [hildonlite](../apps/hildonlite/hildonlite/__init__.py), třídy Window, Box (VBox/HBox), Label, Button, Entry, TextView,
+PannableArea, AppMenu a Banner, signály přes `widget.connect("clicked", fn)`, časovače `hl.timeout()`/`hl.idle()`; zpětná volání drží vrstva naživu sama.
+Ukázka: [demo.py](../apps/hildonlite/examples/demo.py) (`make hildon-run APP=hildonlite`, or `make emulator` and the icon *hildonlite demo* in the launcher), ověřeno v emulátoru (okno, tlačítko, pole, posuvná oblast).
+Dále `Entry.set_completion(words)` (EntryCompletion), `ListStore` + `ListView` (HildonTreeView, `selected()`, `activate()`), `Dialog` a hotové `confirm()`/`info()`.
+Příklad se seznamem, doplňováním a dialogy je [demo_list.py](../apps/hildonlite/examples/demo_list.py); s `DEMO_CHECK=1` zároveň ověří API (5 kontrol, bez člověka):
+`workshop -p . exec n900 -- env DEMO_CHECK=1 DEMO_TIMEOUT=40 /project/scripts/hildon-run.sh /project/apps/hildonlite/examples/demo_list.py`.
+Testy: `make hildon-test` (unittest, 18 testů v emulátoru; `apps/hildonlite/tests/test_hildonlite.py`, na telefonu `python3 test_hildonlite.py` jako user).
+Past: s motivem telefonu (`GTK2_RC_FILES`) zůstává výběr a kurzor v HildonTreeView prázdný i po `select_path`, klepnutí řádek jen aktivuje; proto `ListView.selected()` vrací řádek posledního `row-activated`.
 
 ## Spuštění GUI na PC (bez telefonu)
 Princip: ARM Python (3.11 z `make python3`, nebo **Python 2.5 s PyGTK a Hildon z telefonu**) běží pod `qemu-arm` s **těmi samými knihovnami GTK 2.14 a Hildon 2.2**,

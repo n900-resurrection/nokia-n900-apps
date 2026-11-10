@@ -36,7 +36,7 @@ Základ je hotový, viz [DOC/hildon-python3.md](DOC/hildon-python3.md) (hildon-d
 - [ ] Titulková lišta a stavová oblast (stav sítě, baterie, hodiny, oznámení), Menu v titulku místo samostatného tlačítka.
 - [ ] Další D-Bus mocky (osso, MAFW přehrávání se stavem a pozicí, oznámení); ověřit Menu/Back u gPodderu.
 - [ ] Otevření terminálu z aplikací (osso-xterm není v emulátoru: tlačítko „Open Mutt“ v mutt-hildon).
-- [ ] Hildon z Pythonu 3: tenká vrstva nad ctypes (`hildonlite.py`) podle [DOC/hildon-python3.md](DOC/hildon-python3.md); doplnit xvfb/x11vnc/imagemagick do skriptu toolchain.
+- [ ] Hildon z Pythonu 3: vrstva `apps/hildonlite` (subrepo, pip + deb `python3-hildonlite`, 18 testů `make hildon-test`) hotová (Window, Box, Label, Button, Entry, TextView, PannableArea, AppMenu, Banner, demo.py); má i EntryCompletion, ListView, dialogy (demo_list.py s kontrolami); zbývá test na telefonu (ověřit `selected()` po klepnutí na skutečném HildonTreeView) a na ní postavená skutečná aplikace; doplnit xvfb/x11vnc/imagemagick do skriptu toolchain.
 
 ## Aplikace na telefonu
 - [ ] **OpenSSH 10.6p2 na telefonu** (balíček `openssh` je v repu, v qemu 9/9 testů, na telefonu **nikdy nezkoušen**): po souhlasu nainstalovat, nechat běžet starý sshd na portu 22 a nový spustit ručně na 2222 s otevřeným druhým spojením; ověřit, že funguje sandbox `rlimit` na jádře 2.6.28 (jinak `--with-sandbox=no` nebo patch), přihlášení klíčem uživatele `user`, sftp; pak teprve zvážit nahrazení systémového sshd (viz zabezpečení níže) a `PermitRootLogin`.

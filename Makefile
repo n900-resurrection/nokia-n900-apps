@@ -9,7 +9,7 @@ include mk/common.mk
 # ACTION selects another target of the application: make curl ACTION=deb. Descriptions: variables below, or a default.
 APPS := $(sort $(notdir $(patsubst %/,%,$(dir $(wildcard apps/*/Makefile)))))
 ACTION ?= build
-TARGETS := help up down status enter toolchain sysroot hello $(APPS) debs repo updates test hildon-overlay locale-overlay qemu-smoke qemu-test emu-test emu-shots hildon-run emulator push screenshots clean distclean
+TARGETS := help up down status enter toolchain sysroot hello $(APPS) debs repo updates test hildon-overlay locale-overlay qemu-smoke qemu-test emu-test emu-shots hildon-test hildon-run emulator push screenshots clean distclean
 .PHONY: $(TARGETS)
 
 define APP_RULE
@@ -97,6 +97,10 @@ emu-test:
 EMU-SHOTS := Take the screenshots of an application in the emulated desktop from the timeline apps/<app>/shots.txt into build/shots/<app>/ (APP="mutt-hildon"; COMPARE=dir compares with older images)
 emu-shots:
 	$(INSIDE) /project/scripts/emu-shots.sh $(if $(COMPARE),--compare $(COMPARE)) $(if $(APP),$(APP),$(notdir $(patsubst %/,%,$(dir $(wildcard apps/*/shots.txt)))))
+
+HILDON-TEST := Run the unittest suite of hildonlite (apps/hildonlite/tests/test_hildonlite.py) in the emulator, no phone (the expected tracebacks of the error tests are part of the output)
+hildon-test:
+	$(INSIDE) /project/scripts/hildon-run.sh /project/apps/hildonlite/tests/test_hildonlite.py
 
 LOCALE-OVERLAY := Copy the locale archive (UTF-8 locales, glibc 2.5) from the phone into ./sysroot (once; tmux and other programs need it under qemu-user)
 locale-overlay:
