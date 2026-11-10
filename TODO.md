@@ -36,6 +36,7 @@ Základ je hotový, viz [DOC/hildon-python3.md](DOC/hildon-python3.md) (hildon-d
 - [ ] Titulková lišta a stavová oblast (stav sítě, baterie, hodiny, oznámení), Menu v titulku místo samostatného tlačítka.
 - [ ] Další D-Bus mocky (osso, MAFW přehrávání se stavem a pozicí, oznámení); ověřit Menu/Back u gPodderu.
 - [ ] Otevření terminálu z aplikací (osso-xterm není v emulátoru: tlačítko „Open Mutt“ v mutt-hildon).
+- [ ] Selfie (`apps/selfie`, Python 3 + hildonlite + GStreamer): živý náhled přední/zadní kamery, focení tlačítkem na displeji a půlstiskem HW spouště (plný stisk spouští stock Kameru; spoušť je GPIO přepínač v `/sys/devices/platform/gpio-switch/cam_focus|cam_launch`). Snímky z `v4l2src` jsou tmavé a mají barevný nádech (chybí automatická expozice a vyvážení bílé); další krok: `camerabin` (jádro stock Kamery, `GstPhotography`), pak UI podle stock Kamery (sloupec ikon vpravo, rámeček, nastavení WB/expozice/ISO/rozlišení).
 - [ ] Hildon z Pythonu 3: vrstva `apps/hildonlite` (subrepo, pip + deb `python3-hildonlite`, 18 testů `make hildon-test`) hotová (Window, Box, Label, Button, Entry, TextView, PannableArea, AppMenu, Banner, demo.py); má i EntryCompletion, ListView, dialogy (demo_list.py s kontrolami); zbývá test na telefonu (ověřit `selected()` po klepnutí na skutečném HildonTreeView) a na ní postavená skutečná aplikace; doplnit xvfb/x11vnc/imagemagick do skriptu toolchain.
 
 ## Aplikace na telefonu

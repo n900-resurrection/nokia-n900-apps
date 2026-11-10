@@ -1,0 +1,167 @@
+#!/usr/bin/python3
+"""Selfie: live preview of the N900 cameras (front by default) and a photo button. Python 3 + hildonlite + GStreamer 0.10 through ctypes.
+Test application for the cameras: /dev/video1 = front (VGA, vs6555), /dev/video0 = back (et8ek8).
+Environment: SELFIE_SRC / SELFIE_SINK replace the GStreamer source / sink (the emulator has no camera: SELFIE_SRC=videotestsrc SELFIE_SINK=ximagesink).
+The hardware camera button (half press, the full press belongs to the stock Camera) takes a photo as well.
+Photos: ~/MyDocs/DCIM/selfie-YYYYMMDD-HHMMSS.jpg."""
+import ctypes, os, subprocess, sys, time
+sys.path.insert(0, "/opt/python3/lib/python3.11/site-packages")      # hildonlite (package python3-hildonlite)
+try:
+    import hildonlite as hl
+except ImportError:                                                   # development tree: apps/hildonlite next to this app
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "hildonlite"))
+    import hildonlite as hl
+
+CAMERAS = [("Front camera", "/dev/video1"), ("Back camera", "/dev/video0")]
+SRC = os.environ.get("SELFIE_SRC")
+SINK = os.environ.get("SELFIE_SINK", "xvimagesink")
+ICONS = os.path.join(os.path.dirname(os.path.realpath(__file__)), "icons")          # /opt/selfie/icons, in the source tree apps/selfie/icons
+PHOTO_DIR = os.path.expanduser("~/MyDocs/DCIM")
+NULL, READY, PLAYING = 1, 2, 4
+# The hardware camera button is not an input device: the kernel exposes it as GPIO switches (cam_focus = half press, cam_launch = full press,
+# cam_shutter = lens cover). The state files are readable by every user and say "active" / "inactive".
+SWITCHES = "/sys/devices/platform/gpio-switch"
+# The full press (cam_launch) starts the stock Camera application (the system reacts to it before us), so the HALF press (cam_focus) is the shutter here.
+# SELFIE_BUTTON=cam_launch / none changes it (none: only the on-screen button).
+BUTTON = os.environ.get("SELFIE_BUTTON", "cam_focus")
+
+
+def switch_active(name):
+    try:
+        with open("%s/%s/state" % (SWITCHES, name)) as f:
+            return f.read().strip() == "active"
+    except OSError:
+        return False            # no such switch (emulator): the button never fires
+
+
+class Gst:
+    """The few GStreamer 0.10 calls the application needs (parse_launch, X overlay, state changes)."""
+
+    def __init__(self):
+        self.gst = ctypes.CDLL("libgstreamer-0.10.so.0")
+        self.gif = ctypes.CDLL("libgstinterfaces-0.10.so.0")
+        self.gst.gst_parse_launch.restype = ctypes.c_void_p
+        self.gst.gst_parse_launch.argtypes = [ctypes.c_char_p, ctypes.c_void_p]
+        self.gst.gst_bin_get_by_name.restype = ctypes.c_void_p
+        self.gst.gst_bin_get_by_name.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+        self.gst.gst_element_set_state.argtypes = [ctypes.c_void_p, ctypes.c_int]
+        self.gst.gst_element_get_state.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_uint64]
+        self.gst.gst_object_unref.argtypes = [ctypes.c_void_p]
+        self.gif.gst_x_overlay_set_xwindow_id.argtypes = [ctypes.c_void_p, ctypes.c_ulong]
+        self.gst.gst_init(None, None)
+        self.pipe = None
+
+    def start(self, description, xid):
+        """Build and start a pipeline whose element named "sink" draws into the X window xid. Returns an error text or None."""
+        self.stop()
+        err = ctypes.c_void_p()
+        pipe = self.gst.gst_parse_launch(description.encode(), ctypes.byref(err))
+        if not pipe:
+            return "pipeline: cannot be created"
+        sink = self.gst.gst_bin_get_by_name(pipe, b"sink")
+        if sink:
+            self.gif.gst_x_overlay_set_xwindow_id(sink, xid)
+            self.gst.gst_object_unref(sink)
+        self.gst.gst_element_set_state(pipe, PLAYING)
+        state = ctypes.c_int()
+        ret = self.gst.gst_element_get_state(pipe, ctypes.byref(state), None, 3 * 10**9)    # waits up to 3 s for the camera
+        if ret == 0:                                                                          # GST_STATE_CHANGE_FAILURE
+            self.gst.gst_element_set_state(pipe, NULL)
+            self.gst.gst_object_unref(pipe)
+            return "the camera does not start (is another program using it?)"
+        self.pipe = pipe
+        return None
+
+    def stop(self):
+        if self.pipe:
+            self.gst.gst_element_set_state(self.pipe, NULL)
+            self.gst.gst_object_unref(self.pipe)
+            self.pipe = None
+
+
+def preview_pipeline(device):
+    src = SRC or "v4l2src device=%s" % device
+    return "%s ! ffmpegcolorspace ! %s name=sink" % (src, SINK)
+
+
+def take_photo(device):
+    """One frame to a JPEG file with a separate gst-launch (the preview must be stopped: the camera has one reader). Returns (path, error)."""
+    os.makedirs(PHOTO_DIR, exist_ok=True)
+    path = os.path.join(PHOTO_DIR, time.strftime("selfie-%Y%m%d-%H%M%S.jpg"))
+    src = SRC or "v4l2src device=%s" % device
+    cmd = ["gst-launch-0.10", "-q"] + ("%s num-buffers=3 ! ffmpegcolorspace ! jpegenc ! filesink location=%s" % (src, path)).split()
+    r = subprocess.run(cmd, capture_output=True, timeout=30)
+    if r.returncode != 0 or not os.path.exists(path) or os.path.getsize(path) == 0:
+        return None, (r.stderr.decode("utf-8", "replace").strip().splitlines() or ["no picture"])[-1]
+    return path, None
+
+
+def main():
+    if not hl.init():
+        sys.exit("no X display")
+    try:
+        gst = Gst()
+    except OSError:                                              # no GStreamer (the emulator): the window still opens
+        gst = None
+    state = {"camera": 0}
+    win = hl.Window("Selfie")
+    row = hl.HBox(spacing=8)
+    view = hl.DrawingArea(640, 420)
+    row.add(view, expand=True)
+    side = hl.VBox(spacing=8)
+    status = hl.Label("", wrap=True)
+
+    def device():
+        return CAMERAS[state["camera"]][1]
+
+    def start_preview():
+        if gst is None:
+            status.set_text("no GStreamer")
+            return "no GStreamer"
+        err = gst.start(preview_pipeline(device()), view.xid())
+        status.set_text(err or CAMERAS[state["camera"]][0])
+        return err
+
+    def photo(_b):
+        status.set_text("Saving...")
+        hl.flush()                          # show the text before the blocking capture (the back camera takes a few seconds: 5 Mpx JPEG)
+        if gst:
+            gst.stop()
+        path, err = take_photo(device())
+        hl.Banner(win, ("Saved: " + os.path.basename(path)) if path else "Photo failed: " + err)
+        start_preview()
+
+    def switch(_b):
+        state["camera"] = (state["camera"] + 1) % len(CAMERAS)
+        start_preview()
+
+    # the camera button: the half press takes a photo; polled 10 times a second, only the edge inactive -> active counts
+    button = {"was": switch_active(BUTTON)}
+
+    def poll_button():
+        now = switch_active(BUTTON)
+        if now and not button["was"]:
+            photo(None)
+            now = switch_active(BUTTON)          # the press may have been released (or held) during the capture
+        button["was"] = now
+        return True
+
+    hl.timeout(100, poll_button)
+    icon = lambda n: os.path.join(ICONS, "ui-%s.png" % n)
+    side.add(hl.ImageButton(icon("shutter"), photo, width=84, label="Photo"))          # also: half press of the camera button
+    side.add(hl.ImageButton(icon("switch"), switch, width=84, label="Cam"))
+    side.add(hl.ImageButton(icon("close"), lambda b: hl.quit(), width=84, label="X"))
+    side.add(status, expand=True)
+    row.add(side)
+    win.add(row)
+    win.show()
+    hl.timeout(300, lambda: (start_preview(), False)[1])        # after the window is mapped
+    if os.environ.get("SELFIE_TIMEOUT"):
+        hl.timeout(int(os.environ["SELFIE_TIMEOUT"]) * 1000, lambda: hl.quit() or False)
+    hl.main()
+    if gst:
+        gst.stop()
+
+
+if __name__ == "__main__":
+    main()
