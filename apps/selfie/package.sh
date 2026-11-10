@@ -6,7 +6,7 @@ PROJ=/project
 . "$PROJ/scripts/debpack.sh"
 
 PKG=selfie
-VERSION="${VERSION:-0.5}"
+VERSION="${VERSION:-0.6}"
 STAGE="$PROJ/build/deb/stage-$PKG"
 HERE="$PROJ/apps/selfie"
 
@@ -31,7 +31,7 @@ X-Osso-Type=application/x-executable
 EOT
 
 SECTION=user/multimedia
-DEPENDS="python3.11, python3-hildonlite (>= 0.2.2), gstreamer0.10-plugins-camera"
+DEPENDS="python3.11, python3-hildonlite (>= 0.2.2), gstreamer0.10-plugins-camera, libomap3cam"
 DISPLAY_NAME="Selfie"
 SHORT_DESC="Live preview of the front camera, a photo button and the camera button (test application)"
 LONG_DESC="Shows what the camera sees (front by default, a button switches to the back one) and saves a JPEG to ~/MyDocs/DCIM. Written in Python 3 with hildonlite and GStreamer through ctypes, it is mainly a test of the cameras. The camera has one reader: close the stock Camera application first."
