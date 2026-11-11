@@ -18,7 +18,7 @@ sh ./bootstrap > "$OBJ/bootstrap.log" 2>&1 || { tail -20 "$OBJ/bootstrap.log"; e
 cd "$OBJ"
 "$SRCDIR/libsmb2-libsmb2-$LIBVERSION/configure" --host=arm-linux-gnueabi --build="$(gcc -dumpmachine)" --prefix="$PREFIX" \
     --disable-shared --enable-static --without-libkrb5 --disable-examples --disable-werror \
-    CC="$PROJ/scripts/maemo-gcc" CFLAGS="-Os -include $PROJ/scripts/maemo-compat.h -include $PROJ/apps/smb/endian-compat.h" > configure.log 2>&1 || { tail -30 configure.log; exit 1; }
+    CC="$PROJ/scripts/maemo-gcc" CFLAGS="-Os -include $PROJ/scripts/maemo-compat.h -include $PROJ/scripts/maemo-endian.h" > configure.log 2>&1 || { tail -30 configure.log; exit 1; }
 make -j"$(nproc)" > make.log 2>&1 || { grep -E 'error' make.log | head -20; tail -5 make.log; exit 1; }
 make install > install.log 2>&1
 ls -l "$PREFIX/lib"

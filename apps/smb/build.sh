@@ -8,7 +8,7 @@ PREFIX="$PROJ/build/deps/libsmb2-$LIBVERSION"
 OUT="$PROJ/build/out/smb-$VERSION"
 [ -f "$PREFIX/lib/libsmb2.a" ] || "$PROJ/apps/smb/build-lib.sh"
 rm -rf "$OUT"; mkdir -p "$OUT"
-"$PROJ/scripts/maemo-gcc" -Os -Wall -include "$PROJ/scripts/maemo-compat.h" -include "$PROJ/apps/smb/endian-compat.h" \
+"$PROJ/scripts/maemo-gcc" -Os -Wall -include "$PROJ/scripts/maemo-compat.h" -include "$PROJ/scripts/maemo-endian.h" \
     -I"$PREFIX/include" -I"$PREFIX/include/smb2" -o "$OUT/smb.unstripped" "$PROJ/apps/smb/smb.c" "$PREFIX/lib/libsmb2.a"
 arm-linux-gnueabi-strip -o "$OUT/smb" "$OUT/smb.unstripped"; rm "$OUT/smb.unstripped"
 echo "== Check"
