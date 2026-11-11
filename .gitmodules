@@ -25,3 +25,6 @@
 [submodule "apps/hildonlite"]
 	path = apps/hildonlite
 	url = https://github.com/n900-resurrection/hildonlite.git
+[submodule "apps/selfie"]
+	path = apps/selfie
+	url = https://github.com/n900-resurrection/selfie.git
