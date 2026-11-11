@@ -17,7 +17,7 @@ smb -u alice mv smb://nas/share/old.txt new/name.txt     # second argument is a 
 - URL: `smb://[domain;][user@]host[:port]/share/path`, options after `?`: `vers=3`, `seal` (SMB 3 encryption), `sign`, `sec=ntlmssp`. Flags `-v 2|3`, `-u USER`, `-d DOMAIN`, `-q` (no progress) go before the command.
 - Password: `$SMB_PASSWORD`, or `$NTLM_USER_FILE` (libsmb2: lines `domain:user:password`), otherwise it is asked on the terminal without echo. Never put it into the URL or arguments. Without a user the connection is a guest one.
 - Authentication is NTLMSSP (NTLMv2). Servers that require Kerberos only are not supported.
-- Installs to `/opt/smb`, link `/usr/bin/smb`. Source of the client: [smb.c](smb.c); the library is built by [build-lib.sh](build-lib.sh) (with [endian-compat.h](endian-compat.h): glibc 2.5 has no `htobe32` and friends).
+- Installs to `/opt/smb`, link `/usr/bin/smb`. Source of the client: [smb.c](smb.c); the library is built by [build-lib.sh](build-lib.sh) (with [maemo-endian.h](../../scripts/maemo-endian.h): glibc 2.5 has no `htobe32` and friends).
 
 ## Verified
 
