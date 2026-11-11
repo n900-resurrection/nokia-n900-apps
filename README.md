@@ -25,12 +25,11 @@ Související repozitáře:
 
 | Cíl | Varianta | Stav | Poznámka |
 |---|---|---|---|
-| Maemo Leste | VM (VirtualBox / QEMU amd64) | použitelné | Nejjednodušší start. Wiki stránka je „stub“, nabízené obrazy mohou být staré. |
-| Maemo Leste | armhf chroot + `qemu-user-static` | použitelné | Doporučeno pro buildy balíčků pro N900. |
-| Maemo Leste | reálný N900 z SD karty | podporováno | Kernel 6.18 LTS, 3D akcelerace, telefon, Wi-Fi. |
-| Maemo 5 (Fremantle) | Maemo 5 SDK + Scratchbox + QEMU | historické | 32bit, nefunguje spolehlivě na 64bit hostiteli. Potřeba Nokia balíčky. |
-| Maemo 5 | Reálné zařízení | funguje | Pro ověření nativních Maemo 5 aplikací. |
-| Build prostředí | Ubuntu Workshop (LXD) | nové (květen 2026) | Viz sekce 3. |
+| Maemo Leste | VM, armhf chroot, reálný N900 z SD | nepoužíváme | Jiné ABI i init, pro Maemo 5 k ničemu; zkoušeno na začátku (viz 4.3). |
+| Maemo 5 (Fremantle) | Maemo 5 SDK + Scratchbox + QEMU | nepoužíváme | 32bit, nefunguje spolehlivě na 64bit hostiteli, proprietární balíčky. |
+| Maemo 5 | Vlastní emulátor GUI (qemu-user + Xvfb + sysroot z telefonu) | **používáme** | Bez hardwaru, viz 4.1. |
+| Maemo 5 | Reálné zařízení | **používáme** | Hlavní testovací cíl, viz 4.2. |
+| Build prostředí | Ubuntu Workshop (LXD) | **používáme** | Cross toolchain armel + sysroot, viz sekce 3 a 5.1. |
 
 ## 3. Ubuntu Workshop
 
@@ -41,22 +40,23 @@ Nástroj Canonicalu vydaný koncem května 2026 pro izolovaná a reprodukovateln
 - Prostředí se skládá z **SDK** (jazyky, frameworky, nástroje), které se berou ze SDK Store nebo z vlastního repozitáře. Vlastní SDK jde vytvořit (sesterský projekt SDKcraft).
 - Prostředí může dostat přístup k prostředkům hostitele (GUI, SSH agent) přes rozhraní podobná snapd.
 
-### Instalace
+### Instalace a použití
 
 ```bash
-sudo snap install --channel=6/stable lxd      # vyžaduje LXD >= 6.8
-sudo snap install --classic workshop
-workshop launch <nazev>                        # dle článků; přesnou syntaxi ověřit v dokumentaci
+sudo snap install --channel=6/stable lxd      # vyžaduje LXD >= 6.8; jednou `lxd init` (výchozí hodnoty)
+sudo snap install --classic workshop          # ověřeno s verzí 0.9.9
+make up                                       # = workshop launch n900 podle .workshop/n900.yaml
+make toolchain && make sysroot                # akce z YAML: cross toolchain a sysroot z Fremantle SDK
+workshop -p . exec n900 -- <příkaz>           # jednorázový příkaz; make enter = interaktivní shell
 ```
 
-Oficiální dokumentace: <https://ubuntu.com/workshop/docs/> (sekce *Workshop configuration*, *Using workshops*, *SDK development*, *Reference*).
-
-**[ověřit]** Přesný formát definičního souboru a CLI jsem z dostupných zdrojů nezískal, proto zde není vymyšlený příklad YAML.
+Prostředí je definované v [.workshop/n900.yaml](.workshop/n900.yaml): `name`, `base: ubuntu@24.04` a pojmenované `actions` (shellové příkazy spouštěné `workshop run n900 -- <akce>`; `toolchain`, `sysroot`, `cpp-hello`, `pylibs`). Projekt je v kontejneru jako `/project`, uživatel `workshop` má `sudo` bez hesla.
+Příkazy, formát souboru a zjištěné zvláštnosti (výstup bez TTY, Docker na hostiteli): [DOC/workshop-crosscompile.md](DOC/workshop-crosscompile.md). Oficiální dokumentace: <https://ubuntu.com/workshop/docs/>.
 
 ### Uplatnění pro N900
 
-- Čisté prostředí s armhf cross-toolchainem, Pythonem a OpenSSL pro [Python_3.11_on_N900](https://github.com/elPytel/Python_3.11_on_N900).
-- Uvnitř kontejneru lze použít debootstrap + qemu-user-static (viz sekce 5). **[ověřit]** zda to v neprivilegovaném kontejneru funguje (binfmt_misc je vlastnost jádra hostitele).
+- Čisté prostředí s armel cross-toolchainem (GCC 13.3) a sysrootem z Fremantle SDK, v něm se staví všechny balíčky v `apps/` včetně Pythonu 3.11 a OpenSSL 3.
+- ARM binárky se zkouší přímo pod `qemu-arm` (qemu-user) proti sysrootu, bez debootstrapu a `binfmt_misc`; stejně běží emulátor GUI (sekce 4.1) a `make qemu-test`.
 - Izolace experimentů a AI agentů od hostitele.
 
 Srovnání: Docker/Dev Containers = lehké jednoprocesové kontejnery. Nix shell = reprodukovatelnost přes balíčky na hostiteli. Workshop = plnohodnotný systémový kontejner s deklarativním YAML.
@@ -186,6 +186,8 @@ sudo apt install crossbuild-essential-armhf debootstrap qemu-user-static binfmt-
 - [apt-transport-curl 0.1](apps/apt-transport-curl/apt-transport-curl.md): apt přes HTTPS s TLS 1.2/1.3 (metoda `https` přes curl 8), nutné pro repozitář na GitHub Pages; [DOC/apt-repo.md](DOC/apt-repo.md): `make repo`.
 - [sfeed 2.4](apps/sfeed/sfeed.md): RSS/Atom a podcasty v terminálu (stahování přes curl, TLS 1.3).
 - [jq 1.8](apps/jq/jq.md) a [Wget 1.25 (TLS 1.3)](apps/wget/wget.md): JSON na příkazové řádce a `wget`, který umí moderní HTTPS.
+- [xml-tools 2.15](apps/xml-tools/xml-tools.md): `xmllint` a `xsltproc` (libxml2 + libxslt, staticky); telefon má jen starou knihovnu bez nástrojů.
+- [smb 0.1](apps/smb/smb.md): klient SMB2/SMB3 (`ls`, `get`, `put`, `mv` ...) nad libsmb2, staticky; bez připojení jako disk (jádro nemá `cifs`).
 - [hildonlite 0.3](apps/hildonlite/README.md) (subrepo, balíček `python3-hildonlite`, i pip): GUI pro Python 3 (GTK2/Hildon přes ctypes), okna, seznamy, dialogy, `on_key`; [rozbor](DOC/hildon-python3.md). Testy: `make hildon-test`.
 - [selfie 0.6](apps/selfie/README.md) (subrepo): náhled přední/zadní kamery a focení (GStreamer `camerabin` + `libomap3cam`, správné barvy), půlstisk HW tlačítka kamery jako spoušť.
 - [Bluetooth klávesnice](DOC/bluetooth-keyboard.md): párování, rozdělení zařízení přes uinput, české rozložení v uživatelském prostoru, opakovatelný postup ve [scripts/bt-keyboard/](scripts/bt-keyboard/bt-keyboard.sh).
