@@ -28,3 +28,6 @@
 [submodule "apps/selfie"]
 	path = apps/selfie
 	url = https://github.com/n900-resurrection/selfie.git
+[submodule "apps/bt-kbmouse"]
+	path = apps/bt-kbmouse
+	url = https://github.com/n900-resurrection/bt-kbmouse.git
