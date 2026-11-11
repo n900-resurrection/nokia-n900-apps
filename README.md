@@ -118,7 +118,7 @@ sudo apt install crossbuild-essential-armhf debootstrap qemu-user-static binfmt-
 
 - Architektura **armel**, **glibc 2.5**, jádro 2.6.28-omap1, GTK2/Hildon, 256 MB RAM, Cortex-A8 s NEON; systémový glib 2.20, OpenSSL 0.9.8n, TLS jen 1.0.
 - Nový upstream kód proto často potřebuje: novější kompilátor (máme GCC 13 z cross toolchainu), statické nebo vlastní knihovny v `/opt`, záplaty pro chybějící syscally a funkce ve staré glibc (`getrandom`, `memfd`, novější `stat`) a úpravy pro jádro 2.6.28 (Go runtime, `rlimit` sandbox u OpenSSH).
-- Novější GLib 2.66 je k dispozici jako statická závislost ([apps/glib2](apps/glib2/glib2.md), ověřeno na telefonu); irssi a mc už na ní běží, WeeChat a profanity na ni mohou navázat.
+- Novější GLib 2.66 je k dispozici jako statická závislost ([apps/glib2](apps/glib2/glib2.md), ověřeno na telefonu); irssi, mc a profanity už na ní běží; WeeChat GLib nepotřebuje.
 
 ### Co se osvědčilo
 
@@ -182,6 +182,8 @@ sudo apt install crossbuild-essential-armhf debootstrap qemu-user-static binfmt-
 - [GLib 2.66](apps/glib2/glib2.md): statická knihovna (glib, gobject, gio) jako závislost, systémová GLib 2.20 zůstává.
 - [irssi 1.4.5](apps/irssi/irssi.md): IRC klient v terminálu (TLS 1.3, statická GLib 2.66, OpenSSL 3, ncursesw); ověřeno připojením na Libera.Chat.
 - [Midnight Commander 4.8.33](apps/mc/mc.md): správce souborů ve dvou panelech (`mc`, `mcedit`, `mcview`), statická GLib 2.66 a ncursesw; ověřeno spuštěním na telefonu.
+- [WeeChat 4.10](apps/weechat/weechat.md): chat klient (IRC) v terminálu, TLS přes statické GnuTLS ([apps/gnutls](apps/gnutls/gnutls.md)); ověřeno připojením na Libera.Chat.
+- [Profanity 0.19](apps/profanity/profanity.md): XMPP (Jabber) klient v terminálu (statická GLib 2.66, libstrophe s OpenSSL 3, SQLite); bez OMEMO; zatím ověřeno jen spuštění.
 - [Mutt 2.4](apps/mutt/mutt.md) a [msmtp 1.8](apps/msmtp/msmtp.md): terminálový e-mail s TLS 1.3 (čtení IMAP, odesílání přes msmtp).
 - [Python 3.11](apps/python3/python3.md): CPython pro N900 s ssl (OpenSSL 3.5, TLS 1.3), sqlite3, curses; [rozbor původního repozitáře](DOC/python3-repo-review.md).
 - [camel-lite-ssl3](apps/camel-lite/camel-lite.md): knihovna Modestu s OpenSSL 3 (TLS 1.2/1.3 v systémovém e-mailu).
