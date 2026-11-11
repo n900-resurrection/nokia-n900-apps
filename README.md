@@ -1,6 +1,6 @@
 # Vývoj a portování aplikací pro Nokia N900
 
-Pracovní poznámky k návratu k vývoji pro N900 (2 kusy HW). Stav k 2026-11-03.
+Pracovní poznámky k návratu k vývoji pro N900 (2 kusy HW). Stav k 2026-11-11.
 Související repozitáře:
 
 - [nokia-n900-notes](https://github.com/elPytel/nokia-n900-notes) – odkazy a poznámky
@@ -61,129 +61,85 @@ Oficiální dokumentace: <https://ubuntu.com/workshop/docs/> (sekce *Workshop co
 
 Srovnání: Docker/Dev Containers = lehké jednoprocesové kontejnery. Nix shell = reprodukovatelnost přes balíčky na hostiteli. Workshop = plnohodnotný systémový kontejner s deklarativním YAML.
 
-## 4. Virtualizace Maemo
+## 4. Virtualizace a emulace
 
-### 4.1 Maemo Leste ve VM (amd64)
+Primární cíl je skutečný Maemo 5, takže tady je jen to, co se osvědčilo, a to, co se zkoušelo a nepoužívá.
 
-Obrazy: <https://maedevu.maemo.org/images/virtual-machines/> (formáty `.vdi.xz`, `.qcow2`, Vagrant).
+### 4.1 Emulátor Fremantle ve Workshopu (používáme)
 
-QEMU (příklad z wiki):
+Oficiální Maemo 5 SDK (Scratchbox + QEMU) se nepoužívá: potřebuje starý 32bit systém a proprietární Nokia balíčky. Místo něj je vlastní emulátor
+nad stejnými knihovnami jako na telefonu ([DOC/hildon-python3.md](DOC/hildon-python3.md)):
 
-```bash
-qemu-system-x86_64 -hda maemo-leste-1.0-amd64.qcow2 -enable-kvm -cpu host -smp cores=2 -m 1024
-```
+- ARM programy (Python 2.5 s PyGTK, Python 3.11, C) běží pod `qemu-arm` proti sysrootu s **GTK 2.14 a Hildon 2.2** a motivem, písmem a ikonami z telefonu, obraz jde na virtuální obrazovku Xvfb 800×480 (VNC).
+- `make hildon-overlay` (jednou) doplní do sysrootu motiv, písma a Python 2.5 z telefonu; `make hildon-run APP=<app>` spustí jednu aplikaci, `make emulator` celou plochu (horní lišta, přepínač úloh, mřížka aplikací); `make screenshots` snímky.
+- D-Bus mocky (osso, MAFW) a testy bez telefonu: `make emu-test`, `make hildon-test`, `make qemu-test`.
+- Omezení: hildon-desktop nejde (clutter + OpenGL ES), žádné widgety plochy, žádný hardware (kamera, Bluetooth, GPIO, modem). To se ověřuje jen na telefonu.
 
-VirtualBox: `xz -d` na `.vdi.xz`, nový stroj „Debian (64-bit)“, 1024 MB RAM, obraz jako disk.
+### 4.2 Reálný N900 (hlavní testovací cíl)
 
-Známé potíže:
+Přístup přes SSH alias `n900` (klíč, root přes `su`), nasazení `make push` / `make install`, automatické testy `make test` ([DOC/testing.md](DOC/testing.md)). Co je na telefonu těsné: kořen na NAND (~60 MB volných, balíčky patří do `/opt`),
+`/tmp` je tmpfs o 1 MB (build `pip` potřebuje `TMPDIR` v domovském adresáři), `MyDocs` je FAT s `noexec`. Další poznámky o zařízení: [DOC/n900.md](DOC/n900.md).
 
-- QEMU/libvirt: s `virtio` diskem se obraz nespustí, pomůže sběrnice **SATA**.
-- VirtualBox: může být nutné vypnout integraci myši a ručně nastavit síť.
+### 4.3 Maemo Leste (nepoužívá se)
 
-VM je amd64, neověří tedy ARM specifika (NEON, výkon, 256 MB RAM, rozlišení 800×480).
+Zkoušeno na začátku, od rozhodnutí 2026-11-03 jen okrajová platforma: jiné ABI (armhf), novější knihovny, jiný init, takže ničemu pro Maemo 5 nepomůže; první boot z SD trval extrémně dlouho a nefunguje Bluetooth, kamera ani A-GPS.
+Pokud by se k němu někdo vrátil: obrazy VM na <https://maedevu.maemo.org/images/virtual-machines/> (QEMU s SATA diskem, ne `virtio`), armhf chroot přes `debootstrap` + `qemu-user-static`, vývojový zdroj `daedalus-devel` (komponenta `n900`), na SD kartě `dd` obrazu a U-Boot, doporučena SDXC U3.
+**[ověřit]** aktuální suite a verze obrazů; poznámky výše pocházejí z wiki a nebyly znovu ověřeny.
 
-### 4.2 Maemo Leste armhf (chroot + qemu-user)
+## 5. Cross-kompilace
 
-Wiki doporučuje: `debootstrap` + `qemu-user-static` + `binfmt-support` (nebo `systemd-nspawn`). Příklady na wiki používají staré sady (Stretch / ascii), **je potřeba doplnit aktuální suite** (Leste je postaven na Devuan, aktuální vývoj `daedalus-devel`). **[ověřit]**
+### 5.1 Maemo 5: armel (používáme)
 
-Vývojový apt zdroj: `daedalus-devel` z maedevu.maemo.org, komponenta `n900` pro cross-build na N900.
+Ověřený postup, který používají všechny aplikace v `apps/`:
 
-### 4.3 Maemo Leste na skutečném N900
+- Workshop `n900` (Ubuntu 24.04, LXD): `make up`, `make toolchain` (`gcc-arm-linux-gnueabi` 13.3, `qemu-user`, nástroje), `make sysroot` ([scripts/fetch_sysroot.py](scripts/fetch_sysroot.py): `-dev` balíčky z Fremantle SDK, glibc 2.5).
+- Překladač: [scripts/maemo-gcc](scripts/maemo-gcc) (`-march=armv7-a -mfpu=neon -mfloat-abi=softfp`, linker gold, `-fgnu89-inline`, `MAEMO_DEPS` pro novější knihovny); výsledek odkazuje nejvýš na `GLIBC_2.4`.
+- Novější knihovny (OpenSSL 3, mbedTLS, zlib, ncurses, libevent) se staví staticky nebo do vlastního prefixu v `/opt`, aby se nerozbil systém. Jazyky: C, Go, Rust (staticky), Python 3.11 ([apps/python3](apps/python3/python3.md)).
+- Binárka odpovídá soft-float ABI (armel); `arm-linux-gnueabihf` na Maemo 5 nepoběží.
 
-- Obraz na microSD (`dd` nebo Etcher), doporučena karta **SDXC U3** (Class 10 U1 je pomalá).
-- Bootloader: U-Boot přes `0xFFFF` (nebo `u-boot-flasher` z existujícího Fremantle). Trvalé flashnutí U-Bootu (`-f`) nahradí kernel Fremantle, nejdřív zajistit možnost obnovy.
-- První boot trvá minimálně 3 minuty, nepoužívat Wi-Fi do druhého bootu, spustit `/etc/expandcard.sh`.
-- Nefunguje: Bluetooth, FM přijímač, A-GPS, kamera, USB OTG. Nepoužívat zram/zswap. Do `/home/user` dát `.nomedia`, aby Tracker nezpomaloval systém.
-- Vlastní obraz: `debos` z repozitáře `leste-cicd`.
+Detaily: [DOC/workshop-crosscompile.md](DOC/workshop-crosscompile.md). Nasazení: `scp` do `/home/user/apps/` nebo `.deb` přes `dpkg -i` / apt repozitář (sekce 5.2).
 
-### 4.4 Maemo 5 (Fremantle) – emulace
+### 5.2 Balíčky a repozitář
 
-- Oficiální cesta: Maemo 5 Final SDK, Scratchbox jako cross prostředí a QEMU emulátor (UI přes Xephyr). Instalace: [Maemo 5 Final SDK Installation](https://wiki.maemo.org/Documentation/Maemo_5_Final_SDK_Installation).
-- Omezení: Scratchbox obvykle nefunguje na 64bit systémech, emulátor potřebuje proprietární Nokia balíčky (EULA) a obraz, jehož dostupnost je nejistá. ARM target pod QEMU nefunguje dobře, na desktopu se používá x86 target.
-- Praktický závěr: Maemo 5 testovat primárně na reálném zařízení. Kandidát pro Workshop: starý 32bit Ubuntu/Debian kontejner se Scratchboxem. **[ověřit]**
-- Nenašel jsem N900 model ve `qemu-system-arm`; obecné armhf VM (`vexpress-a9`) nereprezentují HW N900.
+Každá aplikace má `apps/<app>/Makefile` nad [mk/app.mk](mk/app.mk): `make -C apps/<app> build|deb|push|install|test`. `make debs` postaví všechny `.deb`, `make repo` z nich složí apt repozitář (podmodul
+`n900-repository`, publikovaný na GitHub Pages, ~60 balíčků, přes `apt-transport-curl` s TLS 1.3). Podpis repozitáře a Správce aplikací zatím nejsou hotové, viz [TODO.md](TODO.md).
 
-## 5. Nastavení cross-kompilace (armhf)
-
-### 5.1 Přímý cross-toolchain (Ubuntu 24.04)
-
-```bash
-sudo apt install build-essential crossbuild-essential-armhf \
-  gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
-arm-linux-gnueabihf-gcc --version
-```
-
-Python 3.11 – klíčové volby (z repozitáře Python_3.11_on_N900):
+### 5.3 armhf (jen pro Maemo Leste)
 
 ```bash
-./configure --build="$(./config.guess)" --host=arm-linux-gnueabihf \
-  --prefix="$PWD/python-arm-install" --enable-optimizations --enable-shared \
-  --disable-ipv6 --without-ensurepip --with-build-python=/usr/bin/python3.11 \
-  ac_cv_file__dev_ptmx=no ac_cv_file__dev_ptc=no
-file python-arm-install/bin/python3.11    # očekávat: ELF 32-bit ARM
+sudo apt install crossbuild-essential-armhf debootstrap qemu-user-static binfmt-support
 ```
 
-Pasti:
-
-- Hostitelský Python musí mít stejnou verzi jako cílový (3.11).
-- Modul `ssl` potřebuje OpenSSL >= 1.1.1 pro armhf (`compile_OpenSSL.sh` je zatím nedokončený).
-- Bez `--disable-ipv6` configure padá na `getaddrinfo()`.
-- Binárka musí odpovídat glibc na cíli (N900 Maemo 5 má starou glibc, **[ověřit]** kompatibilitu; Maemo Leste je novější).
-
-### 5.2 Debian multiarch / chroot (doporučeno pro `.deb` balíčky)
-
-```bash
-sudo apt install debootstrap qemu-user-static binfmt-support
-sudo debootstrap --arch=armhf --foreign <suite> ./armhf-root <mirror>
-sudo cp /usr/bin/qemu-arm-static ./armhf-root/usr/bin/
-sudo chroot ./armhf-root /debootstrap/debootstrap --second-stage
-# build balíčku:
-dpkg-buildpackage -aarmhf
-```
-
-`<suite>` a `<mirror>` doplnit podle cílového systému (Devuan / Maemo Leste repo). Výhoda: nativní závislosti, správné knihovny, `.deb` na výstupu.
-
-### 5.3 Nasazení na zařízení
-
-```bash
-scp balicek_armhf.deb user@<ip-n900>:/home/user/MyDocs/
-ssh user@<ip-n900> 'dpkg -i /home/user/MyDocs/balicek_armhf.deb'   # Maemo 5: root přes sudo/gainroot
-```
+`debootstrap --arch=armhf --foreign <suite> ./armhf-root <mirror>` + `qemu-arm-static` + `chroot` a `dpkg-buildpackage -aarmhf`. Pro Maemo 5 se nepoužívá.
 
 ## 5A. Maemo 5: backportování nového software
 
 ### Cílové prostředí (Fremantle)
 
-- Architektura **armel** (soft-float, ne armhf!). Binárky z `arm-linux-gnueabihf` na Maemo 5 nepoběží.
-- **glibc 2.5**, původní kompilátor GCC 4.2.1 (podle poznámek k Maemo 5 SDK; **[ověřit]** přesné verze v SDK repozitáři).
-- Starý toolkit GTK2/Hildon, jádro 2.6.28 (Maemo 5), 256 MB RAM, Cortex-A8 s NEON.
-- Systém je zastaralý, takže nový upstream kód často vyžaduje:
-  - nižší C/C++ standard nebo novější kompilátor staticky/cross (GCC 4.2 je pro moderní kód nepoužitelný),
-  - případně staticky slinkované závislosti nebo vlastní knihovny v `/opt` (aby se nerozbil systém),
-  - záplaty pro chybějící syscalls a funkce ve starší glibc (např. `getrandom`, `memfd`, novější `pthread`/`stat` varianty).
+- Architektura **armel**, **glibc 2.5**, jádro 2.6.28-omap1, GTK2/Hildon, 256 MB RAM, Cortex-A8 s NEON; systémový glib 2.20, OpenSSL 0.9.8n, TLS jen 1.0.
+- Nový upstream kód proto často potřebuje: novější kompilátor (máme GCC 13 z cross toolchainu), statické nebo vlastní knihovny v `/opt`, záplaty pro chybějící syscally a funkce ve staré glibc (`getrandom`, `memfd`, novější `stat`) a úpravy pro jádro 2.6.28 (Go runtime, `rlimit` sandbox u OpenSSH).
+- Co čeká na novější glib: irssi, WeeChat, mc, profanity.
 
-### Možnosti toolchainu
+### Co se osvědčilo
 
 | Varianta | Stav | Komentář |
 |---|---|---|
-| Oficiální Maemo 5 SDK (Scratchbox 1) | historické | Potřebuje starý 32bit hostitel a `mmap_min_address <= 4096`. ARMEL target pod qemu-user má problém se spuštěním UI. Nejvěrnější prostředí, ale nepraktické. |
-| Moderní cross-compiler + sysroot z `-dev` balíčků | dle jednoho projektu funguje | [denjhang/Maemo_N900](https://github.com/denjhang/Maemo_N900): Ubuntu 22.04, `arm-linux-gnueabi` (armel), sysroot z oficiálních `-dev` balíčků a glibc 2.5. Autor uvádí, že binárky běží na skutečném N900. **[ověřit]**, jde o jediný osobní projekt. |
-| Docker / Scratchbox 2 pro Fremantle | nenalezeno | Nenašel jsem ověřený hotový obraz. Vlastní sestavení je kandidát na Workshop SDK. |
-| Build přímo na N900 | možné, pomalé | Pro malé věci. 256 MB RAM a pomalé CPU, nutný swap. |
+| Moderní cross-compiler + sysroot z `-dev` balíčků ve Workshopu | **používáme** | Viz sekce 5.1. Ověřeno na telefonu desítkami balíčků. |
+| Oficiální Maemo 5 SDK (Scratchbox) | nepoužíváme | Starý 32bit host, proprietární balíčky, nepraktické. |
+| Build přímo na N900 | výjimečně | 256 MB RAM, pomalé CPU; hodí se jen na malé věci. |
 
-### Navržený postup pro Workshop prostředí
+### Postup backportu jedné aplikace
 
-1. Základ: Ubuntu 22.04/24.04 kontejner s `gcc-arm-linux-gnueabi` (armel).
-2. Sysroot: stáhnout `-dev` balíčky pro Fremantle z archivu SDK repozitáře (zdroj ověřit, originál `repository.maemo.org` může být nedostupný nebo přesunutý) a rozbalit do `sysroot/`.
-3. Použít `--sysroot=...`, `-march=armv7-a -mfpu=neon -mfloat-abi=softfp` (softfp, protože Maemo 5 je armel). **[ověřit]** přesné flagy proti SDK.
-4. Zkušební cíl: Hello World, potom Hildon/GTK aplikace, potom backport vybraného projektu.
-5. Balení do `.deb` (armel) a instalace na zařízení přes `dpkg -i` nebo `apt` z vlastního repa.
+1. Najít upstream a ověřit závislosti (`make updates` porovná naše verze s nejnovějším vydáním).
+2. `apps/<app>/build.sh` (překlad přes `scripts/maemo-gcc`, závislosti do `build/deps`), případně záplaty v `apps/<app>/`.
+3. `make -C apps/<app> deb` a test v qemu nebo v emulátoru, pak `make push` / `install` na telefon a `make test`.
+4. Dokument `apps/<app>/<app>.md`, položka v [TODO.md](TODO.md) a zařazení do `make repo`.
+5. Aplikace s vlastním životem (hildonlite, selfie, mutt-hildon, signal-bridge…) jsou samostatné submoduly.
 
-### Kde se hledat repozitáře a komunitu
+### Komunita a zdroje balíčků
 
-- Extras-devel (`deb http://repository.maemo.org/extras-devel/ fremantle free non-free`) pro vývojové balíčky. Dostupnost zrcadel **[ověřit]**.
-- Community SSU (CSSU) je komunitní aktualizace Maemo 5 (oznámena 2011). Doporučuji mít na zařízeních nainstalovaný, jelikož běžní vývojáři cílí na něj. **[ověřit]**
-- Fórum talk.maemo.org (Maemo 5 sekce), pro zjištění, co už je portované.
+- Originál `repository.maemo.org` je mrtvý; žijí `maemo.plan9.de` (snapshot 2017, včetně SDK) a `n900.h4ck1ng.me`, viz [DOC/mirror.md](DOC/mirror.md).
+- Doporučeno mít na zařízeních CSSU (komunitní aktualizace Maemo 5) **[ověřit]**; fórum talk.maemo.org (sekce Maemo 5), r/N900.
 
 ### Co je hotové a co zbývá
 
@@ -199,6 +155,7 @@ ssh user@<ip-n900> 'dpkg -i /home/user/MyDocs/balicek_armhf.deb'   # Maemo 5: ro
 - Každá aplikace je v `apps/<app>/` s vlastním `Makefile` (`build`, `deb`, `push`, `install`…), příklad:
   [apps/wordgrinder](apps/wordgrinder/README.md). Společná část Makefile je v [mk/common.mk](mk/common.mk).
 - Přehled příkazů: `make` (kořen) a `make -C apps/wordgrinder`.
+- Část aplikací je v samostatných repozitářích jako git submoduly (`hildonlite`, `selfie`, `mutt-hildon`, `signal-bridge`, `n900-repository` a další, viz `.gitmodules`). Klonuj s `git clone --recursive` nebo následně `git submodule update --init`.
 
 ### Cross-kompilace ve Workshopu
 
@@ -229,6 +186,9 @@ ssh user@<ip-n900> 'dpkg -i /home/user/MyDocs/balicek_armhf.deb'   # Maemo 5: ro
 - [apt-transport-curl 0.1](apps/apt-transport-curl/apt-transport-curl.md): apt přes HTTPS s TLS 1.2/1.3 (metoda `https` přes curl 8), nutné pro repozitář na GitHub Pages; [DOC/apt-repo.md](DOC/apt-repo.md): `make repo`.
 - [sfeed 2.4](apps/sfeed/sfeed.md): RSS/Atom a podcasty v terminálu (stahování přes curl, TLS 1.3).
 - [jq 1.8](apps/jq/jq.md) a [Wget 1.25 (TLS 1.3)](apps/wget/wget.md): JSON na příkazové řádce a `wget`, který umí moderní HTTPS.
+- [hildonlite 0.3](apps/hildonlite/README.md) (subrepo, balíček `python3-hildonlite`, i pip): GUI pro Python 3 (GTK2/Hildon přes ctypes), okna, seznamy, dialogy, `on_key`; [rozbor](DOC/hildon-python3.md). Testy: `make hildon-test`.
+- [selfie 0.6](apps/selfie/README.md) (subrepo): náhled přední/zadní kamery a focení (GStreamer `camerabin` + `libomap3cam`, správné barvy), půlstisk HW tlačítka kamery jako spoušť.
+- [Bluetooth klávesnice](DOC/bluetooth-keyboard.md): párování, rozdělení zařízení přes uinput, české rozložení v uživatelském prostoru, opakovatelný postup ve [scripts/bt-keyboard/](scripts/bt-keyboard/bt-keyboard.sh).
 - [Testy na telefonu](DOC/testing.md): `make test`.
 - [E-mail Centrum](DOC/email-centrum.md): nastavení serverů (IMAP/SMTP), curl a Modest, bez hesla.
 - Plány: [roadmapa](DOC/roadmap.md) (TLS, e-mail, feedy, audio, Audiobookshelf), [messengery](DOC/messengers.md).
@@ -237,25 +197,33 @@ ssh user@<ip-n900> 'dpkg -i /home/user/MyDocs/balicek_armhf.deb'   # Maemo 5: ro
 
 Vhodné jsou malé aplikace v C/C++ s minimem závislostí (terminálové nástroje, textové editory, malé hry, SDL). Náročné jsou věci s Rust/Go/moderním C++ nebo s novým Qt/GTK, protože ty cílí na mnohem novější knihovny.
 
-## 6. Doporučený postup (návrh)
+## 6. Postup (jak to dnes děláme)
 
-1. Spustit Maemo Leste amd64 VM a seznámit se s prostředím (Hildon, apt, `daedalus-devel`).
-2. Postavit armhf chroot a vybudovat testovací balíček (hello world `.deb`).
-3. Přenést stejný build do Workshop prostředí (YAML ve verzování).
-4. Dokončit `compile_OpenSSL.sh`, doplnit chybějící `package_python.sh` a otestovat Python `.deb` na reálném N900.
-5. Teprve potom portovat vlastní aplikace.
+1. `make up && make toolchain && make sysroot`: Workshop s toolchainem a sysrootem (jednou).
+2. Nová aplikace: `apps/<app>/` s `Makefile`, `build.sh`, `package.sh`; `make -C apps/<app> deb`.
+3. Zkouška bez telefonu: `make hildon-run APP=<app>` (GUI), `make qemu-test` / `make emu-test`, `make hildon-test`.
+4. Zkouška na telefonu: `make -C apps/<app> install` a `make -C apps/<app> test` (SSH alias `n900`); zásahy do systému jen se souhlasem.
+5. Publikace: `make repo` (v hlavním repu) složí `n900-repository/`, nové verze se přidávají do `pool/`; push repozitáře `n900-repository`, podrepozitářů a nakonec hlavního repa.
+6. Poznatky: dokument v `DOC/` (nové psát anglicky), úkoly v [TODO.md](TODO.md), případně blog.
 
 ## 7. Otevřené otázky
 
-- Rozhodnuto: primární cíl je Maemo 5 (Fremantle), armel, glibc 2.5.
-- Které aplikace backportovat jako první?
-- Kde je dnes dostupné zrcadlo Fremantle SDK a `-dev` balíčků?
-- Instalovat CSSU na obě zařízení?
-- Funguje binfmt/qemu-user uvnitř neprivilegovaného Workshop kontejneru?
-- Aktuální obrazy VM na maedevu.maemo.org a jejich verze.
-- Aktuální suite a mirror pro armhf chroot Maemo Leste.
+Vyřešeno:
 
-## 8. Zdroje
+- Primární cíl je Maemo 5 (armel, glibc 2.5); Leste jen okrajově.
+- Zrcadlo Fremantle SDK a `-dev` balíčků: `maemo.plan9.de` a `n900.h4ck1ng.me` ([DOC/mirror.md](DOC/mirror.md)).
+- Cross-kompilace ve Workshopu funguje, binfmt/qemu-user v kontejneru také (emulátor i testy `make qemu-test`).
+- Backportováno a ověřeno na telefonu: moderní TLS (curl, git, wget), Python 3.11, e-mail (Mutt, msmtp, camel-lite), terminálové nástroje, gPodder, hildonlite, selfie, Bluetooth klávesnice.
+
+Zbývá:
+
+- Správce aplikací zamrzá, instalace jde zatím jen přes `apt-get`; chybí podpis repozitáře (viz [TODO.md](TODO.md)).
+- Které aplikace dál (Jellyfin klient, Signal v nativním UI, další terminálové nástroje)? Plán: [DOC/roadmap.md](DOC/roadmap.md).
+- Instalovat CSSU na obě zařízení?
+- Jak dlouho držet staré verze balíčků v `pool/`?
+- Trvalé zprovoznění Bluetooth klávesnice (moduly při startu, upstart job): čeká na souhlas.
+
+## Zdroje
 
 - [Maemo Leste – Development](https://leste.maemo.org/Development)
 - [Maemo Leste – Nokia N900](https://leste.maemo.org/Nokia_N900)
