@@ -8,6 +8,7 @@
 # The phone is DEVICE (default: the ssh alias n900, root login; the X tools run as user).
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
+APP="$HERE/../../apps/bt-kbmouse"      # splitter, layouts, keymap, cursor and accel tools live in the bt-kbmouse application
 DEVICE="${DEVICE:-n900}"
 SSH=(ssh -o ConnectTimeout=8 "$DEVICE")
 quiet() { grep -v -e '^\*\*' -e '^$'; }          # drop the post-quantum warning of the newer OpenSSH
@@ -17,7 +18,7 @@ DIR=/home/user/btkbd
 
 deploy() {
     remote "mkdir -p $DIR" >/dev/null
-    scp -q "$HERE"/btkbd_layout.py "$HERE"/btkbd-split.py "$HERE"/btkbd-keymap.py "$HERE"/kbtest.py "$DEVICE:$DIR/" 2>&1 | quiet
+    scp -q "$APP"/btkbd_layout.py "$APP"/btkbd-split.py "$APP"/btkbd-keymap.py "$APP"/btkbd-cursor.py "$APP"/btkbd-accel.py "$HERE"/kbtest.py "$DEVICE:$DIR/" 2>&1 | quiet
     remote "chmod +x $DIR/*.py; chown -R user $DIR"
 }
 # the PIDs of the running splitters: ps truncates the command line, so /proc/PID/cmdline is read (the ssh shell itself is not matched: it does not start with the interpreter)
@@ -44,10 +45,13 @@ start)
     layout="${2:-cz}"; part="${3:-ThinkPad}"
     deploy >/dev/null
     for p in $(splitter_pids); do remote "kill $p"; done; sleep 1
-    "${SSH[@]}" "nohup $PY $DIR/btkbd-split.py --layout $layout '$part' >/tmp/btkbd-split.log 2>&1 </dev/null &" </dev/null >/dev/null 2>&1 &
+    "${SSH[@]}" "nohup $PY $DIR/btkbd-split.py --layout $layout --pointer ${POINTER:-abs} ${DEBUG:+--debug} '$part' >/tmp/btkbd-split.log 2>&1 </dev/null &" </dev/null >/dev/null 2>&1 &
     sleep 5
     remote "cat /tmp/btkbd-split.log"
-    remote "su user -c 'cd $DIR && DISPLAY=:0 $PY btkbd-keymap.py --layout $layout 2>&1 | tail -3'" ;;
+    remote "su user -c 'cd $DIR && DISPLAY=:0 $PY btkbd-keymap.py --layout $layout 2>&1 | tail -3'"
+    # pointer: linear motion (the X server of Maemo 5 accelerates relative devices 6 to 16 times, see DOC/mouse.md) and a visible arrow
+    [ "${POINTER:-abs}" = rel ] && remote "su user -c 'cd $DIR && export DISPLAY=:0 && $PY btkbd-accel.py set \"(pointer)\" \"Device Accel Profile\" 3 && $PY btkbd-accel.py setf \"(pointer)\" \"Device Accel Constant Deceleration\" ${POINTER_DECEL:-3}' 2>&1 | tail -4"
+    remote "su user -c 'cd $DIR && DISPLAY=:0 $PY btkbd-cursor.py show' 2>&1 | tail -2" ;;
 stop)
     for p in $(splitter_pids); do remote "kill $p" && echo "stopped $p"; done ;;
 status)

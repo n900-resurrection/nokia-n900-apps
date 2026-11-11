@@ -118,7 +118,7 @@ sudo apt install crossbuild-essential-armhf debootstrap qemu-user-static binfmt-
 
 - Architektura **armel**, **glibc 2.5**, jádro 2.6.28-omap1, GTK2/Hildon, 256 MB RAM, Cortex-A8 s NEON; systémový glib 2.20, OpenSSL 0.9.8n, TLS jen 1.0.
 - Nový upstream kód proto často potřebuje: novější kompilátor (máme GCC 13 z cross toolchainu), statické nebo vlastní knihovny v `/opt`, záplaty pro chybějící syscally a funkce ve staré glibc (`getrandom`, `memfd`, novější `stat`) a úpravy pro jádro 2.6.28 (Go runtime, `rlimit` sandbox u OpenSSH).
-- Co čeká na novější glib: irssi, WeeChat, mc, profanity.
+- Novější GLib 2.66 je k dispozici jako statická závislost ([apps/glib2](apps/glib2/glib2.md), ověřeno na telefonu); irssi a mc už na ní běží, WeeChat a profanity na ni mohou navázat.
 
 ### Co se osvědčilo
 
@@ -179,6 +179,9 @@ sudo apt install crossbuild-essential-armhf debootstrap qemu-user-static binfmt-
 - [ntp-sync](apps/ntp-sync/ntp-sync.md): nastavení času přes NTP (GUI volba používá čas operátora, bez SIM nefunguje).
 - [Go](apps/go/go.md): křížový překlad Go programů (statická binárka, TLS 1.3); runtime potřebuje úpravu kvůli jádru 2.6.28.
 - [OpenSSL 3](apps/openssl/build.sh): statická knihovna jako závislost (ne balíček).
+- [GLib 2.66](apps/glib2/glib2.md): statická knihovna (glib, gobject, gio) jako závislost, systémová GLib 2.20 zůstává.
+- [irssi 1.4.5](apps/irssi/irssi.md): IRC klient v terminálu (TLS 1.3, statická GLib 2.66, OpenSSL 3, ncursesw); ověřeno připojením na Libera.Chat.
+- [Midnight Commander 4.8.33](apps/mc/mc.md): správce souborů ve dvou panelech (`mc`, `mcedit`, `mcview`), statická GLib 2.66 a ncursesw; ověřeno spuštěním na telefonu.
 - [Mutt 2.4](apps/mutt/mutt.md) a [msmtp 1.8](apps/msmtp/msmtp.md): terminálový e-mail s TLS 1.3 (čtení IMAP, odesílání přes msmtp).
 - [Python 3.11](apps/python3/python3.md): CPython pro N900 s ssl (OpenSSL 3.5, TLS 1.3), sqlite3, curses; [rozbor původního repozitáře](DOC/python3-repo-review.md).
 - [camel-lite-ssl3](apps/camel-lite/camel-lite.md): knihovna Modestu s OpenSSL 3 (TLS 1.2/1.3 v systémovém e-mailu).
@@ -191,6 +194,7 @@ sudo apt install crossbuild-essential-armhf debootstrap qemu-user-static binfmt-
 - [hildonlite 0.3](apps/hildonlite/README.md) (subrepo, balíček `python3-hildonlite`, i pip): GUI pro Python 3 (GTK2/Hildon přes ctypes), okna, seznamy, dialogy, `on_key`; [rozbor](DOC/hildon-python3.md). Testy: `make hildon-test`.
 - [selfie 0.6](apps/selfie/README.md) (subrepo): náhled přední/zadní kamery a focení (GStreamer `camerabin` + `libomap3cam`, správné barvy), půlstisk HW tlačítka kamery jako spoušť.
 - [Bluetooth klávesnice](DOC/bluetooth-keyboard.md): párování, rozdělení zařízení přes uinput, české rozložení v uživatelském prostoru, opakovatelný postup ve [scripts/bt-keyboard/](scripts/bt-keyboard/bt-keyboard.sh).
+- [bt-kbmouse 0.1](apps/bt-kbmouse/README.md) (subrepo): služba a nastavení pro Bluetooth klávesnici s TrackPointem: rozložení, viditelný pointer s nastavitelnou rychlostí, rolování prostředním tlačítkem; [rozbor myši](DOC/mouse.md) a upravený evdev ovladač.
 - [Testy na telefonu](DOC/testing.md): `make test`.
 - [E-mail Centrum](DOC/email-centrum.md): nastavení serverů (IMAP/SMTP), curl a Modest, bez hesla.
 - Plány: [roadmapa](DOC/roadmap.md) (TLS, e-mail, feedy, audio, Audiobookshelf), [messengery](DOC/messengers.md).

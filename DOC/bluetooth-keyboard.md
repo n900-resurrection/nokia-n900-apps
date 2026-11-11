@@ -1,5 +1,7 @@
 # Bluetooth keyboard on the N900 (Maemo 5)
 
+> **Since 2026-11-11** the application [bt-kbmouse](../apps/bt-kbmouse) (service and settings GUI, upstart job `bt-kbmouse`) does the steps below for you: it starts the splitter when the keyboard connects (and again after a reconnect), sets the key map, the pointer speed and the cursor, and has a GUI for the layout and the pointer. Pairing is still done once with `scripts/bt-keyboard/bt-keyboard.sh pair` (section *Pairing*). The pointer, clicks and scrolling are described in [mouse.md](mouse.md).
+
 Worked out on 2026-11-10 with a Lenovo ThinkPad Bluetooth keyboard with a TrackPoint (Czech layout) on the stock Maemo 5 firmware (kernel 2.6.28-omap1,
 bluez 4.60, X server 1.6.99). Result: pairing, typing with Shift / Caps Lock / AltGr / Ctrl, Czech letters, key repeat, arrows, Delete, PgUp/PgDn.
 The tools are in [scripts/bt-keyboard/](../scripts/bt-keyboard/); `scripts/bt-keyboard/bt-keyboard.sh` does everything below from the host.
