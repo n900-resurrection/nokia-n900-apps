@@ -158,3 +158,16 @@ Tím je ověřeno linkování proti glibc 2.5, ne chování na skutečném N900.
 - `make <app> ACTION=deb` volá jiný cíl aplikace (výchozí je `build`). Cíle aplikací se generují z `apps/*/Makefile`.
 - `DEPS := openssl curl` v `apps/<app>/Makefile`: závislosti se sestaví napřed a jejich přestavba způsobí přestavbu aplikace.
 - Akce Workshopu `toolchain` obsahuje všechny balíky apt, které skripty používají, akce `pylibs` stáhne knihovny yt-dlp a gPodderu 3 do `build/pylibs`.
+
+## `workshop exec` does not return, and the build stamps (2026-11-12)
+
+After long builds (GnuTLS, libstrophe, Python) the client `workshop exec` sometimes keeps running although the command inside has finished.
+`make` then waits for ever and the processes pile up on the host (`pgrep -af 'workshop.*exec'`).
+
+- `INSIDE` in `mk/common.mk` goes through [scripts/ws-exec.sh](../scripts/ws-exec.sh). The command inside writes its exit code into `build/.wsrc.<pid>`; when that file exists and the client is still alive after `WS_GRACE` seconds (5), the client is killed and the code is used. The whole run is also limited by `WS_TIMEOUT` (7200 s; exit 124, TERM then KILL).
+- A client hung from an older run has to be killed by hand (`pkill -f 'workshop -p .* exec n900'`).
+- **Stamps:** `build/stamps/<app>-<version>.built` and `<app>.built` are touched by `make build` only after a successful run. When a build was finished by hand (or the client hung and was killed), touch both stamps, otherwise make rebuilds the dependency and the applications depending on it from scratch (a rebuild wipes the prefix of the application in `build/out`; this removed the GnuTLS prefix once). `make -C apps/<app> stamp` rebuilds only when something is newer.
+
+## Icons are drawn on the host (2026-11-13)
+
+`make-icon.sh` of an application (ImageMagick, output `icon.png` or `icons/*.png`) runs on the **host**, not in the Workshop (`mk/app.mk`, rule `$(ICONPNG)`). The Workshop has another ImageMagick; it drew the `bt-kbmouse` icons with 675 of 2304 pixels different, so a plain `make` changed PNGs that are committed. The host output is pixel-identical to the committed files; the bytes differ only where the old files still carry time stamps (the script now drops them), so the first run after the change shows the PNGs as modified once.

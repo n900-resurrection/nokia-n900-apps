@@ -54,6 +54,8 @@ stamp: $(STAMP)
 # Menu icon: an application that has apps/<app>/make-icon.sh (the tool, draws the PNG with ImageMagick, shared look in
 # scripts/icon-lib.sh) gets the target `icon` = apps/<app>/icon.png; the package depends on it, so the icon is redrawn when the
 # script changes. Applications without the script just use a committed icon.png or take the icon of their sources (package.sh).
+# The script runs on the HOST, not in the Workshop: the Workshop has another ImageMagick that draws the committed PNGs a little differently
+# (bt-kbmouse: 675 of 2304 pixels), so a build there would change files that are in git.
 # ICON_OUT: the file make-icon.sh writes (relative to apps/<app>); the Makefile of an app can name another one
 ICON_OUT ?= icon.png
 ICONPNG := $(ROOT)/apps/$(APP)/$(ICON_OUT)
@@ -64,7 +66,7 @@ TARGETS += icon
 ICON := Draw the menu icon apps/$(APP)/icon.png with make-icon.sh (when the script is newer)
 icon: $(ICONPNG)
 $(ICONPNG): $(ICONSH) $(ROOT)/scripts/icon-lib.sh
-	$(INSIDE) /project/apps/$(APP)/make-icon.sh
+	$(ROOT)/apps/$(APP)/make-icon.sh
 endif
 
 # Package stamp: package.sh runs when the build is newer, package.sh changed or the .deb is missing.

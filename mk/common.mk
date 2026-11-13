@@ -19,7 +19,8 @@ include $(ROOT)/.env.default
 
 # Commands inside the Workshop. -p selects the project, so they work from subdirectories too.
 WORKSHOP := workshop -p $(ROOT)
-INSIDE   := $(WORKSHOP) exec $(WS) --
+# INSIDE goes through scripts/ws-exec.sh: it does not hang when `workshop exec` fails to return after the command ended
+INSIDE   := $(ROOT)/scripts/ws-exec.sh $(ROOT) $(WS)
 WSRUN    := $(WORKSHOP) run $(WS) --
 
 # Colours: enabled only on a terminal (stderr is a tty). FORCE_COLOR=1 forces, NO_COLOR=1 disables.
