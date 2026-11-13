@@ -31,3 +31,6 @@
 [submodule "apps/bt-kbmouse"]
 	path = apps/bt-kbmouse
 	url = https://github.com/n900-resurrection/bt-kbmouse.git
+[submodule "apps/ical-sync"]
+	path = apps/ical-sync
+	url = https://github.com/n900-resurrection/ical-sync.git
