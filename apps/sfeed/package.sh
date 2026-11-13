@@ -19,7 +19,7 @@ install -m 755 "$PROJ/apps/sfeed/sfeed-reader" "$STAGE/opt/$PKG/bin/sfeed-reader
 install -m 644 "$PROJ/apps/sfeed/sfeedrc.example" "$STAGE/opt/$PKG/share/doc/$PKG/sfeedrc.example"
 install -m 644 "$SRC/LICENSE" "$STAGE/opt/$PKG/share/doc/$PKG/LICENSE"
 # Links for the commands that people type.
-for c in sfeed sfeed_plain sfeed_curses sfeed_update sfeed_markread sfeed_opml_import sfeed_opml_export sfeed-reader; do
+for c in sfeed sfeed_xmlenc sfeed_plain sfeed_curses sfeed_update sfeed_markread sfeed_opml_import sfeed_opml_export sfeed-reader; do
     ln -s "../../opt/$PKG/bin/$c" "$STAGE/usr/bin/$c"
 done
 cat > "$STAGE/opt/$PKG/share/doc/$PKG/README.Maemo" <<EOT

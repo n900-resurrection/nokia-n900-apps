@@ -34,3 +34,6 @@
 [submodule "apps/ical-sync"]
 	path = apps/ical-sync
 	url = https://github.com/n900-resurrection/ical-sync.git
+[submodule "apps/sfeed-hildon"]
+	path = apps/sfeed-hildon
+	url = https://github.com/n900-resurrection/sfeed-hildon.git
