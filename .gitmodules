@@ -40,3 +40,6 @@
 [submodule "apps/apt-transport-curl"]
 	path = apps/apt-transport-curl
 	url = https://github.com/n900-resurrection/apt-transport-curl.git
+[submodule "devkit"]
+	path = devkit
+	url = https://github.com/n900-resurrection/n900-devkit.git

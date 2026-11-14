@@ -4,12 +4,13 @@
 # describes the conventions. Each application has its own Makefile in apps/<app>/.
 
 include mk/common.mk
+include devkit/mk/devkit.mk
 
 # Every directory apps/<app> with a Makefile is a target of the same name (make curl = make -C apps/curl build);
 # ACTION selects another target of the application: make curl ACTION=deb. Descriptions: variables below, or a default.
 APPS := $(sort $(notdir $(patsubst %/,%,$(dir $(wildcard apps/*/Makefile)))))
 ACTION ?= build
-TARGETS := help up down status enter toolchain sysroot hello $(APPS) debs repo updates test hildon-overlay locale-overlay qemu-smoke qemu-test emu-test emu-shots hildon-test hildon-run emulator push screenshots clean distclean
+TARGETS := help $(DEVKIT_TARGETS) $(APPS) debs repo updates test qemu-smoke qemu-test hildon-test push screenshots clean distclean
 .PHONY: $(TARGETS)
 
 define APP_RULE
@@ -42,34 +43,6 @@ updates:
 debs:
 	@for a in $(DEBAPPS); do printf '\n$(BOLD)== %s$(RESET)\n' $$a; $(MAKE) --no-print-directory -C apps/$$a $(if $(INSTALL),install,deb) || exit 1; done
 
-UP := Create and start the workshop (first run)
-up:
-	$(WORKSHOP) launch $(WS)
-
-DOWN := Stop the workshop
-down:
-	$(WORKSHOP) stop $(WS)
-
-STATUS := Show the workshop status
-status:
-	$(WORKSHOP) list
-
-ENTER := Open an interactive shell inside the workshop
-enter:
-	$(WORKSHOP) shell $(WS)
-
-TOOLCHAIN := Install the armel cross toolchain and qemu-user
-toolchain:
-	$(WSRUN) toolchain
-
-SYSROOT := Download the Fremantle SDK sysroot into ./sysroot
-sysroot:
-	$(WSRUN) sysroot
-
-HELLO := Build and run hello.c (qemu-user, glibc 2.5)
-hello:
-	$(WSRUN) cpp-hello
-
 WORDGRINDER := Build WordGrinder (more: make -C apps/wordgrinder)
 HTOP := Build htop (more: make -C apps/htop)
 CURL := Build curl with TLS 1.3 (more: make -C apps/curl)
@@ -90,45 +63,9 @@ QEMU-TEST := Run the apps/*/qemu-test.sh emulation tests (tmux, openssh), no pho
 qemu-test:
 	@fail=0; for t in $(if $(APP),$(foreach a,$(APP),$(ROOT)/apps/$(a)/qemu-test.sh),$(ROOT)/apps/*/qemu-test.sh); do a=$$(basename $$(dirname $$t)); printf '\n$(BOLD)== %s$(RESET)\n' $$a; $(MAKE) --no-print-directory -C apps/$$a qemu-test || fail=$$((fail+1)); done; if [ $$fail -eq 0 ]; then printf '\n$(GREEN)All emulation tests passed$(RESET)\n'; else printf '\n$(RED)%s emulation test(s) failed$(RESET)\n' $$fail; exit 1; fi
 
-EMU-TEST := Run apps/<app>/test.sh in the emulated phone (chroot under qemu-user, no phone): make emu-test APP="jq tmux" (default: all apps with test.sh); RESET=1 builds the root again
-emu-test:
-	$(INSIDE) bash -c '$(if $(RESET),/project/scripts/emu-root.sh --reset &&) /project/scripts/emu-test.sh $(if $(APP),$(APP),$(notdir $(patsubst %/,%,$(dir $(wildcard apps/*/test.sh)))))'
-
-EMU-SHOTS := Take the screenshots of an application in the emulated desktop from the timeline apps/<app>/shots.txt into build/shots/<app>/ (APP="mutt-hildon"; COMPARE=dir compares with older images)
-emu-shots:
-	$(INSIDE) /project/scripts/emu-shots.sh $(if $(COMPARE),--compare $(COMPARE)) $(if $(APP),$(APP),$(notdir $(patsubst %/,%,$(dir $(wildcard apps/*/shots.txt)))))
-
 HILDON-TEST := Run the unittest suite of hildonlite (apps/hildonlite/tests/test_hildonlite.py) in the emulator, no phone (the expected tracebacks of the error tests are part of the output)
 hildon-test:
 	$(INSIDE) /project/scripts/hildon-run.sh /project/apps/hildonlite/tests/test_hildonlite.py
-
-LOCALE-OVERLAY := Copy the locale archive (UTF-8 locales, glibc 2.5) from the phone into ./sysroot (once; tmux and other programs need it under qemu-user)
-locale-overlay:
-	DEVICE=$(DEVICE) scripts/locale-overlay.sh
-
-HILDON-OVERLAY := Copy the Hildon theme, fonts and icons from the phone into ./sysroot (once; for hildon-run)
-hildon-overlay:
-	DEVICE=$(DEVICE) scripts/hildon-overlay.sh
-
-EMULATOR := Start the emulated Fremantle desktop (top bar, launcher, task switching): make emulator (VNC on port 5999 of the Workshop, address is printed)
-emulator:
-	$(INSIDE) env VNC=$(or $(VNC),1) FRESH=1 FOREGROUND=1 /project/scripts/hildon-session.sh
-
-EMULATOR-STOP := End a running emulator session (screen, VNC, window manager, bar, programs)
-emulator-stop:
-	$(INSIDE) env STOP=1 /project/scripts/hildon-session.sh
-
-HILDON-RUN := Show a GTK2/Hildon program on a virtual 800x480 screen: make hildon-run [APP=mutt-hildon | SCRIPT=src/python3/hildon/proof.py] [SHOT=build/shot.png] [VNC=1] [PY2=1 for Python 2.5]
-SCRIPT ?= src/python3/hildon/proof.py
-# SCRIPT=apps/<app>/... of an application that has apps/<app>/hildon-run.sh means APP=<app> (it needs the demo home)
-ifeq ($(APP),)
-SCRIPTAPP := $(word 2,$(subst /, ,$(SCRIPT)))
-ifneq ($(and $(filter apps/%,$(SCRIPT)),$(wildcard apps/$(SCRIPTAPP)/hildon-run.sh)),)
-APP := $(SCRIPTAPP)
-endif
-endif
-hildon-run:
-	$(INSIDE) env SHOT=$(SHOT) VNC=$(VNC) PY2=$(PY2) APP=$(APP) HILDON_DEVSHELL_SCRIPT=$(DEVSHELL_SCRIPT) HILDON_DEVSHELL_DEBUG=$(DEVSHELL_DEBUG) /project/scripts/hildon-run.sh $(if $(APP),,/project/$(SCRIPT))
 
 QUICKJS := Cross-build QuickJS, JavaScript runtime for yt-dlp (more: make -C apps/quickjs)
 MSMTP := Build msmtp (more: make -C apps/msmtp)
