@@ -37,3 +37,6 @@
 [submodule "apps/sfeed-hildon"]
 	path = apps/sfeed-hildon
 	url = https://github.com/n900-resurrection/sfeed-hildon.git
+[submodule "apps/apt-transport-curl"]
+	path = apps/apt-transport-curl
+	url = https://github.com/n900-resurrection/apt-transport-curl.git
