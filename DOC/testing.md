@@ -66,6 +66,7 @@ Aplikace s terminálovým rozhraním (htop3, cmatrix, cbonsai, tty-clock, wordgr
 `readlink /proc/$$/exe` v `bash -c` s jediným příkazem hlásí sám sebe (bash příkaz spustí přes `exec`), `jq` vrací 5 při chybném JSONu.
 
 ## Testing without the phone: emulation (2026-11-09)
+The emulator itself (the desktop, `qemu-n900`, `emu-test`, `emu-shots`) is part of the development kit: see [devkit/docs/emulator.md](../devkit/docs/emulator.md); this section is about how the tests of this repository use it.
 Everything runs INSIDE the Workshop with `qemu-user` (and the package `qemu-user-static`, which the chroot needs; it is in the `toolchain` action of `.workshop/n900.yaml`).
 Four levels, from the cheapest:
 

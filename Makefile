@@ -10,7 +10,7 @@ include devkit/mk/devkit.mk
 # ACTION selects another target of the application: make curl ACTION=deb. Descriptions: variables below, or a default.
 APPS := $(sort $(notdir $(patsubst %/,%,$(dir $(wildcard apps/*/Makefile)))))
 ACTION ?= build
-TARGETS := help $(DEVKIT_TARGETS) $(APPS) debs repo updates test qemu-smoke qemu-test hildon-test push screenshots clean distclean
+TARGETS := help $(DEVKIT_TARGETS) $(APPS) debs repo updates test qemu-smoke qemu-test hildon-test push screenshots distclean
 .PHONY: $(TARGETS)
 
 define APP_RULE
@@ -91,10 +91,6 @@ SCREENSHOTS := Copy new screenshots from the phone into ./screenshots (not in gi
 screenshots:
 	@test -n "$(DEVICE)" || { printf '$(RED)Set DEVICE=user@ip (in .env or on the command line)$(RESET)\n'; exit 1; }
 	scripts/screenshots.sh $(DEVICE) screenshots
-
-CLEAN := Remove ./build
-clean:
-	rm -rf build
 
 DISTCLEAN := Also remove ./sysroot and ./downloads
 distclean: clean
