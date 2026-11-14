@@ -4,6 +4,7 @@ Pracovní poznámky k návratu k vývoji pro N900 (2 kusy HW). Stav k 2026-11-11
 Související repozitáře:
 
 - [nokia-n900-notes](https://github.com/elPytel/nokia-n900-notes) – odkazy a poznámky
+- [Web N900 Resurrection](https://n900-resurrection.github.io/) – blog (anglicky), katalog balíčků apt repozitáře a návody (první připojení přes ssh, použití repozitáře); zdroje: [n900-resurrection.github.io](https://github.com/n900-resurrection/n900-resurrection.github.io), téma [maemo-theme](https://github.com/n900-resurrection/maemo-theme), katalog se generuje skriptem [scripts/mksite.py](scripts/mksite.py)
 
 > Poznámka: informace pochází z webového průzkumu (wiki, novinové články, blogy), ne z vlastního ověření.
 > Co je označeno **[ověřit]**, je třeba vyzkoušet. Část návodů je stará (2009–2020).

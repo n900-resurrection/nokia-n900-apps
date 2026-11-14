@@ -8,6 +8,9 @@
 #   PKG           package name
 #   VERSION       upstream version
 #   REV           package revision, e.g. 1maemo1 (default)
+#   EPOCH         optional epoch (a number): Version becomes EPOCH:VERSION-REV and sorts above every version without it or with a smaller epoch.
+#                 Needed when the package has the name of a community package whose version has an epoch (git, mc, openssh: Extras has 1:...);
+#                 without it apt and the Fast Application Manager offer that older package as an "update". An epoch can never be dropped again.
 #   STAGE         directory with the files of the package (without DEBIAN/)
 #   SECTION       Maemo section, e.g. user/utilities
 #   DEPENDS       Depends: line, e.g. "libc6 (>= 2.5), libncurses5 (>= 5.7)"
@@ -16,7 +19,7 @@
 #   LONG_DESC     longer description (several lines allowed)
 #   MAINTAINER    optional, default elPytel
 #
-# Output: /project/build/deb/<PKG>_<VERSION>-<REV>_armel.deb
+# Output: /project/build/deb/<PKG>_<VERSION>-<REV>_armel.deb   (the file name has no epoch)
 
 PROJ="${PROJ:-/project}"
 
@@ -53,6 +56,8 @@ EOF
 debpack_build() {
     : "${PKG:?}" "${VERSION:?}" "${STAGE:?}" "${SECTION:?}" "${DEPENDS:?}" "${DISPLAY_NAME:?}" "${SHORT_DESC:?}" "${LONG_DESC:?}"
     REV="${REV:-1maemo1}"
+    # a package without an icon of its own gets the one of the catalogue (scripts/make-pkg-icons.sh): shown by the Application Manager and the web site
+    if [ -z "${DEBPACK_ICON:-}" ] && [ -s "$PROJ/icons/packages/$PKG.png" ]; then DEBPACK_ICON="$PROJ/icons/packages/$PKG.png"; fi
     local maint="${MAINTAINER:-elPytel}"
     local deb="$PROJ/build/deb/${PKG}_${VERSION}-${REV}_armel.deb"
 
@@ -61,7 +66,7 @@ debpack_build() {
     size_kb=$(du -sk "$STAGE" | cut -f1)
     {
         echo "Package: $PKG"
-        echo "Version: $VERSION-$REV"
+        echo "Version: ${EPOCH:+$EPOCH:}$VERSION-$REV"
         echo "Architecture: armel"
         echo "Section: $SECTION"
         echo "Priority: optional"

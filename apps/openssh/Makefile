@@ -2,7 +2,9 @@
 # Targets and conventions: ../../mk/app.mk. NOT tested on the phone by agreement (a broken sshd would lock out the remote access).
 override APP     := openssh
 VERSION ?= 10.6p2
-REV     ?= 1maemo1
+# EPOCH 1: Extras has this name with the epoch 1 (1:5.1p1); without it that older package would count as the newer one
+EPOCH   ?= 1
+REV     ?= 1maemo2
 DEPS    := openssl
 RUN_CMD := /opt/openssh/bin/ssh -V
 include ../../mk/app.mk

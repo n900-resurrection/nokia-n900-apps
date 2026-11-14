@@ -6,6 +6,7 @@
 #   VERSION  ?= 2.3                            # upstream version, passed to the scripts as VERSION
 #   PKG      := tty-clock                      # optional, package name (default: APP)
 #   REV      ?= 1maemo1                        # optional, package revision
+#   EPOCH    ?= 1                              # optional, epoch of the version (see scripts/debpack.sh); not part of the file name
 #   RUN_CMD  := TERM=xterm /usr/bin/tty-clock  # command run on the device by `make run`
 #   EMU_BIN  := /project/build/out/...         # optional, binary for `make emu` (default: build/out/<APP>-<VERSION>/<APP>)
 #   DEPS     := openssl curl                   # optional, apps (apps/<dep>) that must be built first; a rebuilt dependency
@@ -20,6 +21,7 @@ include $(dir $(lastword $(MAKEFILE_LIST)))common.mk
 
 PKG     ?= $(APP)
 REV     ?= 1maemo1
+EPOCH   ?=
 DEBFILE ?= $(PKG)_$(VERSION)-$(REV)_armel.deb
 DEPS    ?=
 
@@ -72,7 +74,7 @@ endif
 # Package stamp: package.sh runs when the build is newer, package.sh changed or the .deb is missing.
 PSTAMP := $(ROOT)/build/stamps/$(APP)-$(VERSION)-$(REV).packaged
 $(PSTAMP): $(STAMP) $(ROOT)/scripts/debpack.sh $(wildcard $(ROOT)/apps/$(APP)/package.sh) $(if $(ICONSH),$(ICONPNG),$(wildcard $(ICONPNG))) $(if $(wildcard $(ROOT)/build/deb/$(DEBFILE)),,FORCE)
-	$(INSIDE) bash -c 'VERSION=$(VERSION) REV=$(REV) /project/apps/$(APP)/package.sh'
+	$(INSIDE) bash -c 'VERSION=$(VERSION) REV=$(REV) EPOCH=$(EPOCH) /project/apps/$(APP)/package.sh'
 	@touch $(PSTAMP)
 
 DEB := Create the .deb (armel) in build/deb/ (builds first when out of date)
