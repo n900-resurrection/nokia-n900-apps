@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build a sysroot for Maemo 5 (Fremantle, armel, glibc 2.5) from the SDK repository.
 
-Downloads the `Packages` index from a mirror, resolves the dependencies of the requested
+Downloads the `Packages` index from a mirror (maemo.plan9.de, then maemo.viniciuspaes.com), resolves the dependencies of the requested
 packages, downloads only the .deb files that are needed and unpacks them into ./sysroot
 (via dpkg-deb -x). It does not download the whole mirror.
 
@@ -15,6 +15,7 @@ Status: verified by cross-compiling and running programs on a real N900 (2026-11
 See DOC/workshop-crosscompile.md.
 """
 import argparse
+import hashlib
 import os
 import re
 import subprocess
@@ -23,7 +24,14 @@ import time
 import urllib.request
 from pathlib import Path
 
-BASE = "http://maemo.plan9.de/apt-mirror/mirror/repository.maemo.org/"
+# Mirrors of repository.maemo.org in the order of use (DOC/mirror.md): the index is read from the first one that answers, a .deb that one cannot
+# deliver is taken from the next. Both have the same layout (dists/, pool/). maemo.viniciuspaes.com refuses generic User-Agents (curl, Python-urllib),
+# so every request names this tool; it also asks not to be mirrored in bulk: we take only the files that are needed.
+BASES = [
+    "http://maemo.plan9.de/apt-mirror/mirror/repository.maemo.org/",
+    "http://maemo.viniciuspaes.com/",
+]
+BASE = BASES[0]
 # Fremantle SDK: dists/fremantle/sdk/{free,non-free}/binary-armel/Packages
 INDEXES = [
     "dists/fremantle/sdk/free/binary-armel/Packages",
@@ -49,6 +57,24 @@ def fetch(url: str) -> bytes:
     req = urllib.request.Request(url, headers={"User-Agent": "n900-sysroot-fetch/0.1"})
     with urllib.request.urlopen(req, timeout=60) as r:
         return r.read()
+
+
+def download(stanza) -> bytes:
+    """The .deb of a package from the first mirror that has it; the MD5 sum of the index is checked (a third-party mirror)."""
+    last = None
+    for base in BASES:
+        try:
+            data = fetch(base + stanza["Filename"])
+        except Exception as e:  # noqa: BLE001
+            print(f"WARNING: {base}: {e}", file=sys.stderr)
+            last = e
+            continue
+        want = stanza.get("MD5sum")
+        if want and hashlib.md5(data).hexdigest() != want:
+            print(f"WARNING: {base}: MD5 sum of {stanza['Filename']} differs from the index, trying the next mirror", file=sys.stderr)
+            continue
+        return data
+    sys.exit(f"Could not download {stanza['Filename']}: {last}")
 
 
 def parse_packages(text: str):
@@ -101,11 +127,15 @@ def dep_names(stanza):
 def load_index():
     pkgs = {}
     for rel in INDEXES:
-        url = BASE + rel
-        try:
-            data = fetch(url)
-        except Exception as e:  # noqa: BLE001
-            print(f"WARNING: {url}: {e}", file=sys.stderr)
+        data = None
+        for base in BASES:
+            url = base + rel
+            try:
+                data = fetch(url)
+                break
+            except Exception as e:  # noqa: BLE001
+                print(f"WARNING: {url}: {e}", file=sys.stderr)
+        if data is None:
             continue
         for name, lst in parse_packages(data.decode("utf-8", "replace")).items():
             pkgs.setdefault(name, []).extend(lst)
@@ -193,7 +223,7 @@ def main():
         deb = cache / Path(s["Filename"]).name
         if not deb.exists():
             print(f"downloading {n} {s['Version']}")
-            deb.write_bytes(fetch(BASE + s["Filename"]))
+            deb.write_bytes(download(s))
             time.sleep(DELAY)
         subprocess.run(["dpkg-deb", "-x", str(deb), str(sysroot)], check=True)
     fixed = fix_symlinks(sysroot)

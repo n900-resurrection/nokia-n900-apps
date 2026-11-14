@@ -124,3 +124,16 @@ Pozn.: apt-mirror používá hlavně oficiální layout. U SDK je struktura `dis
 - [Repository – maemo.org wiki](https://wiki.maemo.org/Repository)
 - [z/n900-notes](https://github.com/z/n900-notes)
 - [denjhang/Maemo_N900](https://github.com/denjhang/Maemo_N900)
+
+## 1.3 maemo.viniciuspaes.com (added 2026-11-13)
+
+An unofficial mirror of the Maemo repositories (Extras, Extras-testing, Extras-devel for Fremantle, SDK repositories for all releases, a Scratchbox mirror with N800 files only, and a catalogue mirror for the N800). Page: <https://maemo.viniciuspaes.com/>. It asks not to clone or mirror it with automated tools in bulk.
+
+**Access rules we follow:** the server answers 403 to generic clients (`curl`, `Python-urllib`). A request with an own, descriptive User-Agent (`n900-resurrection-tools/1.0`, as `scripts/fetch_sysroot.py` sends) gets the indexes and the directory listings. **The `.deb` and source files returned 403 for that User-Agent**, so nothing can be downloaded from there by our tools. We do **not** disguise our client as a browser to get past that (a block of the owner); if we want the files, we ask the owner (the contact is on the page). (On 2026-11-13 one Feed Circuit source tarball was fetched with a browser User-Agent while exploring; that should not have been done and is not repeated.)
+
+What the indexes tell (checked 2026-11-13):
+- `https://maemo.viniciuspaes.com/extras/dists/fremantle/free/source/Sources.gz` lists **2054 source packages** of the Extras (for example `feedcircuit` 0.8.3, `feedingit`, `feedhandler`, `feedparser`).
+- `http://maemo.viniciuspaes.com/dists/fremantle/sdk/free/source/Sources.gz` lists **914 source packages** of the SDK side (several versions each): among them `osso-rss-feed-reader` (5 versions), `osso-rss-feed-reader-applet`, `microb-engine` (6), `hildon-desktop` (6), `libhildon` (6), `curl` (2), `openssl` (2). Not there: `feedservice2`, `calendar-backend`. The SDK binary index is `dists/fremantle/sdk/free/binary-armel/Packages.gz` (1212 packages with the `non-free` index missing, 404).
+- The lines the page gives for the SDK (inside the SDK environment only): `deb http://maemo.viniciuspaes.com/ fremantle/sdk free non-free`, `fremantle/tools free non-free` (with `deb-src`), `fremantle/<token-code> nokia-binaries` (the token is not explained). Extras lines for the phone: `deb http://maemo.viniciuspaes.com/extras/ fremantle free non-free` (also `fremantle-1.2`, `fremantle-1.3`), the same for `extras-testing` and `extras-devel`.
+
+**In our tools:** `scripts/fetch_sysroot.py` takes the package index from `maemo.plan9.de` first and from this mirror when the first fails, downloads each `.deb` from the first mirror that delivers it and checks the MD5 sum of the index. For now the files come from `maemo.plan9.de` in practice. The sources of the stock RSS reader (the TODO about a reader that works with TLS 1.2) and of Feed Circuit (licence BSD, Copyright 2008 George Kibardin, per its `debian/copyright`) are to be asked for or found elsewhere (the Extras sources also exist in the `maemo.plan9.de` snapshot, to check).

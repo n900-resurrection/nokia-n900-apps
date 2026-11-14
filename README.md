@@ -188,7 +188,7 @@ sudo apt install crossbuild-essential-armhf debootstrap qemu-user-static binfmt-
 - [Python 3.11](apps/python3/python3.md): CPython pro N900 s ssl (OpenSSL 3.5, TLS 1.3), sqlite3, curses; [rozbor původního repozitáře](DOC/python3-repo-review.md).
 - [camel-lite-ssl3](apps/camel-lite/camel-lite.md): knihovna Modestu s OpenSSL 3 (TLS 1.2/1.3 v systémovém e-mailu).
 - [mutt-hildon 0.4](apps/mutt-hildon/mutt-hildon.md): grafický e-mail (Hildon, Python 2.5) nad curl, msmtp a Muttem.
-- [apt-transport-curl 0.1](apps/apt-transport-curl/apt-transport-curl.md): apt přes HTTPS s TLS 1.2/1.3 (metoda `https` přes curl 8), nutné pro repozitář na GitHub Pages; [DOC/apt-repo.md](DOC/apt-repo.md): `make repo`.
+- [apt-transport-curl 0.1](apps/apt-transport-curl/README.md): apt přes HTTPS s TLS 1.2/1.3 (metoda `https` přes curl 8), nutné pro repozitář na GitHub Pages; [DOC/apt-repo.md](DOC/apt-repo.md): `make repo`.
 - [sfeed 2.4](apps/sfeed/sfeed.md): RSS/Atom a podcasty v terminálu (stahování přes curl, TLS 1.3).
 - [jq 1.8](apps/jq/jq.md) a [Wget 1.25 (TLS 1.3)](apps/wget/wget.md): JSON na příkazové řádce a `wget`, který umí moderní HTTPS.
 - [xml-tools 2.15](apps/xml-tools/xml-tools.md): `xmllint` a `xsltproc` (libxml2 + libxslt, staticky); telefon má jen starou knihovnu bez nástrojů.

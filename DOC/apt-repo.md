@@ -30,7 +30,7 @@ repository served by `python3 -m http.server` from the PC (`apt-get update`, `ap
   works. Investigation and fix: [TODO.md](../TODO.md).
 - **No signature yet** (`Release.gpg` is missing: apt prints `Ign ... Release.gpg` and needs `--force-yes` to install). Plan: [TODO.md](../TODO.md).
 - **HTTPS:** the apt of the phone speaks TLS 1.0 only, GitHub (Pages and raw) requires TLS 1.2. Solution: the package `apt-transport-curl`
-  ([description](../apps/apt-transport-curl/apt-transport-curl.md)), whose `https` method runs curl 8. Verified against an HTTPS server on the PC
+  ([description](../apps/apt-transport-curl/README.md)), whose `https` method runs curl 8. Verified against an HTTPS server on the PC
   and against github.com; a real repository on GitHub Pages has not been tried yet. The first installation (bootstrap) is done by hand
   with `dpkg -i` or over HTTP.
 - The version of a package follows `VERSION` and `REV` in `apps/<app>/Makefile`; raise `REV` to make an update visible to users.
