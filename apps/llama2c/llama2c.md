@@ -3,7 +3,7 @@
 Status 2026-11-17. Build and packaging: [Makefile](Makefile) (`make llama2c`, `make -C apps/llama2c <target>`); conventions in [../../mk/app.mk](../../mk/app.mk).
 
 llama2.c (<https://github.com/karpathy/llama2.c>, MIT, Andrej Karpathy) is an inference engine for the Llama 2 architecture in one C file. The package has the engine (`llama2c`), the int8 variant (`llama2c-q8`),
-the tiny model stories260K (1 MB, for tests) and a launcher `llama-story` that asks for the first words of a story and lets stories15M go on. A blog post tells the story of the decision.
+the tiny model stories260K (1 MB, for tests) and a launcher `llama-story` that asks for the first words of a story and lets stories15M go on. The switches are explained in [README.md](README.md) (also in the package, `/opt/llama2c/share/doc/llama2c/`) and in the manuals. A blog post tells the story of the decision.
 
 ## Measured on the test phone
 
