@@ -11,7 +11,8 @@ cd "$(dirname "$0")/.."
 convert() { command convert +set date:create +set date:modify -define png:exclude-chunk=date,time "$@"; }
 . scripts/icon-lib.sh
 OUT=icons/packages
-mkdir -p "$OUT"
+WEB=icons/web          # the same drawings at 256x256, for the web catalogue (scripts/mksite.py); $OUT keeps the 64x64 that go into the packages
+mkdir -p "$OUT" "$WEB"
 
 # package  text  kind   (term = console program, sys = system/service/data, lib = library for programmers)
 TABLE='age age term
@@ -67,6 +68,7 @@ while read -r pkg text kind; do
         icon_base -font "$FONT" -pointsize "$size" -fill '#f2f2f2' -gravity center -annotate +0-18 "$text" \
                   -fill "$bar" -draw 'roundrectangle 64,184 192,202 9,9' /tmp/pkgicon.$$.png
     fi
+    cp /tmp/pkgicon.$$.png "$WEB/$pkg.png"
     convert /tmp/pkgicon.$$.png -resize 64x64 "$OUT/$pkg.png"
 done <<< "$TABLE"
 rm -f /tmp/pkgicon.$$.png
@@ -80,6 +82,7 @@ done
 # gpodder: headphones (a white headband, orange ear cups)
 icon_base -fill none -stroke '#f2f2f2' -strokewidth 16 -draw 'arc 56,40 200,184 180,360' \
           -fill '#f28c28' -stroke none -draw 'roundrectangle 42,120 90,206 14,14' -draw 'roundrectangle 166,120 214,206 14,14' /tmp/pkgicon.$$.png
+cp /tmp/pkgicon.$$.png "$WEB/gpodder.png"
 convert /tmp/pkgicon.$$.png -resize 64x64 "$OUT/gpodder.png"
 rm -f /tmp/pkgicon.$$.png
-echo "$(ls $OUT | wc -l) icons in $OUT"
+echo "$(ls $OUT | wc -l) icons in $OUT, $(ls $WEB | wc -l) in $WEB"

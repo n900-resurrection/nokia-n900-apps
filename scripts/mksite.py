@@ -8,8 +8,8 @@ included) and writes into the site repository (n900-resurrection.github.io):
     packages/<name>.md               one page per package (front matter only; the layout "package" of the theme draws it)
     install/packages/<name>.install  an install file for the Application Manager: adds our catalogue and offers the package (none for the
                                      packages needed before the catalogue works, BOOTSTRAP)
-    assets/packages/icons/<name>.png the icon that is embedded in the package (XB-Maemo-Icon-26), else icons/packages/<name>.png of the main
-                                     repository, else a plain one; all stored as 52x52
+    assets/packages/icons/<name>.png the best icon: apps/<app>/icon.png (256), icons/web (256), icons/packages (64), else the one embedded in the
+                                     package (XB-Maemo-Icon-26), else a plain one; stored at 128x128 (104 for the tiny ones)
 
 Nothing here is written by hand: the catalogue is what the packages say about themselves (control file of the .deb).
 
@@ -75,11 +75,15 @@ def plain_icon(path: Path):
     path.write_bytes(png)
 
 
-def to_52(path: Path, point: bool):
-    """Icons are shown at 26 px and 52 px: store them at 52x52 (ImageMagick; left as they are when it is not installed)."""
+APP_DIR = {"htop3": "htop", "bash5": "bash", "busybox37": "busybox"}   # package name -> directory in apps/ when they differ
+
+
+def to_size(path: Path, size: int, point: bool):
+    """Icons are shown at 26 px and 52 px, so a sharper picture is stored (a screen with a pixel ratio of 2 or more): size x size with ImageMagick
+    (left as it is when that is not installed). `point`: enlarge the pixels of a tiny icon without smoothing them."""
     if not shutil.which("convert"):
         return
-    args = ["convert", str(path), "-filter", "Point" if point else "Lanczos", "-resize", "52x52", str(path)]
+    args = ["convert", str(path), "-filter", "Point" if point else "Lanczos", "-resize", f"{size}x{size}", str(path)]
     subprocess.run(args, check=False)
 
 
@@ -102,6 +106,8 @@ def main():
     ap.add_argument("--pool", default="n900-repository/pool", help="pool directory of the repository")
     ap.add_argument("--site", required=True, help="the site repository (n900-resurrection.github.io)")
     ap.add_argument("--icons", default="icons/packages", help="directory with <package>.png for the packages that carry no icon in the .deb (scripts/make-pkg-icons.sh)")
+    ap.add_argument("--apps", default="apps", help="directory with apps/<app>/icon.png (256x256 icons of the applications)")
+    ap.add_argument("--web-icons", default="icons/web", help="directory with <package>.png at 256x256 (scripts/make-pkg-icons.sh)")
     ap.add_argument("--base-url", default="https://n900-resurrection.github.io/n900-repository", help="address of the repository, for the download links")
     a = ap.parse_args()
 
@@ -132,17 +138,20 @@ def main():
         short, _, long = desc.partition("\n")
         upstream = re.search(r"Upstream:\s*(\S+?)[.,;]?(?:\s|$)", long)
         icon = icons / f"{name}.png"
-        central = Path(a.icons) / f"{name}.png"
-        if c.get("XB-Maemo-Icon-26"):                      # the icon that the package carries (26x26): doubled with sharp pixels
+        # the best picture of the icon: the 256x256 one of the application, the 256x256 drawing of the catalogue (icons/web), the 64x64 of the
+        # catalogue, and only then the 26x26 that the package carries (scaled up it looks blurry); stored at 128x128, shown at 26 and 52 px
+        hi = [Path(a.apps) / APP_DIR.get(name, name) / "icon.png", Path(a.web_icons) / f"{name}.png", Path(a.icons) / f"{name}.png"]
+        hi = [h for h in hi if h.is_file()]
+        if hi:
+            shutil.copyfile(hi[0], icon)
+            to_size(icon, 128, point=False)
+        elif c.get("XB-Maemo-Icon-26"):                    # the icon that the package carries (26x26): enlarged with sharp pixels
             raw = base64.b64decode("".join(c["XB-Maemo-Icon-26"].split()))
             icon.write_bytes(raw)
-            to_52(icon, point=True)
-        elif central.is_file():                            # the icon of the catalogue
-            shutil.copyfile(central, icon)
-            to_52(icon, point=False)
+            to_size(icon, 104, point=True)
         else:
             plain_icon(icon)
-            to_52(icon, point=True)
+            to_size(icon, 104, point=True)
         stat = deb.stat()
         rel = deb.relative_to(pool).as_posix()
         out.append({
