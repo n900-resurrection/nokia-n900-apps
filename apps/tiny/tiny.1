@@ -1,0 +1,97 @@
+.TH TINY 1 "2026-11-17" "TINY 2.1" "Games"
+.SH NAME
+tiny \- a quiz robot: a tiny neural network that answers questions, with a robot voice
+.SH SYNOPSIS
+.B tiny
+.RI [ options ]
+.SH DESCRIPTION
+.B tiny
+is a neural network with 367,000 weights (4 layers, 96 wide) that reads and writes one letter at a time. It was written for DOS (Turbo C 2.0) and runs here
+with the same network and a full-screen terminal interface: a chat window, a live neural monitor (the activity of every layer, the confidence in each letter, the speed),
+a line for the question, and a robot voice that speaks the answer.
+.PP
+It was taught about 3,500 facts (all countries with their capitals, languages and neighbours, the chemical elements, animals, space, the body, simple sums and
+times tables, opposites and plurals, some words in French, German, Spanish and Italian). On other questions it can answer confidently and be wrong.
+.PP
+The screen follows the size of the terminal (at least 60 x 14 characters). The neon colours want 256 colours; the launcher sets
+.B TERM=xterm\-256color
+when the terminal says plain xterm.
+.SH OPTIONS
+.TP
+.B 0 ... 9
+creativity at the start: 0 always gives the surest answer (best for quizzes and sums), 5 is the default, 9 the freest.
+.TP
+.B /P
+plain text mode, without the full-screen interface and the sound; it also starts when the input or the output is not a terminal, so
+.B tiny < questions.txt
+works.
+.TP
+.B /QUIET
+start with the sound off.
+.TP
+.B /MONO
+no colours.
+.TP
+.B /CLASSIC
+the DOS colours instead of the neon palette.
+.TP
+.B /DEMO
+the program asks a few questions itself.
+.SH KEYS
+.TP
+.B Enter
+ask the question.
+.TP
+.B PgUp, PgDn
+the volume up and down, ten levels (the buttons in the toolbar of the terminal of the N900). The level is remembered in
+.IR ~/.tiny\-volume .
+.TP
+.B Ctrl\-A
+help (F1 in DOS).
+.TP
+.B Ctrl\-S
+sound on or off (F2).
+.TP
+.B Ctrl\-V
+robot voice on or off (F3).
+.TP
+.B Ctrl\-T
+creativity 0 to 9 (F4).
+.TP
+.B Up arrow
+the last question.
+.TP
+.B Esc
+quit. In the line for the question the words
+.B quit
+and
+.B exit
+quit as well, and
+.B cls
+clears the screen.
+.SH ENVIRONMENT
+.TP
+.B TINY_BIN
+the network file (default
+.IR /opt/tiny/share/tiny/TINY.BIN ).
+.TP
+.B TINY_VOLUME
+the volume, 1 to 10, for one run.
+.TP
+.B TINY_SILENT
+if set, no sound.
+.SH FILES
+.TP
+.I /opt/tiny/share/tiny/TINY.BIN
+the trained network (380 kB).
+.TP
+.I ~/.tiny\-volume
+the last volume.
+.SH NOTES
+The sound is played through
+.BR paplay (1):
+the sound policy of the N900 cuts the volume of a program it does not know to about 30 %, unless the stream sets its volume itself, as
+.B paplay
+does. So the volume of TINY is its own and does not follow the volume buttons of the phone.
+.SH AUTHOR
+TINY 2.1: https://github.com/WollyMonjac/Tiny\-2.1 ("written by Fable 5.2 and trained by Opus 5.5"). The port to the N900: https://github.com/n900\-resurrection/Tiny\-2.1.

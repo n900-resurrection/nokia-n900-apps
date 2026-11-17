@@ -88,6 +88,7 @@ build/stamps/mandoc-$(MANDOC_VERSION).built:
 
 BF-INTERPRETER := Build the Brainfuck interpreter (more: make -C apps/bf-interpreter)
 MANDOC := Build mandoc, the man page viewer (more: make -C apps/mandoc)
+TINY := Build TINY, the quiz robot (waiting for the licence: MANUAL; more: make -C apps/tiny)
 TTY-CLOCK := Build tty-clock (more: make -C apps/tty-clock)
 OPENSSL := Build static OpenSSL 3 (dependency) (more: make -C apps/openssl)
 NTP-SYNC := Check the ntp-sync script (more: make -C apps/ntp-sync)
