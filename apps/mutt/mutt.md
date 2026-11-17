@@ -31,4 +31,4 @@ make -C apps/mutt test       # 15 testů na telefonu
   na `/opt/curl/etc/ssl/cacert.pem`. Proměnné `ssl_ca_certificates_file` Mutt 2.4.3 nemá.
 - Bez hlavičkové cache (`header_cache` neexistuje), bez GPGME a bez NLS.
 - Soubor licence je `COPYRIGHT` (Mutt nemá `COPYING`).
-- Dokumentace Muttu (manuál) se nestaví; `mutt -h`, `man` na N900 nefunguje (chybí nroff), nápověda v programu: `?`.
+- Dokumentace Muttu (manuál) se nestaví; `mutt -h`, `man` z BusyBoxu na N900 nefunguje (chybí nroff; balíček `mandoc` to řeší, ale manuál Muttu se nestaví), nápověda v programu: `?`.

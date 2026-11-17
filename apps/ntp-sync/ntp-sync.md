@@ -22,7 +22,7 @@ ntp-sync -h     # nápověda
 ```sh
 make -C apps/ntp-sync install     # kontrola syntaxe, balíček a instalace
 ```
-Man stránka `ntp-sync.1` je v balíčku, ale na N900 se nezobrazí: chybí `nroff` a Maemo `/usr/share/man` maže (`docpurge`).
+Man stránka `ntp-sync.1` je v balíčku; `man` z BusyBoxu ji na N900 nezobrazí (chybí `nroff`, Maemo maže `/usr/share/man`), po instalaci balíčku `mandoc` ano (`man ntp-sync`).
 Použij `ntp-sync -h`. Na počítači: `man ./apps/ntp-sync/ntp-sync.1`.
 
 ## Ověřeno (2026-11-05)

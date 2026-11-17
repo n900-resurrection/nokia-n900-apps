@@ -1,0 +1,62 @@
+.TH BF 1 "November 2026" "bf-interpreter 0.1" "User Commands"
+.SH NAME
+bf \- Brainfuck interpreter
+.SH SYNOPSIS
+.B bf
+.I file.bf
+.SH DESCRIPTION
+.B bf
+reads the Brainfuck program in
+.I file.bf
+and runs it. Characters other than the eight commands are comments.
+The tape starts with one cell and grows to the right when the program needs it.
+Cells are bytes and wrap around at 256.
+.PP
+The commands:
+.TP
+.B >
+move the pointer one cell to the right
+.TP
+.B <
+move the pointer one cell to the left
+.TP
+.B +
+increment the cell
+.TP
+.B \-
+decrement the cell
+.TP
+.B .
+write the cell as a character to standard output
+.TP
+.B ,
+read a character from standard input into the cell
+.TP
+.B [
+jump behind the matching
+.B ]
+if the cell is zero
+.TP
+.B ]
+jump back to the matching
+.B [
+if the cell is not zero
+.SH EXIT STATUS
+.TP
+0
+the program ended
+.TP
+1
+the file could not be read or is empty, or the pointer moved left of the first cell, or memory ran out
+.TP
+2
+wrong number of arguments (usage is printed)
+.SH EXAMPLES
+.nf
+bf /opt/bf-interpreter/share/examples/hello_world.bf
+.fi
+.SH BUGS
+.B char
+is unsigned on ARM: a program that tests for end of file (\-1) on input may behave differently from the same program on x86.
+.SH AUTHOR
+Jaroslav Körner. Project: https://github.com/elPytel/BF_interpreter (MIT).

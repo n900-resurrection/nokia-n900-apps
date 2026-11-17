@@ -75,6 +75,8 @@ test:
 	@fail=0; for t in $(ROOT)/apps/*/test.sh; do a=$$(basename $$(dirname $$t)); case " $(MANUALAPPS) " in *" $$a "*) continue;; esac; printf '\n$(BOLD)== %s$(RESET)\n' $$a; $(MAKE) --no-print-directory -C apps/$$a test || fail=$$((fail+1)); done; \
 	if [ $$fail -eq 0 ]; then printf '\n$(GREEN)All test suites passed$(RESET)\n'; else printf '\n$(RED)%s test suite(s) failed$(RESET)\n' $$fail; exit 1; fi
 
+BF-INTERPRETER := Build the Brainfuck interpreter (more: make -C apps/bf-interpreter)
+MANDOC := Build mandoc, the man page viewer (more: make -C apps/mandoc)
 TTY-CLOCK := Build tty-clock (more: make -C apps/tty-clock)
 OPENSSL := Build static OpenSSL 3 (dependency) (more: make -C apps/openssl)
 NTP-SYNC := Check the ntp-sync script (more: make -C apps/ntp-sync)
