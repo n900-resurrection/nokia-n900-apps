@@ -87,6 +87,7 @@ build/stamps/mandoc-$(MANDOC_VERSION).built:
 	$(MAKE) --no-print-directory mandoc
 
 BF-INTERPRETER := Build the Brainfuck interpreter (more: make -C apps/bf-interpreter)
+LLAMA2C := Build llama2.c, the small language model engine (more: make -C apps/llama2c)
 MANDOC := Build mandoc, the man page viewer (more: make -C apps/mandoc)
 TINY := Build TINY, the quiz robot (waiting for the licence: MANUAL; more: make -C apps/tiny)
 TTY-CLOCK := Build tty-clock (more: make -C apps/tty-clock)

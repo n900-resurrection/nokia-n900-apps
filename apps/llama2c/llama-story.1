@@ -1,0 +1,42 @@
+.TH LLAMA\-STORY 1 "2026-11-17" "llama2c" "User Commands"
+.SH NAME
+llama\-story \- a pocket story teller: a small language model continues the first words of a story
+.SH SYNOPSIS
+.B llama\-story
+.RB [ \-s ]
+.RB [ \-n
+.IR steps ]
+.RB [ \-t
+.IR temperature ]
+.RI [ "first words" ]
+.SH DESCRIPTION
+Asks for the first words of a story (or takes them from the command line) and lets the model stories15M (15 million weights, trained on TinyStories) go on, about 3 tokens per second on the N900.
+The model has 61 MB and is not in the package: the first time,
+.B llama\-story
+offers to download it from huggingface.co (with
+.BR curl (1)) to
+.IR ~/llama2c ,
+checks its SHA\-256, and reuses it afterwards. When the download is refused or fails, or there is too little space, or with
+.BR \-s ,
+the tiny stories260K (1 MB) of the package tells the story.
+.PP
+The models only continue a text. They do not answer questions and do not hold a conversation.
+.SH OPTIONS
+.TP
+.B \-s
+use the tiny model, without any download.
+.TP
+.BI \-n " steps"
+the number of tokens (default 200).
+.TP
+.BI \-t " temperature"
+the temperature (default 0.8; lower is more careful, higher more surprising).
+.SH ENVIRONMENT
+.TP
+.B LLAMA2C_MODELS
+where the downloaded model is kept (default
+.IR ~/llama2c ).
+.SH SEE ALSO
+.BR llama2c (1)
+.SH AUTHOR
+elPytel; the engine and the models are by Andrej Karpathy (MIT licence).

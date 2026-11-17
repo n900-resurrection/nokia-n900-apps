@@ -1,0 +1,63 @@
+.TH LLAMA2C 1 "2026-11-17" "llama2.c" "User Commands"
+.SH NAME
+llama2c, llama2c\-q8 \- run a small Llama 2 language model
+.SH SYNOPSIS
+.B llama2c
+.I model.bin
+.RI [ options ]
+.br
+.B llama2c\-q8
+.I model_q80.bin
+.RI [ options ]
+.SH DESCRIPTION
+.B llama2c
+is llama2.c (https://github.com/karpathy/llama2.c) by Andrej Karpathy, an inference engine for the Llama 2 architecture in one C file. It reads a model in the format of that project
+and continues a text (the prompt) one token at a time. With the small TinyStories models it writes simple children's stories.
+.B llama2c\-q8
+is the same for models quantized to int8 (version 2 of the format, made by export.py of the project).
+.PP
+A model has to fit in the memory of the phone: the engine reads all the weights for every token. stories15M (61 MB) runs at about 3 tokens per second on the N900; stories42M (167 MB) does not fit
+and takes half a minute per token.
+.SH OPTIONS
+.TP
+.BI \-t " temperature"
+the temperature, from 0 (always the likeliest token) up; default 1.0.
+.TP
+.BI \-p " p"
+the p of top\-p (nucleus) sampling, 0 to 1; default 0.9.
+.TP
+.BI \-s " seed"
+the random seed; default the time.
+.TP
+.BI \-n " steps"
+the number of tokens to generate; default 256; 0 is the length of the context of the model.
+.TP
+.BI \-i " prompt"
+the beginning of the text.
+.TP
+.BI \-z " tokenizer"
+a tokenizer file other than
+.I tokenizer.bin
+in the current directory. The package has
+.I /opt/llama2c/share/llama2c/tokenizer.bin
+for the models of Llama 2 size, and
+.I tok512.bin
+for stories260K.
+.TP
+.BI \-m " mode"
+.B generate
+(the default) or
+.BR chat .
+.TP
+.BI \-y " text"
+a system prompt in the chat mode.
+.SH EXAMPLES
+.nf
+llama2c /opt/llama2c/share/llama2c/stories260K.bin \e
+    \-z /opt/llama2c/share/llama2c/tok512.bin \-i "Once upon a time" \-n 100
+.fi
+.SH SEE ALSO
+.BR llama\-story (1),
+.BR n900 (7)
+.SH AUTHOR
+Andrej Karpathy (MIT licence). The package for the N900: https://github.com/n900\-resurrection

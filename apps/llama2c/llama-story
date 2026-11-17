@@ -1,0 +1,50 @@
+#!/bin/sh
+# llama-story: a pocket story teller. Asks for the first words of a story and lets a small language model (stories15M, 15 million weights) go on.
+# The model (61 MB) is downloaded once into ~/llama2c (or $LLAMA2C_MODELS); without it the tiny stories260K (1 MB) of the package is used.
+#   llama-story [-s] [-n steps] [-t temperature] [first words ...]       -s: the tiny model, no download
+D=/opt/llama2c/share/llama2c
+MODELS=${LLAMA2C_MODELS:-$HOME/llama2c}
+URL=https://huggingface.co/karpathy/tinyllamas/resolve/main/stories15M.bin
+SIZE=60816028
+SHA=cd590644d963867a2b6e5a1107f51fad663c41d79c149fbecbbb1f95fa81f49a
+STEPS=200; TEMP=0.8; SMALL=
+while [ $# -gt 0 ]; do
+    case $1 in
+        -s) SMALL=1; shift ;;
+        -n) STEPS=$2; shift 2 ;;
+        -t) TEMP=$2; shift 2 ;;
+        *) break ;;
+    esac
+done
+if [ -z "$SMALL" ]; then
+    M=$MODELS/stories15M.bin
+    if [ ! -s "$M" ]; then
+        echo "The story model stories15M (61 MB) is not on the phone yet."
+        free=$(df -k "$HOME" 2>/dev/null | awk 'NR==2 {print $4}')
+        [ -n "$free" ] && [ "$free" -lt 130000 ] && { echo "Not enough free space in $HOME (need 130 MB, have $((free / 1024)) MB). Using the tiny model."; SMALL=1; }
+        if [ -z "$SMALL" ]; then
+            printf "Download it now to %s? [y/N] " "$MODELS"
+            read a
+            case $a in y|Y) ;; *) echo "Using the tiny model."; SMALL=1 ;; esac
+        fi
+        if [ -z "$SMALL" ]; then
+            mkdir -p "$MODELS" && curl -fL --progress-bar -o "$M.part" "$URL" || { rm -f "$M.part"; echo "The download failed. Using the tiny model."; SMALL=1; }
+        fi
+        if [ -z "$SMALL" ]; then
+            if [ "$(sha256sum "$M.part" | cut -d' ' -f1)" = "$SHA" ]; then mv "$M.part" "$M"; else rm -f "$M.part"; echo "The file is damaged. Using the tiny model."; SMALL=1; fi
+        fi
+    fi
+fi
+if [ -n "$SMALL" ]; then
+    ARGS="$D/stories260K.bin -z $D/tok512.bin"
+else
+    ARGS="$M -z $D/tokenizer.bin"
+fi
+if [ $# -gt 0 ]; then PROMPT=$*; else printf "The first words of the story (Enter for \"Once upon a time\"): "; read PROMPT; fi
+[ -n "$PROMPT" ] || PROMPT="Once upon a time"
+echo
+# shellcheck disable=SC2086
+/opt/llama2c/bin/llama2c $ARGS -t "$TEMP" -n "$STEPS" -i "$PROMPT"
+echo
+printf "Press Enter to close. "
+read a
