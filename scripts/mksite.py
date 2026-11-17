@@ -6,6 +6,8 @@ included) and writes into the site repository (n900-resurrection.github.io):
 
     _data/packages.json              all packages with name, version, section, description, depends, sizes, links ...
     packages/<name>.md               one page per package (front matter only; the layout "package" of the theme draws it)
+    install/packages/<name>.install  an install file for the Application Manager: adds our catalogue and offers the package (none for the
+                                     packages needed before the catalogue works, BOOTSTRAP)
     assets/packages/icons/<name>.png the icon that is embedded in the package (XB-Maemo-Icon-26), else icons/packages/<name>.png of the main
                                      repository, else a plain one; all stored as 52x52
 
@@ -81,6 +83,20 @@ def to_52(path: Path, point: bool):
     subprocess.run(args, check=False)
 
 
+BOOTSTRAP = {"curl", "apt-transport-curl"}   # installed by hand with dpkg: the Application Manager cannot reach the repository without them
+
+INSTALL_FILE = """[install]
+catalogues = n900
+package = {name}
+
+[n900]
+name = N900 Resurrection
+uri = {base_url}
+dist = fremantle
+components = main
+"""
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--pool", default="n900-repository/pool", help="pool directory of the repository")
@@ -149,6 +165,13 @@ def main():
         (site / "packages" / f"{name}.md").write_text(
             f"---\nlayout: package\ntitle: \"{(c.get('XB-Maemo-Display-Name') or name).replace(chr(34), chr(39))}\"\npkg: {name}\npermalink: /packages/{name}/\n---\n",
             encoding="utf-8")
+    inst = site / "install" / "packages"
+    shutil.rmtree(inst, ignore_errors=True)
+    inst.mkdir(parents=True)
+    for p in out:
+        p["install"] = p["name"] not in BOOTSTRAP
+        if p["install"]:
+            (inst / f"{p['name']}.install").write_text(INSTALL_FILE.format(name=p["name"], base_url=a.base_url), encoding="utf-8")
     (site / "_data" / "packages.json").write_text(json.dumps(out, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     sections = sorted({p["section"] for p in out})
     print(f"{len(out)} packages in {len(sections)} sections: {', '.join(sections)}")
