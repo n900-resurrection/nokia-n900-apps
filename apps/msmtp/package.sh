@@ -33,4 +33,6 @@ SHORT_DESC="msmtp $VERSION SMTP client (TLS 1.3), sendmail replacement"
 LONG_DESC="msmtp $VERSION for Maemo 5 with OpenSSL 3. Sends mail through an SMTP server with login over TLS,
 for example smtp.centrum.cz port 465. Mutt needs it because Mutt without Cyrus SASL cannot log in to SMTP.
 Installed in /opt/msmtp, link /usr/bin/msmtp."
+# man pages (shown by the package mandoc)
+debpack_man "$PROJ/build/src/msmtp-$VERSION/doc/msmtp.1" "$PROJ/build/src/msmtp-$VERSION/doc/msmtpd.1"
 debpack_build

@@ -2,4 +2,5 @@
 override APP     := jq
 VERSION ?= 1.8.2
 RUN_CMD := echo '{"a":[1,2]}' | /usr/bin/jq -c '.a|map(.*2)'
+REV     ?= 1maemo2
 include ../../mk/app.mk

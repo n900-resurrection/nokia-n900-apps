@@ -38,4 +38,7 @@ DISPLAY_NAME="Wget"
 SHORT_DESC="GNU Wget $VERSION (HTTPS with TLS 1.3)"
 LONG_DESC="GNU Wget $VERSION for Maemo 5, linked with OpenSSL 3. Upgrades wget 1.10.2 of the device.
 Installed in /opt/wget, with a link /usr/bin/wget. Certificates: /opt/curl/etc/ssl/cacert.pem."
+# man page: made from wget.texi by the doc Makefile (texi2pod.pl and pod2man, both native Perl tools of the build container)
+make -s -C "$PROJ/build/obj/wget-$VERSION/doc" wget.1 > /dev/null
+debpack_man "$PROJ/build/obj/wget-$VERSION/doc/wget.1"
 debpack_build

@@ -23,4 +23,6 @@ SHORT_DESC="whiptail (newt $VERSION): dialog boxes for shell scripts"
 LONG_DESC="whiptail from newt $VERSION: text-mode menus, check lists, input boxes, message boxes and gauges for shell scripts (whiptail --menu, --checklist, --msgbox, --inputbox, --yesno), compatible with the common dialog options. Small: slang and popt are linked statically.
 Upstream: https://pagure.io/newt"
 MAINTAINER="elPytel (build of upstream newt by Red Hat and contributors)"
+# man pages (shown by the package mandoc)
+debpack_man "$PROJ/build/src/newt-$VERSION/whiptail.1"
 debpack_build

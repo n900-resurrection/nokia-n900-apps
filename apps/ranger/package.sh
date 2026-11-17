@@ -23,4 +23,6 @@ LONG_DESC="ranger $VERSION, a console file manager with VI key bindings, for Mae
 Run ranger in the terminal (arrow keys or h j k l, q quits). Images, PDF, HTML, audio and video open in the applications of the phone (Image Viewer, PDF Viewer, Browser, Media Player), text in vim; only directories and plain text are previewed.
 Upstream: https://ranger.fm/"
 MAINTAINER="elPytel (build of upstream ranger by Roman Zimbelmann and contributors)"
+# man pages (shown by the package mandoc)
+debpack_man "$PROJ/build/src/ranger-$VERSION/doc/ranger.1" "$PROJ/build/src/ranger-$VERSION/doc/rifle.1"
 debpack_build

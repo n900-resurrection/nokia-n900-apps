@@ -25,4 +25,6 @@ LONG_DESC="micro $VERSION: a small editor for the terminal that works the way mo
 paste, Ctrl-F searches, Ctrl-E opens a command line (help, set, plugin), the mouse works. Syntax highlighting for many languages. An easier alternative to vim
 and nano on the N900 (the Q key and the arrows are on the keyboard). Built for Maemo 5 with Go (static). Upstream: https://micro-editor.github.io"
 MAINTAINER="elPytel (build of upstream micro by Zachary Yedidia and contributors)"
+# man pages (shown by the package mandoc)
+debpack_man "$PROJ/build/src/micro-$VERSION/assets/packaging/micro.1"
 debpack_build

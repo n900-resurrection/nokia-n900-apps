@@ -2,6 +2,6 @@
 # Needs the Rust toolchain of apps/rust (make -C apps/rust build).
 override APP     := fd
 VERSION ?= 10.5.2
-REV     ?= 1maemo1
+REV     ?= 1maemo2
 RUN_CMD := /usr/bin/fd --version
 include ../../mk/app.mk

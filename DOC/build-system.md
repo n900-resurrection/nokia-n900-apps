@@ -33,6 +33,15 @@ on the host (`pgrep -af 'workshop.*exec'`).
 the `bt-kbmouse` icons with 675 of 2304 pixels different, so a plain `make` changed PNGs that are committed. The host output is pixel-identical to the committed files; the bytes differ only where the old files
 still carried time stamps (the script drops them now). Packages without an icon of their own get one from `icons/packages/<package>.png` (`scripts/make-pkg-icons.sh`: console tools show a green `>_`).
 
+## Man pages (2026-11-17)
+The phone has only the BusyBox `man` (it needs `nroff`, which is missing), so the package `mandoc` provides `man`, `apropos` and `whatis` (see [apps/mandoc/mandoc.md](../apps/mandoc/mandoc.md)). It shows
+every page in `/opt/<package>/share/man/man<N>/<name>.<N>.gz`. A package puts its pages there with two helpers of `scripts/debpack.sh`, called in its `package.sh` before `debpack_build`:
+- `debpack_man <file>...`: the roff files from the sources or the build directory (the section is taken from the extension, `.gz` allowed); a missing file is an error.
+- `debpack_man_download <url> [name.N]`: a page that the sources we build from do not have (Go and Rust projects: age, fd, fzf; cached in `build/downloads`).
+Special cases: `git` takes the pages of the official `git-manpages-<version>.tar.xz` (207 pages), `bat` the `bat.1` of its release tarball, `ripgrep` generates its page with `rg --generate man` under qemu-user,
+`wget` makes `wget.1` from `wget.texi` with the doc Makefile (Perl in the container). Raising `REV` is enough to repack a package that gets a page; nothing is rebuilt.
+Without a page for now: weechat (asciidoctor), cbonsai (scdoc), busybox37, quickjs, python3.11, gurk, wireguard-go and our own tools (see the TODO list).
+
 ## The size of the repository
 A `.deb` that is repacked without a change has other bytes (time stamps), so every `make repo` and commit stores a new copy of it in the git history of `n900-repository`. Reproducible packaging and other
 ways to keep the repository small are in the TODO list ("Růst repozitáře n900-repository").

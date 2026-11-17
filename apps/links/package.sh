@@ -37,4 +37,6 @@ sites (TLS 1.2/1.3) open, unlike in the stock browser. Start it from the menu or
 Certificates are verified against the bundled Mozilla CA list (/opt/links/etc/cacert.pem, override with SSL_CERT_FILE).
 Upstream: http://links.twibright.com"
 MAINTAINER="elPytel (build of upstream Links by Mikulas Patocka and contributors)"
+# man pages (shown by the package mandoc)
+debpack_man "$PROJ/build/src/links-$VERSION/links.1"
 debpack_build

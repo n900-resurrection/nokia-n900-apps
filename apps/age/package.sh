@@ -28,4 +28,7 @@ LONG_DESC="age $VERSION: encrypts files with a passphrase (age -p file > file.ag
 age -d -i key.txt file.age). Small, modern (X25519, ChaCha20-Poly1305), no configuration like gpg. Built for Maemo 5 with Go (static).
 Upstream: https://age-encryption.org"
 MAINTAINER="elPytel (build of upstream age by Filippo Valsorda and contributors)"
+# man pages (shown by the package mandoc)
+debpack_man_download "https://raw.githubusercontent.com/FiloSottile/age/v$VERSION/doc/age.1" age.1
+debpack_man_download "https://raw.githubusercontent.com/FiloSottile/age/v$VERSION/doc/age-keygen.1" age-keygen.1
 debpack_build

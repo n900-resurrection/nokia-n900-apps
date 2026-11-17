@@ -35,4 +35,11 @@ LONG_DESC="bat $VERSION: shows files like cat, but with syntax highlighting, lin
 Built for Maemo 5 with Rust as a static binary, without the git markers of the margin. The pager is cat by default (the less of the phone has no colour support): set BAT_PAGER to change it. Needs a terminal with colours (the menu terminal has them).
 Upstream: https://github.com/sharkdp/bat"
 MAINTAINER="elPytel (build of upstream bat by David Peter and contributors)"
+# man page: bat.1 is made by the build script of bat; the release tarball of the same version has it ready (the arm build is only a container for the page)
+BT="$PROJ/build/downloads/bat-v$VERSION-arm-unknown-linux-gnueabihf.tar.gz"
+mkdir -p "$PROJ/build/downloads"
+[ -s "$BT" ] || curl -fsSL --retry 3 -o "$BT" "https://github.com/sharkdp/bat/releases/download/v$VERSION/bat-v$VERSION-arm-unknown-linux-gnueabihf.tar.gz"
+BTT=$(mktemp -d); tar -C "$BTT" -xzf "$BT" --wildcards '*/bat.1'
+debpack_man "$BTT"/*/bat.1
+rm -rf "$BTT"
 debpack_build

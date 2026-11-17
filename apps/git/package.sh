@@ -61,4 +61,11 @@ SHORT_DESC="Distributed version control system (modern, HTTPS over TLS 1.3)"
 LONG_DESC="git $VERSION built for Maemo 5, linked with libcurl and mbedTLS so that it can clone from
 HTTPS servers such as GitHub (the old git 1.6.2 of the device cannot). Installed in /opt/git,
 replaces the git 1.6.2-1 package. Upstream: https://git-scm.com/"
+# man pages: the official manual pages tarball of the same version (the build makes none: asciidoc and xmlto are not on the build host). All sections 1, 5, 7.
+GM="$PROJ/build/downloads/git-manpages-$VERSION.tar.xz"
+mkdir -p "$PROJ/build/downloads"
+[ -s "$GM" ] || curl -fsSL --retry 3 -o "$GM" "https://mirrors.edge.kernel.org/pub/software/scm/git/git-manpages-$VERSION.tar.xz"
+GMT=$(mktemp -d); tar -C "$GMT" -xf "$GM"
+debpack_man "$GMT"/man1/*.1 "$GMT"/man5/*.5 "$GMT"/man7/*.7
+rm -rf "$GMT"
 debpack_build

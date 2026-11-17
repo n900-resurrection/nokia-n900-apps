@@ -24,4 +24,6 @@ LONG_DESC="tig $VERSION: browse the history of a git repository, diffs, files an
 tig blame file, tig show). Keys: Enter opens, q closes, h shows the help. It uses the git of this repository's git package (modern git with HTTPS).
 Built for Maemo 5 with a static ncursesw (UTF-8). Upstream: https://jonas.github.io/tig"
 MAINTAINER="elPytel (build of upstream tig by Jonas Fonseca and contributors)"
+# man pages (shown by the package mandoc)
+debpack_man "$PROJ/build/src/tig-$VERSION/doc/tig.1" "$PROJ/build/src/tig-$VERSION/doc/tigrc.5" "$PROJ/build/src/tig-$VERSION/doc/tigmanual.7"
 debpack_build

@@ -31,4 +31,6 @@ LONG_DESC="GNU screen $VERSION: several programs in one terminal, detach and rea
 Ctrl-A n/p next/previous, Ctrl-A [ scrollback). An alternative to tmux for people who know it. Sockets go to ~/.screen. Defaults in /opt/screen/etc/screenrc.
 Built for Maemo 5 with the ncurses of the phone. Upstream: https://www.gnu.org/software/screen"
 MAINTAINER="elPytel (build of GNU screen)"
+# man pages (shown by the package mandoc)
+debpack_man "$PROJ/build/src/screen-$VERSION/doc/screen.1"
 debpack_build

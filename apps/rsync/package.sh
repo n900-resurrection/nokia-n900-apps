@@ -25,4 +25,6 @@ LONG_DESC="rsync $VERSION for Maemo 5: copies and synchronises files and directo
 It uses the ssh of the phone as the transport (the same rsync must be on the other side). Built for armel, glibc 2.5, without the optional compression
 and checksum libraries. Upstream: https://rsync.samba.org"
 MAINTAINER="elPytel (build of upstream rsync by Andrew Tridgell, Wayne Davison and contributors)"
+# man pages (shown by the package mandoc)
+debpack_man "$PROJ/build/src/rsync-$VERSION/rsync.1" "$PROJ/build/src/rsync-$VERSION/rsync-ssl.1" "$PROJ/build/src/rsync-$VERSION/rsyncd.conf.5"
 debpack_build

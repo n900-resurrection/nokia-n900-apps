@@ -25,4 +25,6 @@ LONG_DESC="Amfora $VERSION: a terminal browser for the Gemini protocol (small, t
 or type a gemini:// address (for example gemini://geminiprotocol.net), Tab/Enter follow links, q quits, ? shows the keys. Servers are trusted on first use (TOFU).
 Built for Maemo 5 with Go (static). Upstream: https://github.com/makew0rld/amfora"
 MAINTAINER="elPytel (build of upstream amfora by makeworld and contributors)"
+# man pages (shown by the package mandoc)
+debpack_man "$PROJ/build/src/amfora-$VERSION/amfora.1"
 debpack_build

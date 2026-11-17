@@ -53,4 +53,6 @@ SHORT_DESC="Command line tool for transferring data with URLs (TLS 1.3)"
 LONG_DESC="curl $VERSION with mbedTLS $MBEDTLS_VERSION, built for Maemo 5. Supports HTTPS with TLS 1.2/1.3,
 so it works with servers that the system OpenSSL 0.9.8 of the device cannot talk to.
 Installed in /opt/curl, with a link /usr/bin/curl. Upstream: https://curl.se/"
+# man pages (shown by the package mandoc)
+debpack_man "$PROJ/build/obj/curl-$VERSION/docs/cmdline-opts/curl.1" "$PROJ/build/obj/curl-$VERSION/docs/curl-config.1"
 debpack_build

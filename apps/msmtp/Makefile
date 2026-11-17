@@ -3,4 +3,5 @@ override APP     := msmtp
 DEPS    := openssl
 VERSION ?= 1.8.34
 RUN_CMD := /usr/bin/msmtp --version | head -3
+REV     ?= 1maemo2
 include ../../mk/app.mk

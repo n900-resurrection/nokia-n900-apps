@@ -27,4 +27,9 @@ LONG_DESC="ripgrep $VERSION (rg): searches directories recursively for a regular
 much faster than grep -r. Example: rg -n 'TODO' ~/src   or   rg --files | rg png. Built for Maemo 5 with Rust as a static binary (without PCRE2).
 Upstream: https://github.com/BurntSushi/ripgrep"
 MAINTAINER="elPytel (build of upstream ripgrep by Andrew Gallant and contributors)"
+# man page: ripgrep makes it itself (`rg --generate man`); the ARM binary runs under qemu-user with the libraries of the sysroot
+RGMAN=$(mktemp -d)
+QEMU_LD_PREFIX="$PROJ/sysroot" "$OUT/rg" --generate man > "$RGMAN/rg.1"
+debpack_man "$RGMAN/rg.1"
+rm -rf "$RGMAN"
 debpack_build

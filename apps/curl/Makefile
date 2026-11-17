@@ -3,4 +3,5 @@
 override APP     := curl
 VERSION ?= 8.23.0
 RUN_CMD := /usr/bin/curl -sS -o /dev/null -w "http=%{http_code} verify=%{ssl_verify_result}\n" https://github.com
+REV     ?= 1maemo2
 include ../../mk/app.mk

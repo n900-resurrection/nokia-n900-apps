@@ -25,4 +25,6 @@ LONG_DESC="fzf $VERSION: an interactive filter for lists. Pipe anything into it 
 line you want and press Enter. With bash 5 the key bindings come from: eval \"\$(fzf --bash)\" (Ctrl-R history, Ctrl-T files, Alt-C directories).
 Built for Maemo 5 with Go (static, GOARM=7, the 2.6.28 kernel needs the patched toolchain of this project). Upstream: https://github.com/junegunn/fzf"
 MAINTAINER="elPytel (build of upstream fzf by Junegunn Choi and contributors)"
+# man pages (shown by the package mandoc)
+debpack_man_download "https://raw.githubusercontent.com/junegunn/fzf/v$VERSION/man/man1/fzf.1" fzf.1
 debpack_build

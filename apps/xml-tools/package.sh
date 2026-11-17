@@ -29,4 +29,6 @@ LONG_DESC="Command-line XML tools built for Maemo 5 (armel, glibc 2.5), statical
 xmllint (well-formedness, XPath, pretty-printing, schema validation) and xsltproc (XSLT 1.0 with EXSLT).
 The system libxml2 2.6.32 stays untouched.
 Upstream: https://gitlab.gnome.org/GNOME/libxml2"
+# man pages (shown by the package mandoc)
+debpack_man "$PROJ/build/src/libxml2-$VERSION/dist-doc/xmllint.1" "$PROJ/build/src/libxml2-$VERSION/dist-doc/xmlcatalog.1" "$PROJ/build/src/libxslt-$XSLT_VERSION/doc/xsltproc.1"
 debpack_build

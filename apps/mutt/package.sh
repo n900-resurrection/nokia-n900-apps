@@ -39,4 +39,6 @@ SHORT_DESC="Mutt $VERSION terminal e-mail client (IMAP/SMTP over TLS 1.3)"
 LONG_DESC="Mutt $VERSION for Maemo 5 with OpenSSL 3, so it can talk to servers that require TLS 1.2 or newer
 (for example Centrum). Replaces the old mutt 1.5.20. Installed in /opt/mutt, link /usr/bin/mutt.
 Example configuration: /opt/mutt/share/doc/mutt/muttrc.centrum.example."
+# man pages (shown by the package mandoc)
+debpack_man "$PROJ/build/obj/mutt-$VERSION/doc/mutt.1" "$PROJ/build/obj/mutt-$VERSION/doc/pgpewrap.1" "$PROJ/build/obj/mutt-$VERSION/doc/smime_keys.1" "$PROJ/build/obj/mutt-$VERSION/doc/mutt_pgpring.1"
 debpack_build

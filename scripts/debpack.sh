@@ -52,6 +52,26 @@ EOF
     fi
 }
 
+# debpack_man <file>...: install man pages (roff source, .gz allowed) as /opt/$PKG/share/man/man<N>/<name>.<N>.gz, N from the extension.
+# The package mandoc shows them (its profile script puts every /opt/*/share/man on MANPATH). A missing file is an error: the page was expected.
+debpack_man() {
+    local f base sec dir
+    for f in "$@"; do
+        [ -s "$f" ] || { echo "debpack_man: missing $f" >&2; return 1; }
+        base=$(basename "$f" .gz); sec=${base##*.}; sec=${sec:0:1}
+        dir="$STAGE/opt/$PKG/share/man/man$sec"; mkdir -p "$dir"
+        case $f in *.gz) cp "$f" "$dir/$base.gz" ;; *) gzip -9n -c "$f" > "$dir/$base.gz" ;; esac
+    done
+}
+
+# debpack_man_download <url> [name.N]: a man page that is not in the sources we build from: downloaded once (build/downloads/man-<name>), then as debpack_man.
+debpack_man_download() {
+    local url=$1 name=${2:-$(basename "$1")} dl="$PROJ/build/downloads" tmp
+    mkdir -p "$dl"
+    [ -s "$dl/man-$PKG-$name" ] || curl -fsSL --retry 3 -o "$dl/man-$PKG-$name" "$url"
+    tmp=$(mktemp -d); cp "$dl/man-$PKG-$name" "$tmp/$name"; debpack_man "$tmp/$name"; rm -rf "$tmp"
+}
+
 # debpack_build: write DEBIAN/control, normalise permissions and build the .deb.
 debpack_build() {
     : "${PKG:?}" "${VERSION:?}" "${STAGE:?}" "${SECTION:?}" "${DEPENDS:?}" "${DISPLAY_NAME:?}" "${SHORT_DESC:?}" "${LONG_DESC:?}"

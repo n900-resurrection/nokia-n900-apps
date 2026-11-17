@@ -26,4 +26,6 @@ LONG_DESC="fd $VERSION: finds files by name with a regular expression, coloured 
 results (fd -e png -x ls -l). Example: fd report ~/MyDocs   or   fd -e deb. Built for Maemo 5 with Rust as a static binary.
 Upstream: https://github.com/sharkdp/fd"
 MAINTAINER="elPytel (build of upstream fd by David Peter and contributors)"
+# man pages (shown by the package mandoc)
+debpack_man_download "https://raw.githubusercontent.com/sharkdp/fd/v$VERSION/doc/fd.1" fd.1
 debpack_build

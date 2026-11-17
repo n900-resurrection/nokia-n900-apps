@@ -25,4 +25,6 @@ SHORT_DESC="Command-line JSON processor"
 LONG_DESC="jq $VERSION built for Maemo 5 (armel, glibc 2.5). Filters and transforms JSON,
 used for example with the Audiobookshelf API. Regular expressions via the bundled oniguruma.
 Upstream: https://jqlang.org/"
+# man pages (shown by the package mandoc)
+debpack_man "$PROJ/build/src/jq-$VERSION/jq.1"
 debpack_build

@@ -8,7 +8,7 @@ DEPS    := curl
 VERSION ?= 2.56.0
 # EPOCH 1: the community package of this name has an epoch (mc 1:4.8.14, git 1:1.8.3, smb 3.5.6 in extras-devel); without it that older package counts as the newer one
 EPOCH   ?= 1
-REV     ?= 1maemo2
+REV     ?= 1maemo3
 RUN_CMD := /usr/bin/git --version && /usr/bin/git ls-remote https://github.com/octocat/Hello-World.git HEAD
 EMU_BIN := /project/build/out/git-$(VERSION)/root/opt/git/bin/git
 include ../../mk/app.mk
