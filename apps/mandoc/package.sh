@@ -76,4 +76,6 @@ LONG_DESC="mandoc $VERSION built for Maemo 5 (armel, static). The phone has only
 installs man, apropos, whatis and makewhatis in /usr/local/bin. The search path includes /opt/<package>/share/man of every package (set at login in /etc/profile.d/mandoc.sh).
 Open a new terminal, then: man mandoc.
 Upstream: https://mandoc.bsd.lv/ (ISC licence)"
+# man pages (shown by the package mandoc)
+debpack_man "$PROJ/apps/mandoc/n900.7"
 debpack_build

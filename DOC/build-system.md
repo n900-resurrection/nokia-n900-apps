@@ -40,6 +40,9 @@ every page in `/opt/<package>/share/man/man<N>/<name>.<N>.gz`. A package puts it
 - `debpack_man_download <url> [name.N]`: a page that the sources we build from do not have (Go and Rust projects: age, fd, fzf; cached in `build/downloads`).
 Special cases: `git` takes the pages of the official `git-manpages-<version>.tar.xz` (207 pages), `bat` the `bat.1` of its release tarball, `ripgrep` generates its page with `rg --generate man` under qemu-user,
 `wget` makes `wget.1` from `wget.texi` with the doc Makefile (Perl in the container). Raising `REV` is enough to repack a package that gets a page; nothing is rebuilt.
+Our own tools write their pages by hand in roff (`man(7)`, like `apps/bf-interpreter/bf.1`) as `apps/<app>/<name>.<N>`, committed next to the scripts, and install them with `debpack_man`. `make manlint` runs
+`mandoc -T lint -W warning` over `apps/*/*.[1-8]` (with the ARM mandoc under qemu-user in the Workshop; the first run builds mandoc); any warning fails, and `make repo` runs it first. The date in `.TH` has to be `YYYY-MM-DD`.
+Pages so far: `apt(1)` (apt-n900), `apt-transport-curl(8)` and `apt-transport-curl-check(8)`, `bf(1)`, `ntp-sync(1)`, and the overview `n900(7)` (in the package mandoc).
 Without a page for now: weechat (asciidoctor), cbonsai (scdoc), busybox37, quickjs, python3.11, gurk, wireguard-go and our own tools (see the TODO list).
 
 ## The size of the repository

@@ -14,7 +14,7 @@ ISC licence) formats pages itself, without groff.
 - `mandoc-update` (also `makewhatis`) builds the index `mandoc.db` in each of these directories. Without an index `man` works but prints a warning (`outdated mandoc.db lacks ...`) and `apropos` finds nothing.
   The index is rebuilt after the installation of the package and after every `apt-get` run (`/etc/apt/apt.conf.d/50mandoc`, `DPkg::Post-Invoke`). **Not** after `dpkg -i` or an installation through the
   Application Manager: run `mandoc-update` as root then.
-- `Depends: libc6 (>= 2.5)`; the binary is linked statically (zlib for the `.gz` pages). The package carries the manual of mandoc itself (`man mandoc`, `man man.conf`, `man mdoc` is the guide to writing pages).
+- `Depends: libc6 (>= 2.5)`; the binary is linked statically (zlib for the `.gz` pages). The package also carries `n900(7)` (`man n900`: what the project installs, the repository, how the manual pages work), and the manual of mandoc itself (`man mandoc`, `man man.conf`, `man mdoc` is the guide to writing pages).
 
 ## Build
 

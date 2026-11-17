@@ -1,0 +1,69 @@
+.TH N900 7 "2026-11-17" "N900 Resurrection" "Miscellaneous Information"
+.SH NAME
+n900 \- software for the Nokia N900 from the N900 Resurrection project
+.SH DESCRIPTION
+The Nokia N900 runs Maemo 5 "Fremantle" (armel, glibc 2.5). This project builds modern software for it and serves it as an apt repository.
+Every package installs under
+.IR /opt/<package> ,
+with a link in
+.I /usr/bin
+for the commands; the manual pages are in
+.IR /opt/<package>/share/man ,
+the documentation and the licence in
+.IR /opt/<package>/share/doc/<package> .
+.SH REPOSITORY
+The source line (in
+.IR /etc/apt/sources.list.d/n900.list ):
+.PP
+.RS
+deb https://n900-resurrection.github.io/n900-repository fremantle main
+.RE
+.PP
+The apt of the phone speaks TLS 1.0 only, so the packages
+.B curl
+and
+.B apt\-transport\-curl
+(see
+.BR apt\-transport\-curl (8))
+are installed by hand first, with
+.BR "dpkg \-i" .
+They need
+.B bash3
+and
+.B coreutils\-gnu
+from Extras. The repository is not signed yet.
+The Application Manager can add it from an install file.
+.SH THE MANUAL PAGES
+The BusyBox
+.B man
+of the phone cannot format a page (it needs
+.BR nroff ).
+The package
+.B mandoc
+provides
+.BR man ,
+.B apropos
+and
+.BR whatis .
+The search path is set at login by
+.IR /etc/profile.d/mandoc.sh ,
+so open a new terminal after the installation. The index for
+.B apropos
+is rebuilt by
+.B mandoc\-update
+(run it as root after you install a package with
+.B dpkg \-i
+or with the Application Manager;
+.B apt\-get
+does it by itself).
+.SH SEE ALSO
+.BR apt (1),
+.BR apt\-transport\-curl (8),
+.BR man (1),
+.BR mandoc (1)
+.PP
+The web site, with the package catalogue and the guide: https://n900-resurrection.github.io
+.br
+The sources: https://github.com/n900-resurrection
+.SH AUTHOR
+elPytel.

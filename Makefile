@@ -30,7 +30,8 @@ MANUALAPPS := $(foreach a,$(APPS),$(if $(shell grep -l '^MANUAL' apps/$(a)/Makef
 DEBAPPS := $(foreach a,$(or $(APP),$(filter-out $(MANUALAPPS),$(APPS))),$(if $(wildcard apps/$(a)/package.sh),$(a)))
 DEBS := Build the .deb packages of all apps (APP="a b" selects; up to date ones are skipped; INSTALL=1 installs too)
 REPO := Build the apt repository in ./n900-repository from the current .deb of every app (runs make debs first; see DOC/apt-repo.md)
-repo: debs
+MANDOC_VERSION := 1.14.6
+repo: debs manlint
 	@printf '\n$(BOLD)== repository$(RESET)\n'
 	$(INSIDE) env C_BOLD='$(BOLD)' C_GREEN='$(GREEN)' C_CYAN='$(CYAN)' C_YELLOW='$(YELLOW)' C_PURPLE='$(PURPLE)' C_RESET='$(RESET)' /project/scripts/mkrepo.sh $(foreach a,$(DEBAPPS),build/deb/$(shell $(MAKE) --no-print-directory -s -C apps/$(a) debfile))
 
@@ -74,6 +75,16 @@ TEST := Run the tests of all apps on the N900 (apps/*/test.sh, not the MANUAL on
 test:
 	@fail=0; for t in $(ROOT)/apps/*/test.sh; do a=$$(basename $$(dirname $$t)); case " $(MANUALAPPS) " in *" $$a "*) continue;; esac; printf '\n$(BOLD)== %s$(RESET)\n' $$a; $(MAKE) --no-print-directory -C apps/$$a test || fail=$$((fail+1)); done; \
 	if [ $$fail -eq 0 ]; then printf '\n$(GREEN)All test suites passed$(RESET)\n'; else printf '\n$(RED)%s test suite(s) failed$(RESET)\n' $$fail; exit 1; fi
+
+MANLINT := Check our own man pages (apps/*/*.[1-8]) with mandoc -T lint; any warning fails (builds mandoc once)
+manlint: build/stamps/mandoc-$(MANDOC_VERSION).built
+	@printf '\n$(BOLD)== man pages$(RESET)\n'; \
+	n=$$(ls apps/*/*.[1-8] 2>/dev/null | wc -l); \
+	out=$$($(INSIDE) bash -c 'cd /project && /project/build/out/mandoc-$(MANDOC_VERSION)/root/opt/mandoc/bin/mandoc -T lint -W warning apps/*/*.[1-8]' 2>&1); \
+	if [ -z "$$out" ]; then printf '$(GREEN)%s man pages, no warnings$(RESET)\n' $$n; else printf '%s\n$(RED)man pages: warnings above$(RESET)\n' "$$out"; exit 1; fi
+
+build/stamps/mandoc-$(MANDOC_VERSION).built:
+	$(MAKE) --no-print-directory mandoc
 
 BF-INTERPRETER := Build the Brainfuck interpreter (more: make -C apps/bf-interpreter)
 MANDOC := Build mandoc, the man page viewer (more: make -C apps/mandoc)
