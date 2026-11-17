@@ -28,9 +28,11 @@ EOT
 chmod 755 "$STAGE/opt/$PKG/bin/tiny"
 ln -s ../../opt/$PKG/bin/tiny "$STAGE/usr/bin/tiny"
 install -m 644 "$SRC/README.md" "$STAGE/opt/$PKG/share/doc/$PKG/README.md"
-install -m 644 "$SRC/README.TXT" "$STAGE/opt/$PKG/share/doc/$PKG/README.TXT"
+install -m 644 "$SRC/dos/README.TXT" "$STAGE/opt/$PKG/share/doc/$PKG/README.TXT"
+install -m 644 "$SRC/LICENSE" "$STAGE/opt/$PKG/share/doc/$PKG/LICENSE"
+install -m 644 "$SRC/DATA_LICENSES.md" "$STAGE/opt/$PKG/share/doc/$PKG/DATA_LICENSES.md"
 install -m 644 "$SRC/README.n900.md" "$STAGE/opt/$PKG/share/doc/$PKG/README.n900.md"
-printf 'TINY 2.1 by its author (https://github.com/WollyMonjac/Tiny-2.1), "written by Fable 5.2 and trained by Opus 5.5".\nThe original has no licence file yet; the author has been asked in an issue of that repository. This is a test build.\nThe port to POSIX/ncurses (conio_ncurses.c, the layout, the sound) is in https://github.com/n900-resurrection/Tiny-2.1, branch n900.\n' > "$STAGE/opt/$PKG/share/doc/$PKG/NOTICE"
+printf 'TINY 2.1 by WollyMonjac (https://github.com/WollyMonjac/Tiny-2.1), "written by Fable 5.2 and trained by Opus 5.5". The code is under the MIT licence (LICENSE).\nThe trained network TINY.BIN was trained partly on data under other licences, see DATA_LICENSES.md: it contains information from mledoze/countries (ODbL 1.0) and from Periodic-Table-JSON (CC BY-SA 3.0).\nThe port to POSIX and ncurses (conio_ncurses.c, the layout of the screen, the sound) is in https://github.com/n900-resurrection/Tiny-2.1, branch n900, under the same MIT licence.\n' > "$STAGE/opt/$PKG/share/doc/$PKG/NOTICE"
 debpack_man "$HERE/tiny.1"
 # a menu entry: the terminal of the phone starts the program
 debpack_desktop "TINY" "/usr/bin/tiny" "$HERE/icon.png"

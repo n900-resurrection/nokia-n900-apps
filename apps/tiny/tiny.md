@@ -1,19 +1,19 @@
 # TINY 2.1 on Maemo 5
 
-Status 2026-11-17. Build and packaging: [Makefile](Makefile) (`make tiny`, `make tiny ACTION=deb`); conventions in [../../mk/app.mk](../../mk/app.mk).
+Status 2026-11-17 (revision 1maemo2: the licence, the `dos/` layout of the upstream). Build and packaging: [Makefile](Makefile) (`make tiny`, `make tiny ACTION=deb`); conventions in [../../mk/app.mk](../../mk/app.mk).
 
 A tiny question-answering neural network (367,000 weights, 4 layers, 96 wide, 8-bit weights, 380 kB) that reads and writes letter by letter and knows about 3,500 facts. Written for DOS and Turbo C 2.0 by
 <https://github.com/WollyMonjac/Tiny-2.1> ("written by Fable 5.2 and trained by Opus 5.5"). The port, in the fork <https://github.com/n900-resurrection/Tiny-2.1> (branch `n900`):
 the full-screen interface on ncurses (`conio_ncurses.c`), a layout that follows the size of the terminal, sound through `paplay`, volume keys.
 
-## Licence: not published yet
+## Licence
 
-The original has **no licence file**. The author is asked in an issue of the original repository. Until there is an answer the Makefile has a `MANUAL` line: `make debs` and `make repo` skip the package,
-`make tiny ACTION=deb` builds it for tests. Remove the line (and add the licence to the package) when the author answers.
+The code is under the **MIT licence** (the author added it on 2026-11-17 after our question; `LICENSE`). The trained network was trained partly on data under other licences (`DATA_LICENSES.md`): it contains information from
+mledoze/countries (ODbL 1.0) and Periodic-Table-JSON (CC BY-SA 3.0). The package carries `LICENSE`, `DATA_LICENSES.md` and a `NOTICE` with this attribution. The port (conio_ncurses, the layout, the sound) is offered under the same MIT licence.
 
 ## Build
 
-- `build.sh` clones the fork, checks out the pinned commit (`COMMIT`, now `7b61a95`; `TINY_SRC=/path` builds from a local working copy) and runs the `make` of the fork with `maemo-gcc`:
+- `build.sh` clones the fork, checks out the pinned commit (`COMMIT`, now `6b83764`; `TINY_SRC=/path` builds from a local working copy) and runs the `make` of the fork with `maemo-gcc`:
   ncurses with wide characters is linked **statically** (the phone has `libncurses5` but not `libncursesw`), `MODEL_PATH=/opt/tiny/share/tiny/TINY.BIN` tells the program where the network is.
 - `NEEDED`: libm and libc; highest symbol `GLIBC_2.4`. The binary is 168 kB.
 

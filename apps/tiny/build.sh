@@ -7,7 +7,7 @@
 set -euo pipefail
 
 VERSION="${VERSION:-2.1}"
-COMMIT="${COMMIT:-7b61a95}"
+COMMIT="${COMMIT:-6b83764}"
 PROJ=/project
 SRC="$PROJ/build/upstream/tiny"
 OUT="$PROJ/build/out/tiny-$VERSION"
@@ -30,7 +30,7 @@ make -C "$SRC" clean >/dev/null
 make -C "$SRC" tiny CC="$PROJ/scripts/maemo-gcc" CFLAGS="-Os" NCURSES_LIBS="-Wl,-Bstatic -lncursesw -Wl,-Bdynamic" \
     MODEL_PATH=/opt/tiny/share/tiny/TINY.BIN 2>&1 | grep -v fgnu89
 arm-linux-gnueabi-strip -o "$OUT/tiny-bin" "$SRC/tiny"
-install -m 644 "$SRC/TINY.BIN" "$OUT/TINY.BIN"
+install -m 644 "$SRC/dos/TINY.BIN" "$OUT/TINY.BIN"
 make -C "$SRC" clean >/dev/null
 
 echo "== Check"
