@@ -10,10 +10,14 @@ the tiny model stories260K (1 MB, for tests) and a launcher `llama-story` that a
 | Model | Weights | File | Speed |
 |---|---|---|---|
 | stories15M | 15 M | 61 MB | **2.95 tokens/s** (the Pentium II of EXO Labs: 1.03) |
+| TinyStories 25M (Mxode, HF checkpoint converted by `tools/st2llama2c.py`) | 25 M | 98.5 MB | **2.45 tokens/s** (the same output as on the PC) |
 | stories42M | 42 M | 167 MB | **0.03 tokens/s**: it does not fit in RAM, every token reads the flash |
 
 The weights are mapped read-only (`mmap`): clean pages, never written to the swap (the swap in use did not change during the runs: 157 to 160 MB, taken by other applications). **The rule: only models that fit
 comfortably in RAM (about 160 MB at most).**
+
+## Converter
+`tools/st2llama2c.py MODEL_DIR OUT.bin [--seq-len N]`: a Hugging Face Llama checkpoint (`config.json` + `model.safetensors`, F32/F16/BF16, GQA) to the llama2.c format, pure Python 3 without numpy or torch, one tensor in memory at a time (80 MB peak). The q/k rows are un-permuted (HF stores the halves of the rotary pairs apart); a model with `lm_head` of its own gets the negative vocabulary size. Not packaged here: the package `llama-chat` carries it and runs it on the phone for the models that need a conversion.
 
 ## Build
 

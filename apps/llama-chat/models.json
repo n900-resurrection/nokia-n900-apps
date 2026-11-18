@@ -1,0 +1,46 @@
+[
+  {
+    "id": "stories260K",
+    "name": "Tiny demo (260K)",
+    "params": "260 thousand weights",
+    "file": "stories260K.bin",
+    "tokenizer": "tok512.bin",
+    "bundled": true,
+    "size": 1056540,
+    "sha256": "b0a507e7ad0f626624f17112325e66691f9076d622e1d3274d103d00299f2696",
+    "url": "https://huggingface.co/karpathy/tinyllamas/resolve/main/stories260K/stories260K.bin",
+    "license": "MIT (Andrej Karpathy)",
+    "speed": 60,
+    "note": "In the package. Writes short, simple and often odd stories, but very fast."
+  },
+  {
+    "id": "stories15M",
+    "name": "Stories 15M",
+    "params": "15 million weights",
+    "file": "stories15M.bin",
+    "tokenizer": "tokenizer.bin",
+    "size": 60816028,
+    "sha256": "cd590644d963867a2b6e5a1107f51fad663c41d79c149fbecbbb1f95fa81f49a",
+    "url": "https://huggingface.co/karpathy/tinyllamas/resolve/main/stories15M.bin",
+    "license": "MIT (Andrej Karpathy)",
+    "speed": 2.95,
+    "note": "The default. Coherent stories for small children; about as fast as a person reads."
+  },
+  {
+    "id": "mxode25M",
+    "name": "TinyStories 25M (Mxode)",
+    "params": "25 million weights",
+    "file": "mxode-25M.bin",
+    "tokenizer": "tokenizer.bin",
+    "size": 103326748,
+    "convert": {
+      "files": [
+        {"name": "config.json", "url": "https://huggingface.co/Mxode/TinyStories-LLaMA2-25M-256h-4l-GQA/resolve/main/config.json", "sha256": "ecfd41c804f7819260a9d8313f64771584ebc8c31c73f37f4e903ea6873cb47e", "size": 633},
+        {"name": "model.safetensors", "url": "https://huggingface.co/Mxode/TinyStories-LLaMA2-25M-256h-4l-GQA/resolve/main/model.safetensors", "sha256": "c70ff45be232615db7324798b97d9b24ece4b4b4faab85427475e30cdc796d41", "size": 103298200}
+      ]
+    },
+    "license": "not stated by the author (Hugging Face model Mxode/TinyStories-LLaMA2-25M-256h-4l-GQA); downloaded from there on your request, not redistributed by this package",
+    "speed": 2.45,
+    "note": "A bit larger, slightly longer sentences. The Hugging Face file is converted on the phone to the llama2.c format."
+  }
+]

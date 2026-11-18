@@ -1,0 +1,300 @@
+#!/opt/python3/bin/python3
+"""llama-chat: the story teller for the N900 (Python 3 + hildonlite) on top of llama2c.
+The main view is a chat: you write the first words or a turn of the story, the model continues it token by token. In the settings (the menu of the
+title bar) you choose the model, download or delete models, and set the temperature, the length, top-p and how much of the story the model remembers."""
+import ctypes, faulthandler, gettext, os, sys
+HERE = os.path.dirname(os.path.realpath(__file__))
+sys.path.insert(0, HERE)
+try:
+    import hildonlite as hl
+except ImportError:                       # in the repository: the copy of hildonlite next to this application
+    sys.path.insert(0, os.path.join(HERE, "..", "hildonlite"))
+    import hildonlite as hl
+import llama_chat as L
+
+_ = gettext.gettext
+KEY_RETURN = 0xff0d
+R_USE, R_DELETE, R_DOWNLOAD, R_CANCEL_JOB = 1001, 1002, 1003, 1004
+ABOUT = _("Story teller %s\nA tiny language model (llama2.c) continues the first words you give it into a children's story, on the phone, without a network.\n"
+          "Models are kept in %s; the settings in %s.")
+
+
+def append(tv, text):
+    """Add text at the end of a TextView and scroll to it."""
+    buf, ptr = tv._buf, ctypes.c_void_p
+    end = ctypes.create_string_buffer(80)                                  # GtkTextIter
+    hl._fn("gtk", "gtk_text_buffer_get_end_iter", None, ptr, ptr)(buf, end)
+    hl._fn("gtk", "gtk_text_buffer_place_cursor", None, ptr, ptr)(buf, end)
+    hl._fn("gtk", "gtk_text_buffer_insert_at_cursor", None, ptr, ctypes.c_char_p, ctypes.c_int)(buf, text.encode("utf-8"), -1)
+    mark = hl._fn("gtk", "gtk_text_buffer_get_insert", ptr, ptr)(buf)
+    hl._fn("gtk", "gtk_text_view_scroll_mark_onscreen", None, ptr, ptr)(tv.ptr, mark)
+
+
+def main():
+    try:                                   # errors and crashes go to a log (a program started from the menu has no terminal)
+        os.makedirs(L.DIR, exist_ok=True)
+        log = open(os.path.join(L.DIR, "hildon.log"), "w", buffering=1)
+        sys.stderr = log
+        faulthandler.enable(log)
+    except OSError:
+        pass
+    if not hl.init():
+        sys.exit("no X display")
+    S = L.load_settings()
+    models = L.load_models()
+    state = {"story": "", "gen": None, "job": None, "job_model": None}
+    refreshers = []                        # functions that redraw the model list after a change
+
+    def by_id(mid):
+        return next((m for m in models if m["id"] == mid), None)
+
+    def current():
+        m = by_id(S["model"])
+        if m is None or not L.installed(m):
+            m = next((x for x in models if L.installed(x)), m or models[0])
+        return m
+
+    # ---- the chat ----
+    win = hl.Window(_("Story teller"))
+    root = hl.VBox(spacing=4)
+    status = hl.Label("", xalign=0.0)
+    root.add(status)
+    tv = hl.TextView("", editable=False)
+    hl._fn("gtk", "gtk_text_view_set_cursor_visible", None, ctypes.c_void_p, ctypes.c_int)(tv.ptr, 0)
+    area = hl.PannableArea()
+    area.add(tv)
+    root.add(area, expand=True)
+    bar = hl.HBox(spacing=4)
+    entry = hl.Entry("")
+    send = hl.Button(_("Send"), size=hl.FINGER)
+    send.set_size_request(150, -1)
+    bar.add(entry, expand=True)
+    bar.add(send)
+    root.add(bar)
+    win.add(root)
+
+    def show_status():
+        m = current()
+        job = state["job"]
+        if job:
+            _d, frac, text, _e = job.poll()
+            line = "%s %s: %d %%" % (_("Downloading"), state["job_model"]["name"], int(frac * 100)) if text != "converting" else _("Converting %s") % state["job_model"]["name"]
+        elif state["gen"]:
+            line = _("%s is writing...") % m["name"]
+        else:
+            line = m["name"] + ("" if L.installed(m) else " (" + _("not downloaded") + ")")
+        status.set_text(line)
+
+    def finish_generation(g):
+        state["gen"] = None
+        send.set_title(_("Send"))
+        append(tv, "\n\n")
+        if g.error:
+            hl.Banner(win, g.error)
+        elif g.speed and not g.stopped:
+            hl.Banner(win, _("%.1f tokens per second") % g.speed)
+        show_status()
+
+    def do_send():
+        g = state["gen"]
+        if g:                                                     # the button is Stop while the model writes
+            g.stop()
+            return
+        m = current()
+        if not L.installed(m):
+            hl.info(win, _("There is no model on the phone yet. Open Settings from the menu and download one."))
+            return
+        text = entry.get_text().strip()
+        if not text and not state["story"]:
+            hl.Banner(win, _("Write the first words of a story"))
+            return
+        prompt = L.build_prompt(state["story"], text, S["memory"])
+        append(tv, "» " + (text if text else _("go on")) + "\n")
+        state["story"] += (text + " ") if text else ""
+        entry.set_text("")
+        try:
+            state["gen"] = L.Generation(L.engine_command(m, S, prompt), prompt)
+        except OSError as e:
+            hl.info(win, _("The engine could not be started: %s") % e)
+            return
+        send.set_title(_("Stop"))
+        show_status()
+
+    def tick():
+        g = state["gen"]
+        if g:
+            text, done = g.poll()
+            if text:
+                state["story"] += text
+                append(tv, text)
+            if done:
+                finish_generation(g)
+        job = state["job"]
+        if job:
+            done, _frac, _t, err = job.poll()
+            if done:
+                m, state["job"], state["job_model"] = state["job_model"], None, None
+                if err:
+                    L.delete_model(m)
+                    hl.info(win, _("The download of %s failed: %s") % (m["name"], err))
+                else:
+                    hl.Banner(win, _("%s is ready; choose it in Settings") % m["name"])
+                for f in list(refreshers):
+                    f()
+            show_status()
+        return True
+
+    def new_story():
+        if state["gen"]:
+            state["gen"].stop()
+        if state["story"] and not hl.confirm(win, _("Start a new story? The text on the screen will be cleared.")):
+            return
+        state["story"] = ""
+        tv.set_text("")
+        show_status()
+
+    send.connect("clicked", lambda b: do_send())
+
+    def key(keyval, state_mask, hw):
+        if keyval == KEY_RETURN:
+            do_send()
+            return True
+        return False
+    win.on_key(key)
+
+    # ---- the settings: the model list and the sliders ----
+    def model_dialog(m, parent):
+        job_here = state["job"] is not None and state["job_model"]["id"] == m["id"]
+        ok = L.installed(m)
+        lines = [m["name"] + " (" + m.get("params", "") + ")", "",
+                 _("File: %s, %s") % (m["file"], L.fmt_size(m.get("size", 0))),
+                 _("Speed on the N900: about %s tokens per second") % ("%g" % m["speed"]) if m.get("speed") else "",
+                 _("Licence: %s") % m.get("license", "?"), "", m.get("note", "")]
+        if not L.fits(m):
+            lines += ["", _("This model is bigger than the RAM of the phone can hold, it would swap and be very slow.")]
+        d = hl.Dialog(m["name"], parent)
+        lab = hl.Label("\n".join(x for x in lines if x is not None), wrap=True, xalign=0.0)
+        lab.set_size_request(640, -1)
+        pa = hl.PannableArea()
+        pa.add_viewport(lab)
+        pa.set_size_request(660, 260)
+        d.body.add(pa)
+        if ok:
+            d.add_button(_("Use this model"), R_USE)
+            if not m.get("bundled"):
+                d.add_button(_("Delete"), R_DELETE)
+        elif job_here:
+            d.add_button(_("Cancel download"), R_CANCEL_JOB)
+        elif state["job"] is None:
+            d.add_button(_("Download"), R_DOWNLOAD)
+        d.add_button(_("Close"), hl.CANCEL)
+        d.show()
+        r = d.run()
+        d.destroy()
+        if r == R_USE:
+            S["model"] = m["id"]
+            L.save_settings(S)
+            hl.Banner(parent, _("%s will tell the next story") % m["name"])
+        elif r == R_DELETE and hl.confirm(parent, _("Delete %s from the phone?") % m["name"]):
+            L.delete_model(m)
+        elif r == R_CANCEL_JOB and state["job"]:
+            state["job"].cancel()
+            L.delete_model(m)
+            state["job"], state["job_model"] = None, None
+        elif r == R_DOWNLOAD:
+            if L.free_bytes() < L.need_bytes(m):
+                hl.info(parent, _("Not enough free space: %s needed, %s free.") % (L.fmt_size(L.need_bytes(m)), L.fmt_size(L.free_bytes())))
+            elif not L.fits(m) and not hl.confirm(parent, _("%s is too big for the RAM and will be very slow. Download anyway?") % m["name"]):
+                pass
+            else:
+                state["job"], state["job_model"] = L.Job(m), m
+        show_status()
+        for f in list(refreshers):
+            f()
+
+    def open_models():
+        w = hl.Window(_("Models"), quit_on_close=False)
+        store = hl.ListStore(1)
+        lv = hl.ListView(store)
+        pa = hl.PannableArea()
+        pa.add(lv)
+
+        def refill():
+            store.clear()
+            for m in models:
+                store.append([("• " if m["id"] == current()["id"] else "    ") + m["name"] + "\n    " + L.describe(m)])
+
+        def tapped(_w):
+            i = lv._current
+            if i is not None and i < len(models):
+                model_dialog(models[i], w)
+        lv.connect("row-activated", tapped)
+        refill()
+        refreshers.append(refill)
+        w.connect("destroy", lambda _w: refreshers.remove(refill) if refill in refreshers else None)
+        w.add(pa)
+        w.show()
+
+    def open_settings():
+        w = hl.Window(_("Settings"), quit_on_close=False)
+        box = hl.VBox(spacing=2)
+        picker = hl.Button(_("Model"), "", on_clicked=lambda b: open_models())
+
+        def show_model():
+            m = current()
+            picker.set_value(m["name"] + "  ·  " + L.describe(m))
+        show_model()
+        refreshers.append(show_model)
+        w.connect("destroy", lambda _w: refreshers.remove(show_model) if show_model in refreshers else None)
+        box.add(picker)
+
+        def slider(key, caption, step, digits, fmt):
+            lo, hi = L.LIMITS[key]
+            cap = hl.Label("", xalign=0.0)
+
+            def changed(sc):
+                v = round(sc.get_value(), digits + 1)
+                S[key] = type(L.DEFAULTS[key])(v)
+                cap.set_text(caption + ": " + fmt % S[key])
+                L.save_settings(S)
+            s = hl.Scale(lo, hi, step, S[key], None, digits)
+            hl._fn("gtk", "gtk_scale_set_draw_value", None, ctypes.c_void_p, ctypes.c_int)(s.ptr, 0)     # the caption above shows the value
+            cap.set_text(caption + ": " + fmt % S[key])
+            s.connect("value-changed", changed)
+            box.add(cap)
+            box.add(s)
+        slider("temperature", _("Temperature (higher is wilder)"), 0.1, 1, "%.1f")
+        slider("topp", _("Top-p"), 0.05, 2, "%.2f")
+        slider("tokens", _("Length of a turn (tokens)"), 16, 0, "%d")
+        slider("memory", _("Memory (words of the story that the model sees)"), 10, 0, "%d")
+        pa = hl.PannableArea()
+        pa.add_viewport(box)
+        w.add(pa)
+        w.show()
+        return w
+
+    menu = hl.AppMenu()
+    menu.add(_("New story"), lambda b: new_story())
+    menu.add(_("Settings and models"), lambda b: open_settings())
+    menu.add(_("About"), lambda b: hl.info(win, ABOUT % ("0.1", L.MODELS_DIR, L.DIR)))
+    menu.add(_("Quit"), lambda b: hl.quit())
+    win.set_menu(menu)
+    show_status()
+    hl.timeout(150, tick)
+    win.show()
+    demo = os.environ.get("LLAMACHAT_OPEN")                   # self-test / screenshots
+    if demo == "settings":
+        open_settings()
+    elif demo == "models":
+        open_models()
+    if os.environ.get("LLAMACHAT_DEMO_TEXT"):
+        append(tv, os.environ["LLAMACHAT_DEMO_TEXT"].replace("\\n", "\n"))
+    if os.environ.get("LLAMACHAT_DEMO_ENTRY"):
+        entry.set_text(os.environ["LLAMACHAT_DEMO_ENTRY"])
+    if os.environ.get("LLAMACHAT_TIMEOUT"):
+        hl.timeout(int(os.environ["LLAMACHAT_TIMEOUT"]) * 1000, lambda: hl.quit() or False)
+    hl.main()
+
+
+if __name__ == "__main__":
+    main()
