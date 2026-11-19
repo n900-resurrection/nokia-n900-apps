@@ -1,0 +1,379 @@
+#!/opt/python3/bin/python3
+"""notpipe-hildon: a YouTube client for the N900 (Python 3 + hildonlite), on top of public Invidious instances and the player nplay.
+You search, tap a video, and it is downloaded (the picture and the sound are two files) and played; "Save" also keeps it as one MP4 in MyDocs/Videos.
+The menu of the title bar has the settings (quality, sound, size of the cache), the update of the list of instances and the cache."""
+import atexit, ctypes, faulthandler, gettext, os, sys
+HERE = os.path.dirname(os.path.realpath(__file__))
+sys.path.insert(0, HERE)
+try:
+    import hildonlite as hl
+except ImportError:                       # in the repository: the copy of hildonlite next to this application
+    sys.path.insert(0, os.path.join(HERE, "..", "hildonlite"))
+    import hildonlite as hl
+import notpipe_core as N
+
+_ = gettext.gettext
+KEY_RETURN = 0xff0d
+R_PLAY, R_SAVE = 1001, 1002
+MARK_SAVED, MARK_CACHED = "√ ", "◊ "          # downloaded / in the cache (the Nokia fonts have no check mark; these two are in them)
+VERSION = "0.1"
+ABOUT = _("NotPipe %s\nA YouTube client: it asks a public Invidious instance (not YouTube) for the videos and plays them with nplay, the player of this project. "
+          "The idea comes from notPipe for old Android phones (WTFPL).\nWatching downloads the video into the cache (%s) and plays it; the oldest files go when the cache is full. "
+          "Download puts the finished video into %s, where the file manager sees it.\n"
+          "The picture is H.264, 240p plays smoothly on the N900, 360p may stutter.")
+QUALITY_NAMES = {144: _("144p (very small)"), 240: _("240p (smooth)"), 360: _("360p (may stutter)"), 480: _("480p (too slow)")}
+AUDIO_NAMES = {140: _("Normal (128 kbit/s)"), 139: _("Low (48 kbit/s, downloads sooner)")}
+
+
+def short(text, n=70):
+    return text if len(text) <= n else text[:n - 1] + "…"
+
+
+def main():
+    try:                                   # errors and crashes go to a log (a program started from the menu has no terminal)
+        os.makedirs(N.DIR, exist_ok=True)
+        log = open(os.path.join(N.DIR, "hildon.log"), "w", buffering=1)
+        sys.stderr = log
+        faulthandler.enable(log)
+    except OSError:
+        pass
+    if not hl.init():
+        sys.exit("no X display")
+    S = N.load_settings()
+    st = {"results": [], "more": False, "query": "", "page": 0, "search": None, "flow": None, "flow_video": None, "player": None,
+          "refresh": None, "refresh_banner": False, "thumbs": None, "queue": [], "flow_q": False, "retried": set()}
+
+    # ---- the main view ----
+    win = hl.Window(_("NotPipe"))
+    root = hl.VBox(spacing=4)
+    bar = hl.HBox(spacing=4)
+    entry = hl.Entry("")
+    go = hl.Button(_("Search"), size=hl.FINGER)
+    go.set_size_request(170, -1)
+    bar.add(entry, expand=True)
+    bar.add(go)
+    root.add(bar)
+    srow = hl.HBox(spacing=4)
+    status = hl.Label("", xalign=0.0)
+    cancel = hl.Button(_("Cancel"), size=hl.FINGER)
+    cancel.set_size_request(150, -1)
+    srow.add(status, expand=True)
+    srow.add(cancel)
+    root.add(srow)
+    store = hl.ListStore(2, pixbuf_columns=(0,), image_size=(96, 54))          # a thumbnail and the text of a video
+    lv = hl.ListView(store)
+    area = hl.PannableArea()
+    area.add(lv)
+    root.add(area, expand=True)
+    win.add(root)
+
+    def row(v, saved=(), cached=()):
+        pic = N.thumb_path(v["id"])
+        info = " · ".join(x for x in (v["author"], N.fmt_duration(v["length"]) if v["length"] else "",
+                                      N.fmt_count(v["views"]) + " " + _("views") if v["views"] else "") if x)
+        return [pic if os.path.exists(pic) else None, (MARK_SAVED if v["id"] in saved else MARK_CACHED if v["id"] in cached else "") + short(v["title"]) + "\n" + info]
+
+    def fill():
+        store.clear()
+        saved = N.saved_ids()                                       # the videos that are already in the Videos folder get a check mark,
+        cached = N.cached_ids(S["quality"])                         # those complete in the cache another sign
+        for v in st["results"]:
+            store.append(row(v, saved, cached))
+        if st["more"]:
+            store.append([None, _("More results...")])
+
+    def load_thumbs(items):
+        """Download the thumbnails of videos in the background; tick() puts them into the list as they arrive."""
+        if st["thumbs"]:
+            st["thumbs"].cancel()
+        st["thumbs"] = N.ThumbLoader([v for v in items if not os.path.exists(N.thumb_path(v["id"]))])
+
+    def stop_player():
+        if st["player"]:
+            st["player"].stop()
+
+    def quit_app():
+        stop_player()
+        hl.quit()
+
+    def show_status():
+        flow, player = st["flow"], st["player"]
+        if flow:
+            _d, frac, text, _e = flow.poll()
+            if text == "downloading":
+                line = "%s %s: %d %%" % (_("Downloading"), short(st["flow_video"]["title"], 40), int(frac * 100))
+            elif text == "joining":
+                line = _("Saving...")
+            else:
+                line = _("Looking up the video...")
+        elif player:
+            line = _("Playing %s") % short(st["flow_video"]["title"], 50)
+        elif st["search"]:
+            line = _("Searching...")
+        elif st["results"]:
+            line = _("%d videos") % len(st["results"])
+        else:
+            line = _("Type what to look for")
+        if st["queue"]:
+            line += " · " + _("%d in the queue") % len(st["queue"])
+        status.set_text(line)
+        if flow:
+            cancel.show()
+        else:
+            cancel.hide()
+
+    def search(new=True):
+        if new:
+            q = entry.get_text().strip()
+            if not q:
+                hl.Banner(win, _("Write what to look for"))
+                return
+            st["query"], st["page"], st["results"], st["more"] = q, 0, [], False
+            fill()
+        st["page"] += 1
+        st["search"] = N.Task(N.search, st["query"], st["page"])
+        show_status()
+
+    def start_flow(v, save, queued=False):
+        if st["flow"] or st["player"]:                              # busy: the video waits in the queue (one at a time: the phone has little memory and CPU)
+            cur = st["flow_video"] and st["flow_video"]["id"] == v["id"] and st["flow_save"] == save
+            if cur or any(q[0]["id"] == v["id"] and q[1] == save for q in st["queue"]):
+                hl.Banner(win, _("It is already in the queue"))
+                return
+            st["queue"].append((v, save))
+            hl.Banner(win, _("Added to the queue (%d)") % len(st["queue"]))
+            show_status()
+            return
+        st["flow"] = N.Playback(v["id"], S, save=save, title=v["title"])
+        st["flow_video"], st["flow_save"], st["flow_q"] = v, save, queued
+        show_status()
+
+    def finish_flow(flow):
+        v, save = st["flow_video"], st["flow_save"]
+        st["flow"] = None
+        finished, _f, _t, err = flow.poll()
+        if err:
+            if err != "cancelled":
+                print("failed: %s (%s%s): %s" % (v["id"], "download" if save else "watch", ", queued" if st["flow_q"] else "", err), file=sys.stderr)
+                key_ = (v["id"], save)
+                if st["flow_q"] and key_ not in st["retried"] and "403" not in err:      # a queued one may have met a busy server: one more try at the end
+                    st["retried"].add(key_)
+                    st["queue"].append((v, save))
+                    hl.Banner(win, _("%s failed, it will be tried again") % short(v["title"], 30))
+                elif st["flow_q"]:
+                    hl.Banner(win, _("%s: %s") % (short(v["title"], 30), err))             # the queue goes on, nothing to confirm
+                else:
+                    hl.info(win, _("The video could not be fetched: %s") % err)
+        elif save:
+            fill()
+            hl.info(win, _("Downloaded into the Videos folder: %s") % os.path.basename(flow.saved_to))
+        else:
+            try:
+                st["player"] = N.Player(flow.vpath, flow.apath)
+            except OSError as e:
+                hl.info(win, _("The player could not be started: %s") % e)
+        show_status()
+
+    def tick():
+        t = st["search"]
+        if t:
+            done, res, err = t.poll()
+            if done:
+                st["search"] = None
+                if err:
+                    hl.info(win, _("The search failed: %s") % err)
+                else:
+                    st["results"] += res
+                    st["more"] = len(res) >= 10
+                    fill()
+                    load_thumbs(res)
+                    N.save_last(st["query"], st["results"], st["page"])
+                    if os.environ.get("NOTPIPE_DEMO_PLAY") and res and st["page"] == 1:           # self-test: play the Nth result at once
+                        start_flow(st["results"][int(os.environ["NOTPIPE_DEMO_PLAY"])], False)
+                    if not res and st["page"] == 1:
+                        hl.Banner(win, _("Nothing found"))
+                show_status()
+        tl = st["thumbs"]
+        if tl:
+            for vid in tl.poll():
+                idx = next((i for i, v in enumerate(st["results"]) if v["id"] == vid), None)
+                if idx is not None:
+                    store.set_value(idx, 0, N.thumb_path(vid))
+        flow = st["flow"]
+        if not flow and not st["player"] and st["queue"]:           # the next one in the queue (a download that was made meanwhile is skipped)
+            v, save = st["queue"].pop(0)
+            if save and N.saved_file(v["id"]):
+                show_status()
+            else:
+                start_flow(v, save, queued=True)
+        flow = st["flow"]
+        if flow:
+            if flow.poll()[0]:
+                finish_flow(flow)
+            else:
+                show_status()
+        pl = st["player"]
+        if pl:
+            r = pl.poll()
+            if r is not None:
+                st["player"] = None
+                if r[0] != 0:
+                    hl.info(win, _("The player stopped: %s") % (r[1] or _("error %d") % r[0]))
+                show_status()
+        rf = st["refresh"]
+        if rf:
+            done, res, err = rf.poll()
+            if done:
+                st["refresh"] = None
+                if st["refresh_banner"]:
+                    hl.Banner(win, _("%d instances found") % len(res) if not err else _("The list could not be updated: %s") % err)
+                    st["refresh_banner"] = False
+        return True
+
+    def video_dialog(v):
+        d = hl.Dialog(short(v["title"], 40), win)
+        have = N.saved_file(v["id"])
+        text = "\n".join([v["title"], "", _("Channel: %s") % v["author"], _("Length: %s") % N.fmt_duration(v["length"]),
+                          _("Views: %s") % N.fmt_count(v["views"]) if v["views"] else "", v.get("published", ""),
+                          "", _("Already downloaded in the Videos folder: it plays from there.") if have else _("Quality: %s (change it in Settings)") % QUALITY_NAMES[S["quality"]]])
+        lab = hl.Label(text, wrap=True, xalign=0.0)
+        lab.set_size_request(640, -1)
+        pa = hl.PannableArea()
+        pa.add_viewport(lab)
+        pa.set_size_request(660, 240)
+        d.body.add(pa)
+        d.add_button(_("Watch"), R_PLAY)                           # downloads into the cache and plays (a downloaded video plays from the Videos folder)
+        if not have:
+            d.add_button(_("Download"), R_SAVE)                    # the same, but the joined video goes to the Videos folder and is not played
+        d.add_button(_("Close"), hl.CANCEL)
+        d.show()
+        r = d.run()
+        d.destroy()
+        if r in (R_PLAY, R_SAVE):
+            start_flow(v, r == R_SAVE)
+
+    def tapped(_w):
+        i = lv._current
+        if i is None:
+            return
+        if i < len(st["results"]):
+            video_dialog(st["results"][i])
+        elif i == len(st["results"]) and st["more"] and not st["search"]:
+            search(new=False)
+    lv.connect("row-activated", tapped)
+
+    go.connect("clicked", lambda b: search())
+    entry.connect("activate", lambda e: search())                   # Return in the entry starts the search
+
+    def stop_flow(b):
+        if st["flow"]:
+            st["flow"].cancel()
+            finish_flow(st["flow"])
+    cancel.connect("clicked", stop_flow)
+
+    def key(keyval, state_mask, hw):
+        if keyval == KEY_RETURN:
+            search()
+            return True
+        return False
+    win.on_key(key)
+
+    # ---- settings ----
+    def open_settings():
+        w = hl.Window(_("Settings"), quit_on_close=False)
+        box = hl.VBox(spacing=2)
+
+        def quality_changed(p):
+            S["quality"] = N.CHOICES["quality"][p.get_active()]
+            N.save_settings(S)
+        qp = hl.PickerButton(_("Video quality"), [QUALITY_NAMES[q] for q in N.CHOICES["quality"]], N.CHOICES["quality"].index(S["quality"]), quality_changed)
+
+        def audio_changed(p):
+            S["audio"] = N.CHOICES["audio"][p.get_active()]
+            N.save_settings(S)
+        ap = hl.PickerButton(_("Sound"), [AUDIO_NAMES[a] for a in N.CHOICES["audio"]], N.CHOICES["audio"].index(S["audio"]), audio_changed)
+        box.add(qp)
+        box.add(ap)
+        lo, hi = N.LIMITS["cache_mb"]
+        cap = hl.Label("", xalign=0.0)
+
+        def cache_changed(sc):
+            S["cache_mb"] = int(round(sc.get_value()))
+            cap.set_text(_("Cache of videos: %d MB (now %s)") % (S["cache_mb"], N.fmt_size(N.cache_size())))
+            N.save_settings(S)
+        sc = hl.Scale(lo, 2000, 50, min(S["cache_mb"], 2000), None, 0)
+        hl._fn("gtk", "gtk_scale_set_draw_value", None, ctypes.c_void_p, ctypes.c_int)(sc.ptr, 0)       # the caption above shows the value
+        cap.set_text(_("Cache of videos: %d MB (now %s)") % (S["cache_mb"], N.fmt_size(N.cache_size())))
+        sc.connect("value-changed", cache_changed)
+        box.add(cap)
+        box.add(sc)
+        pa = hl.PannableArea()
+        pa.add_viewport(box)
+        w.add(pa)
+        w.show()
+        return w
+
+    def update_instances():
+        if st["refresh"]:
+            return
+        st["refresh"], st["refresh_banner"] = N.Task(N.refresh_instances), True
+        hl.Banner(win, _("Updating the list of instances..."))
+
+    def clear_cache():
+        if hl.confirm(win, _("Delete the downloaded videos (%s) from the cache?") % N.fmt_size(N.cache_size())):
+            hl.Banner(win, _("%d files deleted") % N.clear_cache())
+
+    def show_cached():
+        """The videos that play without the network (complete in the cache or in the Videos folder) replace the list: a tap offers Watch as usual."""
+        vids = N.cached_videos(S["quality"])
+        if not vids:
+            hl.Banner(win, _("No video is in the cache"))
+            return
+        st["results"], st["more"], st["page"], st["query"] = vids, False, 0, ""
+        fill()
+        load_thumbs(vids)
+        status.set_text(_("%d videos in the cache and in the Videos folder") % len(vids))
+
+    def clear_queue():
+        n = len(st["queue"])
+        st["queue"] = []
+        hl.Banner(win, _("%d removed from the queue") % n if n else _("The queue is empty"))
+        show_status()
+
+    menu = hl.AppMenu()
+    menu.add(_("Cached videos"), lambda b: show_cached())
+    menu.add(_("Settings"), lambda b: open_settings())
+    menu.add(_("Clear the queue"), lambda b: clear_queue())
+    menu.add(_("Update list of instances"), lambda b: update_instances())
+    menu.add(_("Clear cache"), lambda b: clear_cache())
+    menu.add(_("About"), lambda b: hl.info(win, ABOUT % (VERSION, N.CACHE, N.SAVE_DIR) + "\n" + _("Instances: %s") % ", ".join(i.split("//")[-1] for i in N.instances()[:3])))
+    menu.add(_("Quit"), lambda b: quit_app())
+    win.set_menu(menu)
+    win.connect("destroy", lambda w: stop_player())                # closing the application ends the video that it started
+    atexit.register(stop_player)
+    N.migrate_old_cache()
+    q, res, page = N.load_last()                                    # the list of the last search: the application may have been closed or killed meanwhile
+    if res:
+        st["query"], st["results"], st["page"], st["more"] = q, res, page, len(res) >= 10 * max(1, page)
+        entry.set_text(q)
+        fill()
+        load_thumbs(res)
+    show_status()
+    hl.timeout(150, tick)
+    win.show()
+    cancel.hide()
+    if N.instance_list_is_old():                           # the list of instances is refreshed in the background once a day
+        st["refresh"] = N.Task(N.refresh_instances)
+    demo = os.environ.get("NOTPIPE_OPEN")                  # self-test / screenshots
+    if demo == "settings":
+        open_settings()
+    if os.environ.get("NOTPIPE_DEMO_QUERY"):
+        entry.set_text(os.environ["NOTPIPE_DEMO_QUERY"])
+        search()
+    if os.environ.get("NOTPIPE_TIMEOUT"):
+        hl.timeout(int(os.environ["NOTPIPE_TIMEOUT"]) * 1000, lambda: hl.quit() or False)
+    hl.main()
+
+
+if __name__ == "__main__":
+    main()

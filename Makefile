@@ -10,7 +10,7 @@ include devkit/mk/devkit.mk
 # ACTION selects another target of the application: make curl ACTION=deb. Descriptions: variables below, or a default.
 APPS := $(sort $(notdir $(patsubst %/,%,$(dir $(wildcard apps/*/Makefile)))))
 ACTION ?= build
-TARGETS := help $(DEVKIT_TARGETS) $(APPS) debs repo updates test qemu-smoke qemu-test hildon-test push screenshots distclean
+TARGETS := help $(DEVKIT_TARGETS) $(APPS) debs repo external updates test qemu-smoke qemu-test hildon-test push screenshots distclean
 .PHONY: $(TARGETS)
 
 define APP_RULE
@@ -33,7 +33,13 @@ REPO := Build the apt repository in ./n900-repository from the current .deb of e
 MANDOC_VERSION := 1.14.6
 repo: debs manlint
 	@printf '\n$(BOLD)== repository$(RESET)\n'
-	$(INSIDE) env C_BOLD='$(BOLD)' C_GREEN='$(GREEN)' C_CYAN='$(CYAN)' C_YELLOW='$(YELLOW)' C_PURPLE='$(PURPLE)' C_RESET='$(RESET)' /project/scripts/mkrepo.sh $(foreach a,$(DEBAPPS),build/deb/$(shell $(MAKE) --no-print-directory -s -C apps/$(a) debfile))
+	@EXT=$$(python3 -I scripts/external-fetch.py) || exit 1; \
+	$(INSIDE) env C_BOLD='$(BOLD)' C_GREEN='$(GREEN)' C_CYAN='$(CYAN)' C_YELLOW='$(YELLOW)' C_PURPLE='$(PURPLE)' C_RESET='$(RESET)' /project/scripts/mkrepo.sh $(foreach a,$(DEBAPPS),build/deb/$(shell $(MAKE) --no-print-directory -s -C apps/$(a) debfile)) $$EXT
+
+# The packages of other authors (scripts/external.conf): downloaded from their GitHub releases, the SHA-256 and the control fields are checked (make repo does it too).
+EXTERNAL := Fetch and check the packages of other authors listed in scripts/external.conf (into build/external/)
+external:
+	@python3 -I scripts/external-fetch.py >/dev/null
 
 # `make updates` compares the version of every application with the newest upstream release (sources: scripts/upstream.conf).
 # APP selects some applications, ARGS passes options: make updates APP="bat fd" ARGS="--only-new --refresh" (see scripts/upstream-check.py --help)
