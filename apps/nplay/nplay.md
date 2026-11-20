@@ -33,6 +33,12 @@ time, the headers are not in the sysroot; "apply immediately" changes the stream
 show one level, and it is kept for the next video. The steps of Up/Down are 3 dB, the slider is perceptual (its position is the square root of the volume).
 `NPLAY_OWN_STREAM=1` gives the stream an identity of its own (100 %, not muted), for a phone whose volume was left muted (the status area shows a crossed-out note).
 
+## The screen stays on
+
+While a video plays (not paused, with a picture), nplay asks the power daemon every 20 s to pause the dimming and blanking of the screen
+(`com.nokia.mce.request.req_display_blanking_pause` on the system bus; MCE keeps the pause for 60 s). A paused video lets the screen blank as usual.
+libdbus is loaded when needed; without it nothing happens. `-v` prints a line for every request.
+
 ## What was learned on the phone (2026-11-19, test video 640x360 25 fps, Main profile)
 
 * **Hardware decoders cannot be used**: `omx_h264dec` and `dspvdec` fail on these streams (the DSP of the OMAP3 does Baseline).

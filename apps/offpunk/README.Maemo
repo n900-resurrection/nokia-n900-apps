@@ -1,0 +1,10 @@
+offpunk 3.1 (https://offpunk.net, https://git.sr.ht/~lioploum/offpunk, AGPL-3.0-or-later) for Maemo 5, packaged by apps/offpunk of the N900 project.
+It is the unchanged offpunk with the pure Python libraries it needs in /opt/offpunk/lib (requests, urllib3, idna, certifi, charset-normalizer, beautifulsoup4,
+soupsieve, chardet, feedparser, feedparser-sgmllib, typing-extensions); their licences are in this folder. The sources are the wheels from PyPI
+listed (with SHA-256) in apps/offpunk/SHA256SUMS; the recipe is apps/offpunk/build.sh.
+Left out: lxml and readability-lxml (C extensions: web pages are simplified with BeautifulSoup only) and cryptography.
+Commands: offpunk (the reader: type a URL or "help"; gemini://, gopher://, https://, a feed), ansicat (shows a file or a page in the terminal),
+netcache (downloads into the cache), openk (opens a file or a link in the right program).
+Data: ~/.cache/offpunk (the cache that makes it work offline), ~/.config/offpunk, ~/.local/share/offpunk (bookmarks, lists).
+Certificates of https:// come from /opt/curl/etc/ssl/cacert.pem (the package curl).
+The pager is the GNU less of the package less (/opt/less/bin, put first in PATH by the commands): the BusyBox pager of the phone has no --version.

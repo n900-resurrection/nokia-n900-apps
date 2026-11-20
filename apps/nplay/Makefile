@@ -2,6 +2,6 @@
 override APP     := nplay
 VERSION ?= 0.1
 RUN_CMD := /usr/bin/nplay 2>&1 | head -1
-REV     ?= 1maemo2
+REV     ?= 1maemo3
 DEPS    := ffmpeg
 include ../../mk/app.mk

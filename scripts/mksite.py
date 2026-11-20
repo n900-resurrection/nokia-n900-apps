@@ -87,6 +87,21 @@ def to_size(path: Path, size: int, point: bool):
     subprocess.run(args, check=False)
 
 
+def keep_if_same_picture(path: Path, before):
+    """ImageMagick writes the time of the conversion into every PNG, so a regenerated icon differs in bytes although not in a single pixel, and git
+    would list all of them as changed: when the new picture equals the old one pixel by pixel, the old file is put back."""
+    if before is None or not path.is_file() or not shutil.which("compare"):
+        return
+    old = path.with_name(path.name + ".old")
+    old.write_bytes(before)
+    try:
+        r = subprocess.run(["compare", "-metric", "AE", str(old), str(path), "null:"], capture_output=True, text=True)
+        if r.stderr.split(" ")[0].strip() == "0":
+            path.write_bytes(before)
+    finally:
+        old.unlink()
+
+
 BOOTSTRAP = {"curl", "apt-transport-curl"}   # installed by hand with dpkg: the Application Manager cannot reach the repository without them
 
 INSTALL_FILE = """[install]
@@ -138,6 +153,7 @@ def main():
         short, _, long = desc.partition("\n")
         upstream = re.search(r"Upstream:\s*(\S+?)[.,;]?(?:\s|$)", long)
         icon = icons / f"{name}.png"
+        before = icon.read_bytes() if icon.is_file() else None
         # the best picture of the icon: the 256x256 one of the application, the 256x256 drawing of the catalogue (icons/web), the 64x64 of the
         # catalogue, and only then the 26x26 that the package carries (scaled up it looks blurry); stored at 128x128, shown at 26 and 52 px
         hi = [Path(a.apps) / APP_DIR.get(name, name) / "icon.png", Path(a.web_icons) / f"{name}.png", Path(a.icons) / f"{name}.png"]
@@ -152,6 +168,7 @@ def main():
         else:
             plain_icon(icon)
             to_size(icon, 104, point=True)
+        keep_if_same_picture(icon, before)
         stat = deb.stat()
         rel = deb.relative_to(pool).as_posix()
         out.append({

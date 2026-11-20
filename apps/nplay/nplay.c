@@ -372,6 +372,41 @@ static void audio_cb(void *u, Uint8 *stream, int len)
 }
 
 /* ---------- the clock ---------- */
+/* The screen must not dim and blank while a video plays: the Maemo power daemon (MCE) pauses the blanking for 60 s after each request, so it is repeated
+   every 20 s (while not paused). libdbus is loaded when needed (as libpulse is), the message needs no answer. */
+static struct { int tried; void *conn; void *(*new_call)(const char *, const char *, const char *, const char *); int (*send)(void *, void *, void *);
+                void (*flush)(void *); void (*unref)(void *); void (*no_reply)(void *, int); } dbs;
+static void keep_display_on(void)
+{
+    static Uint32 last;
+    Uint32 t = SDL_GetTicks();
+    if (dbs.tried && !dbs.conn) return;
+    if (dbs.conn && t - last < 20000) return;
+    last = t;
+    if (!dbs.tried) {
+        dbs.tried = 1;
+        void *h = dlopen("libdbus-1.so.3", RTLD_NOW);
+        void *(*get)(int, void *) = h ? (void *(*)(int, void *))dlsym(h, "dbus_bus_get") : NULL;
+        void (*noexit)(void *, int) = h ? (void (*)(void *, int))dlsym(h, "dbus_connection_set_exit_on_disconnect") : NULL;
+        *(void **)&dbs.new_call = h ? dlsym(h, "dbus_message_new_method_call") : NULL;
+        *(void **)&dbs.send = h ? dlsym(h, "dbus_connection_send") : NULL;
+        *(void **)&dbs.flush = h ? dlsym(h, "dbus_connection_flush") : NULL;
+        *(void **)&dbs.unref = h ? dlsym(h, "dbus_message_unref") : NULL;
+        *(void **)&dbs.no_reply = h ? dlsym(h, "dbus_message_set_no_reply") : NULL;
+        if (!get || !noexit || !dbs.new_call || !dbs.send || !dbs.flush || !dbs.unref || !dbs.no_reply) return;
+        dbs.conn = get(1, NULL);                                  /* DBUS_BUS_SYSTEM */
+        if (!dbs.conn) { if (opt_verbose) fprintf(stderr, "nplay: no system bus, the screen may blank\n"); return; }
+        noexit(dbs.conn, 0);
+    }
+    void *m = dbs.new_call("com.nokia.mce", "/com/nokia/mce/request", "com.nokia.mce.request", "req_display_blanking_pause");
+    if (!m) return;
+    dbs.no_reply(m, 1);
+    int ok = dbs.send(dbs.conn, m, NULL);
+    dbs.flush(dbs.conn);
+    dbs.unref(m);
+    if (opt_verbose) fprintf(stderr, "nplay: screen blanking paused (%s)\n", ok ? "sent" : "not sent");
+}
+
 static Uint32 wall0, wall_pause_at, wall_paused_total;
 static int have_audio;
 
@@ -849,6 +884,7 @@ int main(int argc, char **argv)
                 drag = 0; ui_dirty = 1;
             }
         }
+        if (screen && !opt_bench && !paused) keep_display_on();
         if (screen && !opt_bench && ui_visible) {
             if (!paused && !drag && (int)(SDL_GetTicks() - ui_hide_at) > 0) HIDE_UI();           /* the controls go away by themselves */
             else {

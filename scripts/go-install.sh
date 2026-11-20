@@ -13,7 +13,7 @@ export GOCACHE="$DIR/cache" GOPATH="$DIR/gopath" GOTOOLCHAIN=local GOFLAGS=-mod=
 OUT="$ROOT/build/out/$bin-${version#v}"
 rm -rf "$OUT"; mkdir -p "$OUT"
 go version
-GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0 go install -trimpath -ldflags="-s -w" "$pkg@$version"
+GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0 go install -trimpath -ldflags="-s -w ${GO_LDFLAGS:-}" "$pkg@$version"
 # cross compiled binaries go to $GOPATH/bin/linux_arm
 mv "$GOPATH/bin/linux_arm/$bin" "$OUT/$bin"
 file "$OUT/$bin" | cut -c1-140
