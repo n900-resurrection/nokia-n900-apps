@@ -1,0 +1,6 @@
+cmus 2.13.0 (https://cmus.github.io, GPL-2.0-or-later) built for Maemo 5 by apps/cmus of the N900 project.
+Output: PulseAudio only (the headers of the 0.9.15 sources and a four-line compatibility header, apps/cmus/pulse-compat.h, because cmus asks for 0.9.19).
+Input: one plugin, ip/ffmpeg.so, with the ffmpeg 9.0.2 of apps/ffmpeg inside (statically): mp3, aac/m4a, opus, ogg vorbis, flac, alac, ape, wav.
+Not built: ALSA/OSS output, the separate decoders (mad, vorbis, flac, ...), MPRIS, CD audio, cddb. The recipe is apps/cmus/build.sh.
+First start: :add ~/MyDocs/.sounds (the music of the phone), or :add any folder; Enter plays. The configuration is in ~/.config/cmus.
+The volume of the phone (the status menu, the volume keys) is the volume of the stream. A blank screen does not stop the music.

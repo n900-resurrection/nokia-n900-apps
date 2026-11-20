@@ -2,5 +2,5 @@
 override APP     := ffmpeg
 VERSION ?= 9.0.2
 RUN_CMD := /usr/bin/ffmpeg -hide_banner -version | head -1
-REV     ?= 1maemo1
+REV     ?= 1maemo2
 include ../../mk/app.mk

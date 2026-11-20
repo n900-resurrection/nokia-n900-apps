@@ -24,17 +24,19 @@ tar -C "$SRCDIR" -xJf "$DL/$f"
 mkdir -p "$OBJ" "$OUT"
 cd "$OBJ"
 
+# --enable-pic: the static libraries are also linked into the input plugin of cmus (a shared object). Audio formats beyond the video player's needs
+# (flac, vorbis, alac, ape, wav, aiff) are there for cmus.
 # --disable-everything and then only the needed parts; --disable-network: no sockets (the app downloads with curl).
 "$SRCDIR/ffmpeg-$VERSION/configure" \
     --enable-cross-compile --arch=arm --cpu=cortex-a8 --target-os=linux \
     --cross-prefix=arm-linux-gnueabi- --cc="$PROJ/scripts/maemo-gcc" --sysroot="$SR" \
-    --prefix=/opt/ffmpeg --enable-neon --enable-static --disable-shared --disable-debug --disable-doc \
+    --prefix=/opt/ffmpeg --enable-neon --enable-static --disable-shared --enable-pic --disable-debug --disable-doc \
     --disable-everything --disable-network --disable-autodetect --disable-ffplay --disable-ffprobe \
     --enable-protocol=file,pipe \
-    --enable-demuxer=mov,matroska,mp3,ogg,aac,rawvideo \
+    --enable-demuxer=mov,matroska,mp3,ogg,aac,rawvideo,flac,wav,aiff,ape \
     --enable-muxer=mp4,nut,rawvideo,pcm_s16le,null \
-    --enable-parser=h264,aac,mpeg4video,vp8,opus \
-    --enable-decoder=h264,aac,mpeg4,vp8,opus,mp3,rawvideo,pcm_s16le \
+    --enable-parser=h264,aac,mpeg4video,vp8,opus,mpegaudio,flac,vorbis \
+    --enable-decoder=h264,aac,mpeg4,vp8,opus,mp3,rawvideo,pcm_s16le,flac,vorbis,alac,ape,pcm_s16be,pcm_s24le,pcm_s32le,pcm_u8,pcm_f32le \
     --enable-bsf=aac_adtstoasc,h264_mp4toannexb \
     --enable-filter=scale,aresample,format,aformat,null,anull \
     --enable-encoder=rawvideo,pcm_s16le,mpeg4 \
