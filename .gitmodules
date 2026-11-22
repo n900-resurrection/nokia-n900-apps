@@ -46,3 +46,6 @@
 [submodule "apps/copyparty-hildon"]
 	path = apps/copyparty-hildon
 	url = https://github.com/n900-resurrection/copyparty-hildon.git
+[submodule "apps/vlak"]
+	path = apps/vlak
+	url = https://github.com/n900-resurrection/vlak.git
