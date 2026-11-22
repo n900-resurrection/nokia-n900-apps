@@ -1,1 +1,1 @@
-../devkit/scripts/maemo-compat.h
+../maemo-toolchain/maemo-compat.h

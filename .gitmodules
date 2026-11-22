@@ -49,3 +49,6 @@
 [submodule "apps/vlak"]
 	path = apps/vlak
 	url = https://github.com/n900-resurrection/vlak.git
+[submodule "maemo-toolchain"]
+	path = maemo-toolchain
+	url = https://github.com/n900-resurrection/maemo-toolchain.git

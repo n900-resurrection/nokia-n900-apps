@@ -1,1 +1,1 @@
-../devkit/scripts/maemo-endian.h
+../maemo-toolchain/maemo-endian.h
