@@ -43,3 +43,6 @@
 [submodule "devkit"]
 	path = devkit
 	url = https://github.com/n900-resurrection/n900-devkit.git
+[submodule "apps/copyparty-hildon"]
+	path = apps/copyparty-hildon
+	url = https://github.com/n900-resurrection/copyparty-hildon.git

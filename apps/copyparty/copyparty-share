@@ -1,0 +1,110 @@
+#!/bin/sh
+# copyparty-share: a small file server for the N900 (copyparty), controlled with one command.
+#   copyparty-share [run]   run in the foreground (the menu entry does this), Ctrl-C stops it
+#   copyparty-share start   run in the background       stop | status | url | passwd | config
+# Settings: ~/.copyparty/share.conf (created on the first start: the folder MyDocs, the user n900 with a random password).
+# The same file is what the settings application edits. Everything else of copyparty works too: run `copyparty --help`.
+set -eu
+
+# Never run as root: the files uploaded would belong to root. The phone has the user "user".
+if [ "$(id -u)" = 0 ]; then
+    exec su user -c "$0 $*"
+fi
+
+CFG_DIR="$HOME/.copyparty"
+CONF="$CFG_DIR/share.conf"
+PIDF="$CFG_DIR/server.pid"
+LOGF="$CFG_DIR/server.log"
+mkdir -p "$CFG_DIR"
+
+make_conf() {
+    pw=$(tr -dc 'a-km-z2-9' < /dev/urandom | head -c 10 || true)
+    cat > "$CONF" <<EOT
+# Settings of the file server (copyparty-share). Edit it or use the settings application, then restart the server.
+# Format: https://github.com/9001/copyparty#accounts-and-volumes
+[global]
+  p: 3923
+  no-thumb
+  no-robots
+  hist: $CFG_DIR/hist
+
+[accounts]
+  n900: $pw
+
+# Folder shared at the address of the server (the first path is the real folder on the phone).
+[/]
+  $HOME/MyDocs
+  accs:
+    rw: n900
+EOT
+    chmod 600 "$CONF"
+}
+
+[ -f "$CONF" ] || make_conf
+
+port=$(sed -n 's/^ *p: *\([0-9]*\).*/\1/p' "$CONF" | head -n 1)
+port=${port:-3923}
+
+# the pid file counts only when that process is really copyparty (the pid may have been reused after a crash or a reboot)
+running() {
+    [ -f "$PIDF" ] || return 1
+    _p=$(cat "$PIDF" 2>/dev/null); [ -n "$_p" ] || return 1
+    kill -0 "$_p" 2>/dev/null && grep -qs copyparty "/proc/$_p/cmdline"
+}
+
+# the addresses to type in the browser of the other computer: every network interface that has an address, except the loopback
+show_urls() {
+    ips=$(ifconfig 2>/dev/null | sed -n 's/.*inet addr:\([0-9.]*\).*/\1/p' | grep -v '^127\.' || true)
+    if [ -z "$ips" ]; then
+        echo "No network connection: connect to Wi-Fi (or start a hotspot/USB networking)."
+    else
+        for ip in $ips; do echo "  http://$ip:$port/"; done
+    fi
+}
+
+show_login() {
+    user=$(sed -n '/^\[accounts\]/,/^\[/{s/^ *\([^#[ :][^:]*\): *\(.*\)$/\1/p}' "$CONF" | head -n 1)
+    pass=$(sed -n '/^\[accounts\]/,/^\[/{s/^ *\([^#[ :][^:]*\): *\(.*\)$/\2/p}' "$CONF" | head -n 1)
+    echo "  user: ${user:-?}    password: ${pass:-?}"
+}
+
+banner() {
+    echo "File server (copyparty) is running. In the browser of your computer open:"
+    show_urls
+    show_login
+}
+
+export PYTHONPATH=${CP_DIR:-/opt/copyparty}:${CP_DIR:-/opt/copyparty}/j2:${CP_DIR:-/opt/copyparty}/ftp
+
+case "${1:-run}" in
+    run)
+        if running; then echo "The server already runs in the background (copyparty-share stop)."; banner; exit 0; fi
+        banner
+        echo; echo "Ctrl-C (or closing this window) stops the server."; echo
+        echo $$ > "$PIDF"       # exec keeps the pid: the settings application sees that the server runs
+        exec python3 -m copyparty -c "$CONF" -q
+        ;;
+    start)
+        if running; then echo "Already running."; banner; exit 0; fi
+        nohup python3 -m copyparty -c "$CONF" -q > "$LOGF" 2>&1 &
+        echo $! > "$PIDF"
+        echo "Started in the background (pid $(cat "$PIDF")); it needs a few seconds to come up."
+        banner
+        ;;
+    stop)
+        if running; then kill "$(cat "$PIDF")"; rm -f "$PIDF"; echo "Stopped."; else rm -f "$PIDF"; echo "Not running."; fi
+        ;;
+    status)
+        if running; then echo "Running (pid $(cat "$PIDF"))."; banner; else echo "Not running."; fi
+        ;;
+    url) show_urls ;;
+    passwd)
+        # a new random password for the first account
+        user=$(sed -n '/^\[accounts\]/,/^\[/{s/^ *\([^#[ :][^:]*\): *\(.*\)$/\1/p}' "$CONF" | head -n 1)
+        pw=$(tr -dc 'a-km-z2-9' < /dev/urandom | head -c 10 || true)
+        sed -i "s/^\( *$user: *\).*$/\1$pw/" "$CONF"
+        echo "New password of $user: $pw (restart the server)"
+        ;;
+    config) echo "$CONF"; cat "$CONF" ;;
+    *) echo "Usage: copyparty-share [run|start|stop|status|url|passwd|config]" >&2; exit 2 ;;
+esac

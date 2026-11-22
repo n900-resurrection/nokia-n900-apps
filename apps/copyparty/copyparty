@@ -1,0 +1,5 @@
+#!/bin/sh
+# copyparty (file server) with the paths of the package: all options of the upstream program work, see `copyparty --help`.
+# The simple way is `copyparty-share` (a ready configuration in ~/.copyparty/share.conf).
+export PYTHONPATH=/opt/copyparty:/opt/copyparty/j2:/opt/copyparty/ftp
+exec python3 -m copyparty "$@"
