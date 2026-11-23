@@ -31,7 +31,7 @@ DEBAPPS := $(foreach a,$(or $(APP),$(filter-out $(MANUALAPPS),$(APPS))),$(if $(w
 DEBS := Build the .deb packages of all apps (APP="a b" selects; up to date ones are skipped; INSTALL=1 installs too)
 REPO := Build the apt repository in ./n900-repository from the current .deb of every app (runs make debs first; see DOC/apt-repo.md)
 MANDOC_VERSION := 1.14.6
-repo: debs manlint
+repo: debs manlint | ws-ready
 	@printf '\n$(BOLD)== repository$(RESET)\n'
 	@EXT=$$(python3 -I scripts/external-fetch.py) || exit 1; \
 	$(INSIDE) env C_BOLD='$(BOLD)' C_GREEN='$(GREEN)' C_CYAN='$(CYAN)' C_YELLOW='$(YELLOW)' C_PURPLE='$(PURPLE)' C_RESET='$(RESET)' /project/scripts/mkrepo.sh $(foreach a,$(DEBAPPS),build/deb/$(shell $(MAKE) --no-print-directory -s -C apps/$(a) debfile)) $$EXT
@@ -63,15 +63,15 @@ MUTT-HILDON := Package the Hildon GUI over Mutt (more: make -C apps/mutt-hildon)
 CAMEL-LITE := Build camel-lite (Modest mail library) with OpenSSL 3 (more: make -C apps/camel-lite)
 PYTHON3 := Cross-build Python 3.11 (more: make -C apps/python3)
 QEMU-SMOKE := Smoke tests of the built programs under qemu-user, no phone (APP="jq rsync" selects; kernel 2.6.28, one CPU, 1 MB /tmp)
-qemu-smoke:
+qemu-smoke: | emu-ready
 	$(INSIDE) env APPS="$(APP)" /project/scripts/qemu-smoke.sh
 
 QEMU-TEST := Run the apps/*/qemu-test.sh emulation tests (tmux, openssh), no phone (APP="tmux" selects)
-qemu-test:
+qemu-test: | emu-ready
 	@fail=0; for t in $(if $(APP),$(foreach a,$(APP),$(ROOT)/apps/$(a)/qemu-test.sh),$(ROOT)/apps/*/qemu-test.sh); do a=$$(basename $$(dirname $$t)); printf '\n$(BOLD)== %s$(RESET)\n' $$a; $(MAKE) --no-print-directory -C apps/$$a qemu-test || fail=$$((fail+1)); done; if [ $$fail -eq 0 ]; then printf '\n$(GREEN)All emulation tests passed$(RESET)\n'; else printf '\n$(RED)%s emulation test(s) failed$(RESET)\n' $$fail; exit 1; fi
 
 HILDON-TEST := Run the unittest suite of hildonlite (apps/hildonlite/tests/test_hildonlite.py) in the emulator, no phone (the expected tracebacks of the error tests are part of the output)
-hildon-test:
+hildon-test: | emu-ready
 	$(INSIDE) /project/scripts/hildon-run.sh /project/apps/hildonlite/tests/test_hildonlite.py
 
 QUICKJS := Cross-build QuickJS, JavaScript runtime for yt-dlp (more: make -C apps/quickjs)

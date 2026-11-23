@@ -52,3 +52,6 @@
 [submodule "maemo-toolchain"]
 	path = maemo-toolchain
 	url = https://github.com/n900-resurrection/maemo-toolchain.git
+[submodule "sdk-mirror"]
+	path = sdk-mirror
+	url = https://github.com/n900-resurrection/n900-sdk-mirror.git

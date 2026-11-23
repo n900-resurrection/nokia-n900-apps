@@ -1,0 +1,1 @@
+../devkit/scripts/toolchain.sh

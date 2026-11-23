@@ -1,5 +1,39 @@
 # Vývoj a portování aplikací pro Nokia N900
 
+- [Vývoj a portování aplikací pro Nokia N900](#vývoj-a-portování-aplikací-pro-nokia-n900)
+  - [1. Cíle a plán](#1-cíle-a-plán)
+    - [Upřesnění zadání (2026-11-03)](#upřesnění-zadání-2026-11-03)
+  - [2. Přehled možností](#2-přehled-možností)
+  - [3. Ubuntu Workshop](#3-ubuntu-workshop)
+    - [Instalace a použití](#instalace-a-použití)
+      - [Inicializace projektu](#inicializace-projektu)
+      - [Workshop](#workshop)
+    - [Uplatnění pro N900](#uplatnění-pro-n900)
+  - [4. Virtualizace a emulace](#4-virtualizace-a-emulace)
+    - [4.1 Emulátor Fremantle ve Workshopu (používáme)](#41-emulátor-fremantle-ve-workshopu-používáme)
+    - [4.2 Reálný N900 (hlavní testovací cíl)](#42-reálný-n900-hlavní-testovací-cíl)
+    - [4.3 Maemo Leste (nepoužívá se)](#43-maemo-leste-nepoužívá-se)
+  - [5. Cross-kompilace](#5-cross-kompilace)
+    - [5.1 Maemo 5: armel (používáme)](#51-maemo-5-armel-používáme)
+    - [5.2 Balíčky a repozitář](#52-balíčky-a-repozitář)
+    - [5.3 armhf (jen pro Maemo Leste)](#53-armhf-jen-pro-maemo-leste)
+  - [5A. Maemo 5: backportování nového software](#5a-maemo-5-backportování-nového-software)
+    - [Cílové prostředí (Fremantle)](#cílové-prostředí-fremantle)
+    - [Co se osvědčilo](#co-se-osvědčilo)
+    - [Postup backportu jedné aplikace](#postup-backportu-jedné-aplikace)
+    - [Komunita a zdroje balíčků](#komunita-a-zdroje-balíčků)
+    - [Co je hotové a co zbývá](#co-je-hotové-a-co-zbývá)
+    - [Plán dalšího vývoje](#plán-dalšího-vývoje)
+    - [Struktura a balíčky](#struktura-a-balíčky)
+    - [Cross-kompilace ve Workshopu](#cross-kompilace-ve-workshopu)
+    - [Repozitáře a vlastní mirror](#repozitáře-a-vlastní-mirror)
+    - [Konkrétní aplikace (jedna aplikace = jeden soubor v `DOC/`)](#konkrétní-aplikace-jedna-aplikace--jeden-soubor-v-doc)
+    - [Kandidáti na backport (bude třeba vybrat)](#kandidáti-na-backport-bude-třeba-vybrat)
+  - [6. Postup (jak to dnes děláme)](#6-postup-jak-to-dnes-děláme)
+  - [7. Otevřené otázky](#7-otevřené-otázky)
+  - [Zdroje](#zdroje)
+
+
 Pracovní poznámky k návratu k vývoji pro N900 (2 kusy HW). Stav k 2026-11-11.
 Související repozitáře:
 
@@ -44,13 +78,41 @@ Nástroj Canonicalu vydaný koncem května 2026 pro izolovaná a reprodukovateln
 
 ### Instalace a použití
 
+#### Inicializace projektu
+
+Repozitář klonujte včetně všech git submodulů. Submodul `devkit/` je nutný
+pro sdílenou část Makefile (`mk/common.mk`); bez něj selže už `make help`.
+
+Při novém klonování:
+
+```bash
+git clone --recursive https://github.com/n900-resurrection/nokia-n900-apps.git
+cd nokia-n900-apps
+make help
+```
+
+U již existujícího klonu nebo po aktualizaci repozitáře:
+
+```bash
+git submodule update --init --recursive
+make help
+```
+
+Lokální nastavení (například přístup k telefonu) patří do `.env`, který není
+verzovaný; výchozí hodnoty jsou v [`.env.default`](.env.default).
+
+#### Workshop
+
 ```bash
 sudo snap install --channel=6/stable lxd      # vyžaduje LXD >= 6.8; jednou `lxd init` (výchozí hodnoty)
 sudo snap install --classic workshop          # ověřeno s verzí 0.9.9
+make init                                     # celé prostředí najednou (viz níže); samotné `make jq` si potřebné vytvoří samo
 make up                                       # = workshop launch n900 podle .workshop/n900.yaml
 make toolchain && make sysroot                # akce z YAML: cross toolchain a sysroot z Fremantle SDK
 workshop -p . exec n900 -- <příkaz>           # jednorázový příkaz; make enter = interaktivní shell
 ```
+
+Prostředí je v Makefile modelované jako závislosti ([devkit/mk/ready.mk](devkit/mk/ready.mk)): `make <app>`, `make debs` a spol. závisí na `ws-ready` (workshop → toolchain, sysroot), emulátor a testy (`emu-test`, `hildon-run`, `emulator`, `qemu-smoke`, `qemu-test`, `hildon-test`) na `emu-ready` (+ ARM Python, overlaye). Na čistém klonu tedy stačí `make jq`: chybějící kroky se provedou samy (první běh stahuje stovky MB) a hotové se přeskočí (stampy v `sysroot/.stamps`). Ručně zůstává jen instalace LXD a Workshopu, submoduly a případně `DEVICE` v `.env` (overlay pak jde z vašeho telefonu). `make toolchain`, `make sysroot` atd. krok vynutí znovu.
 
 Prostředí je definované v [.workshop/n900.yaml](.workshop/n900.yaml): `name`, `base: ubuntu@24.04` a pojmenované `actions` (shellové příkazy spouštěné `workshop run n900 -- <akce>`; `toolchain`, `sysroot`, `cpp-hello`, `pylibs`). Projekt je v kontejneru jako `/project`, uživatel `workshop` má `sudo` bez hesla.
 Příkazy, formát souboru a zjištěné zvláštnosti (výstup bez TTY, Docker na hostiteli): [DOC/workshop-crosscompile.md](DOC/workshop-crosscompile.md). Oficiální dokumentace: <https://ubuntu.com/workshop/docs/>.
@@ -157,7 +219,7 @@ sudo apt install crossbuild-essential-armhf debootstrap qemu-user-static binfmt-
 - Každá aplikace je v `apps/<app>/` s vlastním `Makefile` (`build`, `deb`, `push`, `install`…), příklad:
   [apps/wordgrinder](apps/wordgrinder/README.md). Společná část Makefile je v [mk/common.mk](mk/common.mk).
 - Přehled příkazů: `make` (kořen) a `make -C apps/wordgrinder`.
-- Část aplikací je v samostatných repozitářích jako git submoduly (`hildonlite`, `selfie`, `mutt-hildon`, `signal-bridge`, `n900-repository` a další, viz `.gitmodules`). Klonuj s `git clone --recursive` nebo následně `git submodule update --init`.
+- Část aplikací je v samostatných repozitářích jako git submoduly (`hildonlite`, `selfie`, `mutt-hildon`, `signal-bridge`, `n900-repository` a další, viz `.gitmodules`). Klonuj s `git clone --recursive` nebo následně `git submodule update --init --recursive`.
 
 ### Cross-kompilace ve Workshopu
 

@@ -15,6 +15,9 @@
 #   DEBFILE  := name_1.0-1maemo1_armel.deb     # optional, when the package file name differs from PKG_VERSION-REV_armel.deb
 #   include ../../mk/app.mk
 #
+# Everything that runs in the workshop (build, emu, and so deb/push/install) depends order-only on ws-ready (workshop, toolchain, sysroot: created when
+# missing, see ready.mk).
+#
 # See common.mk for the conventions (description variables, colours, .env).
 
 include $(dir $(lastword $(MAKEFILE_LIST)))common.mk
@@ -39,7 +42,7 @@ SRCS   := $(filter-out %/package.sh %/test.sh %/LICENSE %.md %/Makefile %/icon.p
 DEPSTAMPS := $(foreach d,$(DEPS),$(ROOT)/build/stamps/$(d).built)
 
 BUILD := Build $(APP) $(VERSION) in the workshop into build/out/ (always)
-build:
+build: | ws-ready
 	$(INSIDE) bash -c 'VERSION=$(VERSION) /project/apps/$(APP)/build.sh'
 	@mkdir -p $(dir $(STAMP)) && touch $(STAMP) $(ASTAMP)
 
@@ -119,7 +122,7 @@ test:
 # TERM=xterm like on the device: the sysroot (and the phone) has no terminfo for xterm-256color.
 # EMU_TERM overrides it.
 EMU := Run the built binary in the workshop under qemu-user: make emu ARGS=--help
-emu:
+emu: | ws-ready
 	$(INSIDE) env LC_ALL=C TERM=$(or $(EMU_TERM),xterm) qemu-arm -L /project/sysroot $(or $(EMU_BIN),/project/build/out/$(APP)-$(VERSION)/$(APP)) $(ARGS)
 
 CLEAN := Remove the outputs of this application from build/

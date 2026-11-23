@@ -1,0 +1,1 @@
+../devkit/mk/ready.mk
