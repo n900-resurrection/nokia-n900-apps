@@ -55,3 +55,6 @@
 [submodule "sdk-mirror"]
 	path = sdk-mirror
 	url = https://github.com/n900-resurrection/n900-sdk-mirror.git
+[submodule "apps/openxcom"]
+	path = apps/openxcom
+	url = https://github.com/n900-resurrection/openxcom.git
