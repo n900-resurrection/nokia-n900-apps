@@ -106,11 +106,16 @@ verzovaný; výchozí hodnoty jsou v [`.env.default`](.env.default).
 ```bash
 sudo snap install --channel=6/stable lxd      # vyžaduje LXD >= 6.8; jednou `lxd init` (výchozí hodnoty)
 sudo snap install --classic workshop          # ověřeno s verzí 0.9.9
+# jen když na hostiteli běží Docker (jeho FORWARD DROP zahazuje síť kontejneru, viz níže):
+sudo nft insert rule ip filter DOCKER-USER iifname workshopbr0 accept
+sudo nft insert rule ip filter DOCKER-USER oifname workshopbr0 ct state related,established accept
 make init                                     # celé prostředí najednou (viz níže); samotné `make jq` si potřebné vytvoří samo
 make up                                       # = workshop launch n900 podle .workshop/n900.yaml
 make toolchain && make sysroot                # akce z YAML: cross toolchain a sysroot z Fremantle SDK
 workshop -p . exec n900 -- <příkaz>           # jednorázový příkaz; make enter = interaktivní shell
 ```
+
+**Docker na hostiteli:** Docker nastaví řetěz `FORWARD` na `DROP` a kontejner Workshopu (most `workshopbr0`) pak nemá síť: `make` spadne na stahování (`curl: (28) Failed to connect`) a `workshop warnings` hlásí `firewall rules may be blocking network traffic on the workshopbr0 bridge`. Pomůžou dva příkazy `nft` výše (po `make up` nebo před ním). Pravidla nepřežijí restart Dockeru ani počítače, pak je zadejte znovu. Test sítě z kontejneru: `workshop -p . exec n900 -- curl -sSI -m 10 https://github.com`.
 
 Prostředí je v Makefile modelované jako závislosti ([devkit/mk/ready.mk](devkit/mk/ready.mk)): `make <app>`, `make debs` a spol. závisí na `ws-ready` (workshop → toolchain, sysroot), emulátor a testy (`emu-test`, `hildon-run`, `emulator`, `qemu-smoke`, `qemu-test`, `hildon-test`) na `emu-ready` (+ ARM Python, overlaye). Na čistém klonu tedy stačí `make jq`: chybějící kroky se provedou samy (první běh stahuje stovky MB) a hotové se přeskočí (stampy v `sysroot/.stamps`). Ručně zůstává jen instalace LXD a Workshopu, submoduly a případně `DEVICE` v `.env` (overlay pak jde z vašeho telefonu). `make toolchain`, `make sysroot` atd. krok vynutí znovu.
 
