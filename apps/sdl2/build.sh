@@ -8,7 +8,7 @@
 #  - video: X11 (libX11 etc. are opened at run time, so the library has no hard dependency on them), plus dummy and offscreen. No OpenGL, GLES, Vulkan, Wayland, KMS:
 #    the phone has GLES 2 only through the proprietary PowerVR libraries and the sysroot has no EGL headers.
 #  - audio: ALSA and PulseAudio 0.9.15 (both dlopen'd), dummy. SDL_AUDIODRIVER=alsa|pulseaudio|dummy chooses.
-#  - no joystick (the kernel headers 2.6.28 lack input_absinfo.resolution), no udev, D-Bus, IBus, HIDAPI, sensors, haptic, XInput2 (libXi 1.2 is too old).
+#  - joystick: the evdev one (the one line that needs input_absinfo.resolution is patched out above), no udev, D-Bus, IBus, HIDAPI, sensors, haptic, XInput2 (libXi 1.2 is too old).
 #  - scripts/maemo-compat.h: the newer glibc symbols that glibc 2.5 lacks.
 set -euo pipefail
 
@@ -28,6 +28,9 @@ f="SDL2-$VERSION.tar.gz"
 echo "sha256 $(sha256sum "$DL/$f" | cut -d' ' -f1)  $f"
 rm -rf "$SRCDIR/SDL2-$VERSION" "$OBJ" "$OUT"
 tar -C "$SRCDIR" -xzf "$DL/$f"
+# The kernel headers 2.6.28 lack input_absinfo.resolution (kernel 2.6.37); the joystick code of SDL uses it only to guess the type of a stick and for the scale
+# of accelerometers: 0 means "unknown". Games that start SDL with SDL_INIT_JOYSTICK (Abuse) fail without a joystick subsystem.
+sed -i -E 's/(absinfo(_[xy])?)(->|\.)resolution/0/g' "$SRCDIR/SDL2-$VERSION/src/joystick/linux/SDL_sysjoystick.c"
 mkdir -p "$OBJ" "$OUT/root"
 cd "$OBJ"
 
@@ -35,7 +38,7 @@ cd "$OBJ"
 export PKG_CONFIG_LIBDIR="$SR/usr/lib/pkgconfig" PKG_CONFIG_SYSROOT_DIR="$SR"
 CC="$PROJ/scripts/maemo-gcc -include $PROJ/scripts/maemo-compat.h" CFLAGS="-O2 -fPIC" \
 "$SRCDIR/SDL2-$VERSION/configure" --host=arm-linux-gnueabi --prefix=/opt/sdl2 --enable-shared --enable-static \
-    --disable-joystick --disable-joystick-virtual --disable-hidapi --disable-sensor --disable-haptic --disable-dbus --disable-ibus --disable-fcitx --disable-libudev \
+    --enable-joystick --disable-joystick-virtual --disable-hidapi --disable-sensor --disable-haptic --disable-dbus --disable-ibus --disable-fcitx --disable-libudev \
     --disable-video-opengl --disable-video-opengles --disable-video-opengles2 --disable-video-vulkan --disable-video-wayland --disable-video-kmsdrm --disable-video-x11-xinput \
     --disable-pipewire --disable-jack --disable-sndio --disable-oss --disable-esd --disable-arts --disable-nas --disable-diskaudio \
     --enable-alsa --enable-pulseaudio --enable-video-x11 \

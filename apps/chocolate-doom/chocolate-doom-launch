@@ -1,0 +1,13 @@
+#!/bin/sh
+# Doom through Chocolate Doom: looks for an IWAD (doom.wad, doom2.wad, freedoom1.wad, freedoom2.wad, heretic.wad ...) in /home/user/MyDocs/doom and
+# ~/.local/share/games/doom; Chocolate Doom finds it itself through DOOMWADDIR. Without one it tells where to put it.
+# Freedoom (free game data, BSD licence): https://freedoom.github.io/
+W=/home/user/MyDocs/doom
+if [ -z "$(ls "$W"/*.wad "$W"/*.WAD "$HOME"/.local/share/games/doom/*.wad 2>/dev/null | head -1)" ]; then
+    msg="No IWAD found. Copy doom.wad, doom2.wad or freedoom1.wad / freedoom2.wad (https://freedoom.github.io/) into $W and start again."
+    echo "$msg"
+    [ -t 0 ] && { echo "Press Enter."; read -r _; }
+    exit 1
+fi
+export DOOMWADDIR="$W"
+exec /opt/chocolate-doom/bin/chocolate-doom "$@"

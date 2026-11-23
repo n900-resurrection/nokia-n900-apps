@@ -1,0 +1,15 @@
+#!/bin/sh
+# NXEngine-evo: starts the game; the first time (no extracted game data) it runs nxengine-evo-setup in a terminal instead.
+#   nxengine-evo-launch --check   prints "data: ok" or "data: missing" and exits with 0 or 1
+D="${XDG_DATA_HOME:-$HOME/.local/share}/nxengine/data"
+if [ -s "$D/stage.dat" ]; then have=1; else have=0; fi
+if [ "$1" = --check ]; then
+    [ $have = 1 ] && { echo "data: ok"; exit 0; } || { echo "data: missing"; exit 1; }
+fi
+if [ $have = 0 ]; then
+    if [ -x /usr/bin/osso-xterm ] && [ -n "$DISPLAY" ]; then exec /usr/bin/osso-xterm -e /opt/nxengine-evo/bin/nxengine-evo-setup; fi
+    exec /opt/nxengine-evo/bin/nxengine-evo-setup
+fi
+# SDL 2 here has no OpenGL; the engine asks for an "accelerated" renderer and finds none unless the software one is named
+export SDL_RENDER_DRIVER=software
+exec /opt/nxengine-evo/bin/nxengine-evo "$@"

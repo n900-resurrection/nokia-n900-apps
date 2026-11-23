@@ -1,0 +1,5 @@
+#!/bin/sh
+# Brogue CE with the graphical interface (SDL 2, software drawing: the phone has no OpenGL), window sized for the 800x480 screen.
+# Saves and high scores are written into the current directory, so it is ~/.brogue-ce.
+mkdir -p "$HOME/.brogue-ce" && cd "$HOME/.brogue-ce" || exit 1
+exec /opt/brogue-ce/bin/brogue --size 2 --no-gpu "$@"

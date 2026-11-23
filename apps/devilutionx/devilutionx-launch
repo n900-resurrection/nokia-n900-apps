@@ -1,0 +1,10 @@
+#!/bin/sh
+# Diablo through DevilutionX: the game data is not in the package. DIABDAT.MPQ (the full game) or spawn.mpq (the shareware) goes to
+# ~/.local/share/diasurgical/devilution/ (or the folder of the game is given with --data-dir).
+D="${XDG_DATA_HOME:-$HOME/.local/share}/diasurgical/devilution"
+if [ -z "$(ls "$D"/diabdat.mpq "$D"/DIABDAT.MPQ "$D"/spawn.mpq "$D"/SPAWN.MPQ 2>/dev/null | head -1)" ]; then
+    echo "No game data. Copy DIABDAT.MPQ (or the shareware spawn.mpq) into $D and start again."
+    [ -t 0 ] && { echo "Press Enter."; read -r _; }
+    exit 1
+fi
+exec /opt/devilutionx/bin/devilutionx "$@"

@@ -1,0 +1,40 @@
+#!/bin/sh
+# nxengine-evo-setup [folder-of-Cave-Story | Doukutsu.exe]: prepare the game data of Cave Story (freeware, by Daisuke "Pixel" Amaya) in
+# ~/.local/share/nxengine/data, where NXEngine-evo looks for it first:
+#   - nxextract takes the sounds, the credit pictures and the stage data out of Doukutsu.exe,
+#   - the pictures and the rest of the folder "data" of the original game are copied from there, except the files that the engine brings itself (its improved
+#     versions win).
+# The game is not in the package: copy the whole folder of the English Cave Story (Doukutsu.exe and the folder data) to the phone, for example into MyDocs,
+# and give its path; without an argument MyDocs and the home folder are searched.
+D="${XDG_DATA_HOME:-$HOME/.local/share}/nxengine"
+ENG=/opt/nxengine-evo/share/nxengine/data
+SRC=$1
+if [ -z "$SRC" ]; then
+    SRC=$(find /home/user/MyDocs "$HOME" -maxdepth 4 -iname Doukutsu.exe 2>/dev/null | head -1)
+fi
+[ -d "$SRC" ] && SRC=$(find "$SRC" -maxdepth 3 -iname Doukutsu.exe 2>/dev/null | head -1)
+if [ -z "$SRC" ] || [ ! -f "$SRC" ]; then
+    echo "Doukutsu.exe not found. Copy the whole folder of the freeware Cave Story (English: Doukutsu.exe and the folder data) to the phone,"
+    echo "for example into MyDocs, and run: nxengine-evo-setup /home/user/MyDocs/CaveStory"
+    [ -t 0 ] && { echo "Press Enter."; read -r _; }
+    exit 1
+fi
+SRCDIR=$(dirname "$SRC")
+mkdir -p "$D/data" && cd "$D" || exit 1
+cp "$SRC" "$D/Doukutsu.exe" || exit 1
+echo "Extracting $SRC ..."
+rc=0
+/opt/nxengine-evo/bin/nxextract || rc=1
+rm -f "$D/Doukutsu.exe"
+if [ $rc = 0 ] && [ -d "$SRCDIR/data" ]; then
+    echo "Copying the data folder of the game ..."
+    (cd "$SRCDIR/data" && find . -type f) | while read -r f; do
+        [ -e "$ENG/$f" ] || [ -e "$D/data/$f" ] && continue
+        mkdir -p "$D/data/$(dirname "$f")" && cp "$SRCDIR/data/$f" "$D/data/$f"
+    done
+elif [ $rc = 0 ]; then
+    echo "Note: the folder data next to Doukutsu.exe is missing, the game will lack its pictures (Loading.pbm, Stage, Npc ...)."
+fi
+if [ $rc = 0 ]; then echo "Done: $D/data. Start NXEngine-evo from the menu."; else echo "The extraction failed: is it the English Doukutsu.exe of Cave Story 1.0.0.6?"; fi
+[ -t 0 ] && { echo "Press Enter."; read -r _; }
+exit $rc

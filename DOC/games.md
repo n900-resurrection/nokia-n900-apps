@@ -42,7 +42,7 @@ Pořadí práce: **SDL 2** (umožní celou skupinu A kromě her, které ho nepot
 | # | Hra | Závislosti a data | Licence | Odhad | Poznámka |
 |---|---|---|---|---|---|
 | 1 ✓ | **Simon Tatham's Puzzles** (~40 logických her; **hotovo 2026-11-23, `apps/sgt-puzzles`**, GTK 2 front end funguje, potřeboval jen shimy `tgmath.h`, `GDK_KEY_*` a `gtk_widget_set_can_default`) | C, **GTK 2** (máme 2.14), CMake, `halibut` jen na dokumentaci (nepotřebné) | MIT | malé | Nepotřebuje SDL ani data. GTK 2 front end je v upstreamu (**ověřit**, že ho nová CMake ještě umí). Dotyk = klepnutí myší; pravé tlačítko nahradit klávesnicí nebo dlouhým stiskem. Lze zabalit jako Hildon okno. |
-| 2 | **NetHack 3.7**, **Angband 4.2**, **Brogue CE** (konzolový build) | C, ncurses 5.7 (máme) | NGPL / GPL2 / AGPL | malé | Terminál 80×24 s fyzickou klávesnicí je pro roguelike ideální. NetHack a Angband v extras-devel už byly (staré verze). Brogue CE: ověřit volbu bez SDL (`TERMINAL=YES`). DCSS je těžká (C++, Lua, SQLite) – až později. |
+| 2 | **NetHack 3.7**, **Angband 4.2**, **Brogue CE** (**hotovo 2026-11-23, `apps/brogue-ce`**: SDL 2 i terminál v jednom programu, `--no-gpu`; starší Brogue 1.7 přes libtcod na N900 podle fóra běžel) | C, ncurses 5.7 (máme) | NGPL / GPL2 / AGPL | malé | Terminál 80×24 s fyzickou klávesnicí je pro roguelike ideální. NetHack a Angband v extras-devel už byly (staré verze). Brogue CE: ověřit volbu bez SDL (`TERMINAL=YES`). DCSS je těžká (C++, Lua, SQLite) – až později. |
 | 3 | **Abuse** (SDL 1.2 větev 0.8) | C++, SDL 1.2, `SDL_mixer`; data shareware jsou volná | PD / GPL | střední | Bez SDL 2. Ověřit, zda se dá starší zdroj 0.8 přeložit s GCC 13 (C++ z roku 2000). |
 | 4 | **NXEngine** (původní, SDL 1.2) | C++, SDL 1.2, `SDL_mixer`; **hru Cave Story (freeware) dodá hráč** | GPL | střední | NXEngine-evo čeká na SDL 2. Nejmenší riziko mezi akčními hrami. |
 | 5 | **C-Dogs SDL** (starší větev na SDL 1.2) | C, SDL 1.2, `SDL_mixer` | GPL2 | střední | Novější verze chtějí SDL 2: **ověřit**, kterou řadu lze ještě na SDL 1.2. |
@@ -56,7 +56,7 @@ Pořadí práce: **SDL 2** (umožní celou skupinu A kromě her, které ho nepot
 SDL 2.30.11 se přeložila `scripts/maemo-gcc` proti sysrootu (statická knihovna, 9,8 MB, bez GL/GLES/Vulkanu/joysticku/D-Bus/udev) a malý program ji
 spustil v emulátoru (qemu-user + Xvfb 800×480×16, glibc 2.5 ze sysrootu): `video=x11`, okno 800×480, povrch okna `RGB565`, kreslení a `SDL_UpdateWindowSurface` fungují.
 Co se při tom zjistilo:
-- **Joystick vypnout** (`--disable-joystick`): hlavičky jádra 2.6.28 nemají `input_absinfo.resolution`; telefon joystick stejně nepotřebuje.
+- **Joystick:** hlavičky jádra 2.6.28 nemají `input_absinfo.resolution`, proto byl napoprvé vypnutý. Hry ho ale inicializují (Abuse končí na „SDL not built with joystick support“), takže je zapnutý a jediné použití `resolution` se ve zdroji nahrazuje nulou (`apps/sdl2/build.sh`).
 - **Zvuk zatím není ověřený:** přeložil se jen ovladač `dummy` (hlavičky ALSA a PulseAudio nejsou v našem sysrootu; `libasound2-dev` a `libpulse-dev` 0.9.15 v indexu SDK jsou a přidají se do mirroru). Zvuk SDL 1.2 na telefonu funguje, takže ALSA (`default`) nebo PulseAudio se zkusí na telefonu.
 - **X11 se načítá za běhu** (`x11(dynamic)`), volitelná rozšíření (XRandr, Xcursor, XInput2) jdou vypnout nebo dostat z `-dev` balíčků SDK.
 - V emulátoru je potřeba `LC_ALL=C` (jako u ostatních programů).

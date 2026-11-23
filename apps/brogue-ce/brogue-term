@@ -1,0 +1,4 @@
+#!/bin/sh
+# Brogue CE in the terminal (ncurses; the keyboard of the N900, 80x24 is too small: use the 100x34 of the full screen terminal or a smaller font).
+mkdir -p "$HOME/.brogue-ce" && cd "$HOME/.brogue-ce" || exit 1
+exec /opt/brogue-ce/bin/brogue --term "$@"
