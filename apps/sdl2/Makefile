@@ -2,6 +2,6 @@
 override APP := sdl2
 PKG     := libsdl2
 VERSION ?= 2.30.11
-REV     ?= 1maemo2
+REV     ?= 1maemo4
 RUN_CMD := /opt/sdl2/bin/sdl2-info
 include ../../mk/app.mk

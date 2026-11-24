@@ -31,6 +31,38 @@ tar -C "$SRCDIR" -xzf "$DL/$f"
 # The kernel headers 2.6.28 lack input_absinfo.resolution (kernel 2.6.37); the joystick code of SDL uses it only to guess the type of a stick and for the scale
 # of accelerometers: 0 means "unknown". Games that start SDL with SDL_INIT_JOYSTICK (Abuse) fail without a joystick subsystem.
 sed -i -E 's/(absinfo(_[xy])?)(->|\.)resolution/0/g' "$SRCDIR/SDL2-$VERSION/src/joystick/linux/SDL_sysjoystick.c"
+# hildon-desktop (Maemo 5) leaves the keyboard focus with its own "desktop" window when a SDL 2 window is mapped, so no key reaches the game (the mouse and
+# the touch screen work). Giving the focus to the new window by hand, as SDL does when there is no window manager, fixes it (tested 2026-11-24: keys arrive).
+python3 - "$SRCDIR/SDL2-$VERSION/src/video/x11/SDL_x11window.c" <<'PY'
+import sys
+p = sys.argv[1]; s = open(p).read()
+old = "    if (!data->videodata->net_wm) {\n        /* no WM means no FocusIn event, which confuses us. Force it. */"
+assert old in s
+s = s.replace(old, "    if (1) { /* Maemo 5: hildon-desktop does not focus the window, force it */")
+open(p, 'w').write(s)
+PY
+# The same, but hildon-desktop moves the focus again after the window was shown (and when a game changes the video mode: Abuse makes a second window): for 4 seconds
+# after every MapNotify/ConfigureNotify of a window the focus is given back to it, if it is mapped and lost it.
+python3 - "$SRCDIR/SDL2-$VERSION/src/video/x11/SDL_x11events.c" <<'PY'
+import sys
+p = sys.argv[1]; s = open(p).read()
+s = s.replace("static void X11_DispatchEvent(_THIS, XEvent *xevent)\n{", "static Window maemo_focus_win;\nstatic Uint32 maemo_focus_until, maemo_focus_last;\nstatic void X11_DispatchEvent(_THIS, XEvent *xevent)\n{", 1)
+for case in ("    case MapNotify:\n    {\n", "    case ConfigureNotify:\n    {\n"):
+    assert case in s
+    s = s.replace(case, case + "        maemo_focus_win = data->xwindow;\n        maemo_focus_until = SDL_GetTicks() + 4000;\n", 1)
+old = "    SDL_zero(xevent);\n\n    /* Keep processing pending events */"
+assert old in s
+s = s.replace(old, """    if (maemo_focus_win && !SDL_TICKS_PASSED(SDL_GetTicks(), maemo_focus_until) && SDL_GetTicks() - maemo_focus_last >= 100) {
+        Window f; int rv; XWindowAttributes wa;
+        maemo_focus_last = SDL_GetTicks();
+        X11_XGetInputFocus(data->display, &f, &rv);
+        if (f != maemo_focus_win && X11_XGetWindowAttributes(data->display, maemo_focus_win, &wa) && wa.map_state == IsViewable) {
+            X11_XSetInputFocus(data->display, maemo_focus_win, RevertToParent, CurrentTime);
+        }
+    }
+""" + old, 1)
+open(p, 'w').write(s)
+PY
 mkdir -p "$OBJ" "$OUT/root"
 cd "$OBJ"
 

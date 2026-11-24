@@ -32,6 +32,38 @@ rm -rf "$SRCDIR/sgt-puzzles-$VERSION" "$OBJ" "$OUT"
 mkdir -p "$SRCDIR/sgt-puzzles-$VERSION" "$OBJ" "$OUT/root"
 tar -C "$SRCDIR/sgt-puzzles-$VERSION" --strip-components=1 -xJf "$DL/$f"
 
+# Full screen (800x480) on the phone: the puzzles fit their tiles to the window, so a full screen window gives big tiles for the fingers; the menu bar stays
+# (Game > Exit closes it). SGT_WINDOWED=1 in the environment gives the normal window.
+python3 - "$SRCDIR/sgt-puzzles-$VERSION/gtk.c" <<'PY'
+import sys
+p = sys.argv[1]; s = open(p).read()
+old = "    gtk_widget_show(fe->area);\n    gtk_widget_show(fe->window);\n"
+assert s.count(old) == 1
+s = s.replace(old, old + "    if (!getenv(\"SGT_WINDOWED\")) gtk_window_fullscreen(GTK_WINDOW(fe->window));\n"
+              "    if (fe->menubar) g_signal_connect(fe->menubar, \"deactivate\", G_CALLBACK(maemo_menu_closed), fe);\n")
+# After a menu was closed the board in the full screen window drifted up (the picture changed without any expose event, so it is the compositing of the
+# phone): a complete redraw of the window, at once and 150 ms later, puts it right.
+helper = """static gboolean maemo_redraw_later(gpointer data)
+{
+    frontend *fe = (frontend *)data;
+    gtk_widget_queue_draw(fe->window);
+    return FALSE;
+}
+
+static void maemo_menu_closed(GtkMenuShell *shell, gpointer data)
+{
+    frontend *fe = (frontend *)data;
+    gtk_widget_queue_draw(fe->window);
+    g_timeout_add(150, maemo_redraw_later, fe);
+}
+
+"""
+mark = "static void resize_fe(frontend *fe)\n{"
+assert s.count(mark) == 1
+s = s.replace(mark, helper + mark)
+open(p, 'w').write(s)
+PY
+
 # GTK 2.14 (Maemo 5) has the key symbols as GDK_Escape; the puzzles use the names GDK_KEY_Escape of GTK 2.22 and later: a header that maps them (macros, so
 # the order of the includes does not matter), made from the list of gdkkeysyms.h of the sysroot
 mkdir -p "$OBJ/compat"
