@@ -1,13 +1,24 @@
 #!/bin/sh
-# Doom through Chocolate Doom: looks for an IWAD (doom.wad, doom2.wad, freedoom1.wad, freedoom2.wad, heretic.wad ...) in /home/user/MyDocs/doom and
-# ~/.local/share/games/doom; Chocolate Doom finds it itself through DOOMWADDIR. Without one it tells where to put it.
-# Freedoom (free game data, BSD licence): https://freedoom.github.io/
-W=/home/user/MyDocs/doom
-if [ -z "$(ls "$W"/*.wad "$W"/*.WAD "$HOME"/.local/share/games/doom/*.wad 2>/dev/null | head -1)" ]; then
-    msg="No IWAD found. Copy doom.wad, doom2.wad or freedoom1.wad / freedoom2.wad (https://freedoom.github.io/) into $W and start again."
-    echo "$msg"
-    [ -t 0 ] && { echo "Press Enter."; read -r _; }
+# Doom through Chocolate Doom. It looks for an IWAD (the game data: doom2.wad, doom.wad, plutonia.wad, tnt.wad, freedoom2.wad, freedoom1.wad) in
+# MyDocs/doom, in ~/.local/share/games/doom and then anywhere in MyDocs (six levels deep, any letter case), and starts the first it finds
+# (doom2 before doom, the commercial games before Freedoom). Freedoom (free game data, BSD licence): https://freedoom.github.io/
+# SDL 2 on the phone has only the software renderer, and Chocolate Doom asks for another one when it starts: selected here.
+export SDL_RENDER_DRIVER="${SDL_RENDER_DRIVER:-software}"
+export SDL_AUDIODRIVER="${SDL_AUDIODRIVER:-pulseaudio}"
+cd "$HOME" 2>/dev/null || cd /
+IWAD=
+for n in doom2.wad doom.wad plutonia.wad tnt.wad freedoom2.wad freedoom1.wad; do
+    for d in /home/user/MyDocs/doom "$HOME/.local/share/games/doom" "$HOME/MyDocs"; do
+        [ -d "$d" ] || continue
+        IWAD=$(find "$d" -maxdepth 6 -iname "$n" -type f 2>/dev/null | head -1)
+        [ -n "$IWAD" ] && break 2
+    done
+done
+if [ -z "$IWAD" ]; then
+    msg="No IWAD found. Copy doom.wad, doom2.wad or freedoom1.wad / freedoom2.wad (https://freedoom.github.io/) into /home/user/MyDocs/doom and start again."
+    echo "$msg" >&2
+    dbus-send --session --type=method_call --dest=org.freedesktop.Notifications /org/freedesktop/Notifications \
+        org.freedesktop.Notifications.SystemNoteInfoprint "string:Chocolate Doom: $msg" >/dev/null 2>&1 || true
     exit 1
 fi
-export DOOMWADDIR="$W"
-exec /opt/chocolate-doom/bin/chocolate-doom "$@"
+exec /opt/chocolate-doom/bin/chocolate-doom -iwad "$IWAD" "$@"

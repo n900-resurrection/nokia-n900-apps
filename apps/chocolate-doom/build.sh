@@ -3,7 +3,7 @@
 #   workshop exec n900 -- bash -c 'VERSION=3.1.1 /project/apps/chocolate-doom/build.sh'   (or: make -C apps/chocolate-doom build)
 # Output: /project/build/out/chocolate-doom-$VERSION/root/opt/chocolate-doom/{bin,share}
 #
-# NOT TRIED YET (prepared 2026-11-23 to be built on the desktop): expect to fix small things (a cmake option, the documentation step needs python3);
+# Built 2026-11-23: the CMake files of 3.1.1 have no install rules, so the programs are copied by hand;
 # write what you change into the README.
 # Without SDL2_net (no network games), FluidSynth, libsamplerate, libpng. Music: SDL2_mixer of apps/sdl2-mixer has no MIDI decoder, so the music is silent until
 # a MIDI back end (timidity with a sound font, or fluidsynth) is added to it; the sound effects work. The game data (an IWAD such as freedoom1.wad) is not in the package.
@@ -33,8 +33,14 @@ cmake -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE="$OBJ/toolchain.cmake" -DCMAKE_
     -DENABLE_SDL2_NET=OFF -DCMAKE_DISABLE_FIND_PACKAGE_FluidSynth=ON -DCMAKE_DISABLE_FIND_PACKAGE_SampleRate=ON -DCMAKE_DISABLE_FIND_PACKAGE_PNG=ON \
     "${CMAKE_SDL_ARGS[@]}" "$SRCDIR/chocolate-doom-$VERSION" > "$OUT/configure.log" 2>&1 || { tail -30 "$OUT/configure.log"; exit 1; }
 make -j"$(nproc)" > "$OUT/make.log" 2>&1 || { grep -E 'error|Error' "$OUT/make.log" | head -20; tail -15 "$OUT/make.log"; exit 1; }
-make DESTDIR="$OUT/root" install > "$OUT/install.log" 2>&1 || { tail -15 "$OUT/install.log"; exit 1; }
+# the CMake files of 3.1.1 have no install rules (only the autotools build installs): copy the programs
 ROOT="$OUT/root/opt/chocolate-doom"
+mkdir -p "$ROOT/bin"
+for b in chocolate-doom chocolate-heretic chocolate-hexen chocolate-strife chocolate-setup; do
+    f=$(find "$OBJ" -maxdepth 3 -type f -name "$b" -perm -u+x | head -1)
+    [ -n "$f" ] && cp "$f" "$ROOT/bin/$b"
+done
+[ -x "$ROOT/bin/chocolate-doom" ] || { echo "chocolate-doom was not built"; exit 1; }
 for b in "$ROOT"/bin/*; do arm-linux-gnueabi-strip --strip-unneeded "$b"; done
 cp "$SRCDIR/chocolate-doom-$VERSION/COPYING.md" "$OUT/COPYING.md"
 echo "== Check"

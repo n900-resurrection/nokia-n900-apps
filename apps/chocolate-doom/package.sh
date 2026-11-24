@@ -21,7 +21,7 @@ install -m 644 "$OUT/COPYING.md" "$STAGE/opt/chocolate-doom/share/doc/$PKG/COPYI
 for b in "$STAGE"/opt/chocolate-doom/bin/*; do ln -sf "../../opt/chocolate-doom/bin/$(basename "$b")" "$STAGE/usr/bin/$(basename "$b")"; done
 
 debpack_desktop "Chocolate Doom" "/opt/chocolate-doom/bin/chocolate-doom-launch" "$HERE/icon.png"
-sed -i 's|^Exec=.*|Exec=/usr/bin/osso-xterm -e /opt/chocolate-doom/bin/chocolate-doom-launch|' "$STAGE/usr/share/applications/hildon/$PKG.desktop"
+sed -i 's|^Exec=.*|Exec=/usr/bin/chocolate-doom-launch|' "$STAGE/usr/share/applications/hildon/$PKG.desktop"
 
 SECTION=user/games
 DEPENDS="libc6 (>= 2.5), libsdl2 (>= 2.30), libsdl2-mixer (>= 2.8)"

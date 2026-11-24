@@ -31,7 +31,7 @@ tar -C "$SRCDIR/devilutionx-$VERSION" --strip-components=1 -xJf "$DL/$f"
 sdl2_cmake_setup
 cd "$OBJ"
 cmake -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE="$OBJ/toolchain.cmake" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/devilutionx \
-    -DNONET=ON -DBUILD_TESTING=OFF -DDISCORD_INTEGRATION=OFF -DBUILD_ASSETS_MPQ=OFF -DDISABLE_LTO=ON \
+    -DCMAKE_STRIP=/usr/bin/arm-linux-gnueabi-strip -DDEVILUTIONX_SYSTEM_SDL2=ON -DDEVILUTIONX_STATIC_SDL2=OFF -DNONET=ON -DBUILD_TESTING=OFF -DDISCORD_INTEGRATION=OFF -DBUILD_ASSETS_MPQ=OFF -DDISABLE_LTO=ON \
     "${CMAKE_SDL_ARGS[@]}" "$SRCDIR/devilutionx-$VERSION" > "$OUT/configure.log" 2>&1 || { tail -30 "$OUT/configure.log"; exit 1; }
 make -j"$(nproc)" > "$OUT/make.log" 2>&1 || { grep -E 'error|Error' "$OUT/make.log" | head -20; tail -15 "$OUT/make.log"; exit 1; }
 make DESTDIR="$OUT/root" install > "$OUT/install.log" 2>&1 || { tail -15 "$OUT/install.log"; exit 1; }

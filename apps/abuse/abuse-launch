@@ -1,0 +1,9 @@
+#!/bin/sh
+# Starts Abuse on the N900. Abuse asks SDL 2 for a renderer that the phone does not have (there is no GPU driver for SDL 2 here, only the
+# software renderer), and stops with "Unable to create renderer : Couldn't find matching render driver". The software renderer is selected here.
+# The sound effects and the music of Abuse (by Bobby Prince) are not part of the free data of the port, so the game is silent
+# (copy the folders sfx and music into /opt/abuse/share/games/abuse if you own them).
+export SDL_RENDER_DRIVER="${SDL_RENDER_DRIVER:-software}"
+export SDL_AUDIODRIVER="${SDL_AUDIODRIVER:-pulseaudio}"
+cd "$HOME" 2>/dev/null || cd /
+exec /opt/abuse/bin/abuse "$@"
