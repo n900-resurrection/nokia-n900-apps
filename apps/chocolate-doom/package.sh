@@ -17,6 +17,7 @@ STAGE="$PROJ/build/deb/stage-$PKG"
 rm -rf "$STAGE"; mkdir -p "$STAGE/usr/bin" "$STAGE/opt/chocolate-doom/share/doc/$PKG"
 cp -a "$ROOT/." "$STAGE/opt/chocolate-doom/"
 install -m 755 "$HERE/chocolate-doom-launch" "$STAGE/opt/chocolate-doom/bin/chocolate-doom-launch"
+install -m 644 "$HERE/n900.cfg" "$STAGE/opt/chocolate-doom/share/n900.cfg"
 install -m 644 "$OUT/COPYING.md" "$STAGE/opt/chocolate-doom/share/doc/$PKG/COPYING.md"
 for b in "$STAGE"/opt/chocolate-doom/bin/*; do ln -sf "../../opt/chocolate-doom/bin/$(basename "$b")" "$STAGE/usr/bin/$(basename "$b")"; done
 

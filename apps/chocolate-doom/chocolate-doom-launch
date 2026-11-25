@@ -21,4 +21,7 @@ if [ -z "$IWAD" ]; then
         org.freedesktop.Notifications.SystemNoteInfoprint "string:Chocolate Doom: $msg" >/dev/null 2>&1 || true
     exit 1
 fi
-exec /opt/chocolate-doom/bin/chocolate-doom -iwad "$IWAD" "$@"
+# the start takes about half a minute (the sound effects are prepared): say so
+dbus-send --session --type=method_call --dest=org.freedesktop.Notifications /org/freedesktop/Notifications \
+    org.freedesktop.Notifications.SystemNoteInfoprint "string:Chocolate Doom is starting, wait a moment. Menu: Backspace." >/dev/null 2>&1 || true
+exec /opt/chocolate-doom/bin/chocolate-doom -iwad "$IWAD" -extraconfig /opt/chocolate-doom/share/n900.cfg "$@"

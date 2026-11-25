@@ -28,6 +28,29 @@ rm -rf "$SRCDIR/chocolate-doom-$VERSION" "$OBJ" "$OUT"
 mkdir -p "$SRCDIR/chocolate-doom-$VERSION" "$OBJ" "$OUT/root"
 tar -C "$SRCDIR/chocolate-doom-$VERSION" --strip-components=1 -xzf "$DL/$f"
 sdl2_cmake_setup
+# On the phone the game did not exit: after "Quit" (and at the end of a timedemo) the process stayed alive for minutes, in the shutdown of the SDL audio
+# (PulseAudio) or in SDL_Quit. Only with the PulseAudio driver; with SDL_AUDIODRIVER=dummy the game exits at once (tested 2026-11-24). A SIGALRM armed at the start of
+# the shutdown ends the process after 5 seconds, by which time the config and the savegame are written (they are done by the exit functions first).
+python3 - "$SRCDIR/chocolate-doom-$VERSION/src/i_system.c" <<'PY'
+import sys
+p = sys.argv[1]; s = open(p).read()
+s = s.replace("void I_Quit (void)\n{\n", "void I_Quit (void)\n{\n    alarm(5);   /* Maemo: the shutdown of the audio may hang */\n", 1)
+s = s.replace("void I_Error (const char *error, ...)\n{\n", "void I_Error (const char *error, ...)\n{\n    alarm(5);   /* Maemo: the shutdown of the audio may hang */\n", 1)
+s = s.replace("#include <stdlib.h>\n", "#include <stdlib.h>\n#include <unistd.h>\n", 1)
+assert s.count("alarm(5)") == 2 and "#include <unistd.h>" in s
+open(p, 'w').write(s)
+PY
+# Speed: the game runs at 120 fps with the output switched off (-noblit) but 6 to 10 fps with it. The frame is drawn into an ARGB8888 texture and the software
+# renderer of SDL 2 converts it to the RGB565 window surface of the phone and scales it, pixel by pixel. With the texture in the format of the window the scaling
+# is a plain copy. (The window of the N900 is always RGB565; this build is for the phone only.)
+python3 - "$SRCDIR/chocolate-doom-$VERSION/src/i_video.c" <<'PY'
+import sys
+p = sys.argv[1]; s = open(p).read()
+n = s.count("SDL_PIXELFORMAT_ARGB8888")
+assert n == 3, n
+s = s.replace("SDL_PIXELFORMAT_ARGB8888", "SDL_PIXELFORMAT_RGB565")
+open(p, 'w').write(s)
+PY
 cd "$OBJ"
 cmake -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE="$OBJ/toolchain.cmake" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/chocolate-doom \
     -DENABLE_SDL2_NET=OFF -DCMAKE_DISABLE_FIND_PACKAGE_FluidSynth=ON -DCMAKE_DISABLE_FIND_PACKAGE_SampleRate=ON -DCMAKE_DISABLE_FIND_PACKAGE_PNG=ON \
