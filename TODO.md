@@ -1,5 +1,7 @@
 # TODO
 
+**Přechod na issues (od 2026-11-25):** nové úkoly se zakládají jako [issues](https://github.com/n900-resurrection/nokia-n900-apps/issues) (anglicky, v repu, kam věc patří; štítky `games`, `packaging`, `upstream`, `needs-phone-test`, `blocked`). Starý bod z TODO se převede na issue, až se na něm začne pracovat, a v TODO z něj zůstane jen řádek s odkazem. Už převedeno: [#2](https://github.com/n900-resurrection/nokia-n900-apps/issues/2) DevilutionX, [#3](https://github.com/n900-resurrection/nokia-n900-apps/issues/3) Chocolate Doom, [#4](https://github.com/n900-resurrection/nokia-n900-apps/issues/4) NXEngine-evo, [#5](https://github.com/n900-resurrection/nokia-n900-apps/issues/5) Abuse, [#6](https://github.com/n900-resurrection/nokia-n900-apps/issues/6) novější upstream verze, [#7](https://github.com/n900-resurrection/nokia-n900-apps/issues/7) maeshare. Do issues nepatří nic soukromého (návrhy příspěvků, licenční jednání, osobní údaje): to zůstává v `private/`.
+
 Stav k 2026-11-06. Odškrtnuté = hotovo a ověřené, neodškrtnuté = zbývá. Nahoře je to, co se dělá teď, dole stručný přehled hotového.
 
 ## Teď
