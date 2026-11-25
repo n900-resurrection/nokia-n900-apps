@@ -1,10 +1,19 @@
 #!/bin/sh
-# Diablo through DevilutionX: the game data is not in the package. DIABDAT.MPQ (the full game) or spawn.mpq (the shareware) goes to
-# ~/.local/share/diasurgical/devilution/ (or the folder of the game is given with --data-dir).
+# Diablo through DevilutionX: the game data is not in the package. DIABDAT.MPQ (the full game, 517 MB) or spawn.mpq (the shareware) is looked for in
+# ~/.local/share/diasurgical/devilution/ and then on the memory card: MyDocs/diablo, and anywhere in MyDocs (four levels deep, any letter case).
+# /home of the phone is small (2 GB, mostly full), so the file belongs on the card (MyDocs). The folder found is given to the game with --data-dir.
 D="${XDG_DATA_HOME:-$HOME/.local/share}/diasurgical/devilution"
-if [ -z "$(ls "$D"/diabdat.mpq "$D"/DIABDAT.MPQ "$D"/spawn.mpq "$D"/SPAWN.MPQ 2>/dev/null | head -1)" ]; then
-    echo "No game data. Copy DIABDAT.MPQ (or the shareware spawn.mpq) into $D and start again."
+find_data() {
+    for d in "$D" "$HOME/MyDocs/diablo" "$HOME/MyDocs"; do
+        [ -d "$d" ] || continue
+        f=$(find "$d" -maxdepth 4 \( -iname diabdat.mpq -o -iname spawn.mpq \) -type f 2>/dev/null | head -1)
+        [ -n "$f" ] && { dirname "$f"; return 0; }
+    done
+    return 1
+}
+DATA=$(find_data) || {
+    echo "No game data. Copy DIABDAT.MPQ (or the shareware spawn.mpq) into $HOME/MyDocs/diablo (the memory card) and start again."
     [ -t 0 ] && { echo "Press Enter."; read -r _; }
     exit 1
-fi
-exec /opt/devilutionx/bin/devilutionx "$@"
+}
+exec /opt/devilutionx/bin/devilutionx --data-dir "$DATA/" "$@"
