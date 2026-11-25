@@ -16,4 +16,10 @@ DATA=$(find_data) || {
     [ -t 0 ] && { echo "Press Enter."; read -r _; }
     exit 1
 }
+# The engine looks for its own assets (devilutionx.mpq, fonts) in the data and the preference folder, not in /opt: link the packaged archive there.
+mkdir -p "$D"
+ln -sf /opt/devilutionx/share/diasurgical/devilutionx/devilutionx.mpq "$D/devilutionx.mpq"
+# The X cursor library of the phone lacks the functions the hardware cursor needs (a white square flickered around the hand): let the game draw it.
+INI="$D/diablo.ini"
+[ -f "$INI" ] && grep -q '^Hardware Cursor=1' "$INI" && sed -i 's/^Hardware Cursor=1/Hardware Cursor=0/' "$INI"
 exec /opt/devilutionx/bin/devilutionx --data-dir "$DATA/" "$@"

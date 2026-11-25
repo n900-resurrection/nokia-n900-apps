@@ -1,11 +1,12 @@
 # chocolate-doom
 
-**Not finished: prepared on 2026-11-23 for building on the desktop** (see TODO.md, section games). The files:
+**Works on the phone** (built and tested 2026-11-24/25; see TODO.md, section games). The files:
 
-- `build.sh` (cross-build in the Workshop, `make -C apps/chocolate-doom build`), `package.sh` (`make debs APP=chocolate-doom`), `test.sh` (`make emu-test APP=chocolate-doom`, on the phone `make -C apps/chocolate-doom test`),
-  `make-icon.sh` (the menu icon), `Makefile` (the dependencies on the SDL 2 libraries are in `DEPS`).
-- The first build will probably need small changes; write what you change here.
+- `build.sh` (cross-build in the Workshop, `make -C apps/chocolate-doom build`), `package.sh` (`make debs APP=chocolate-doom`), `test.sh` (on the phone `make -C apps/chocolate-doom test`),
+  `make-icon.sh` (the menu icon), `n900.cfg` (settings for the phone), `chocolate-doom-launch`, `Makefile` (the dependencies on the SDL 2 libraries are in `DEPS`).
+- The game data (an IWAD such as `DOOM2.WAD` or `freedoom1.wad`) is not in the package: put it in `MyDocs`.
 - Layout of the build: `apps/sdl2/sdl2-env.sh` and `apps/sdl2/sdl2-cmake.sh` (the toolchain file and the SDL 2 arguments for cmake) are shared by the cmake games.
+- Open: the music is silent (SDL2_mixer has no MIDI decoder); the cause of the audio shutdown hang is not known; sound was missing for a while once after a start and came back.
 
 ## What was changed for the phone (2026-11-25, revision 1maemo3)
 
