@@ -58,3 +58,6 @@
 [submodule "apps/openxcom"]
 	path = apps/openxcom
 	url = https://github.com/n900-resurrection/openxcom.git
+[submodule "apps/n900-gothi"]
+	path = apps/n900-gothi
+	url = https://github.com/n900-resurrection/n900-gothi.git
