@@ -13,6 +13,7 @@
 #                 without it apt and the Fast Application Manager offer that older package as an "update". An epoch can never be dropped again.
 #   STAGE         directory with the files of the package (without DEBIAN/)
 #   SECTION       Maemo section, e.g. user/utilities
+#   RECOMMENDS    optional, packages that are installed with it by default but are not required (the Recommends field)
 #   DEPENDS       Depends: line, e.g. "libc6 (>= 2.5), libncurses5 (>= 5.7)"
 #   DISPLAY_NAME  name shown by the Application Manager
 #   SHORT_DESC    one-line description
@@ -92,6 +93,7 @@ debpack_build() {
         echo "Priority: optional"
         echo "Installed-Size: $size_kb"
         echo "Depends: $DEPENDS"
+        [ -n "${RECOMMENDS:-}" ] && echo "Recommends: $RECOMMENDS"
         echo "Maintainer: $maint"
         echo "XB-Maemo-Display-Name: $DISPLAY_NAME"
         if [ -n "${DEBPACK_ICON:-}" ]; then
