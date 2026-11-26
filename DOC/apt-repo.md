@@ -28,7 +28,7 @@ repository served by `python3 -m http.server` from the PC (`apt-get update`, `ap
 - **Install with `apt-get` in a terminal, not with the Application Manager.** On the phone the Application Manager hangs (2026-11-07) while refreshing the
   lists and while preparing an installation ("Preparing installation, please wait", `apt-worker` idle, dpkg lock held, nothing installed). `apt-get update && apt-get upgrade`
   works. Investigation and fix: [TODO.md](../TODO.md).
-- **No signature yet** (`Release.gpg` is missing: apt prints `Ign ... Release.gpg` and needs `--force-yes` to install). Plan: [TODO.md](../TODO.md).
+- **No signature yet** (`Release.gpg` is missing: apt prints `Ign ... Release.gpg` and needs `--force-yes` to install). Plan: [issue n900-repository#1](https://github.com/n900-resurrection/n900-repository/issues/1).
 - **HTTPS:** the apt of the phone speaks TLS 1.0 only, GitHub (Pages and raw) requires TLS 1.2. Solution: the package `apt-transport-curl`
   ([description](../apps/apt-transport-curl/README.md)), whose `https` method runs curl 8. Verified against an HTTPS server on the PC
   and against github.com; a real repository on GitHub Pages has not been tried yet. The first installation (bootstrap) is done by hand

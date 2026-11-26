@@ -20,8 +20,7 @@ Stav k 2026-11-06. Odškrtnuté = hotovo a ověřené, neodškrtnuté = zbývá.
   ale ve Správci aplikací `apt-worker` čeká v `select` a transportu nepošle žádný požadavek (log `/tmp/apt-transport-curl.log` má jen úvodní handshake). Stejný zásek byl i s původním http mirrorem,
   takže problém není v transportu. Další krok: porovnat konfiguraci apt-workeru (jiné `Dir::*`, seznam repozitářů, katalogy v `/var/lib/hildon-application-manager/`) a zkusit `apt-worker` ručně.
   Zamrzlý Správce drží zámek dpkg, proto se balíčky zatím instalují přes `dpkg -i` / `make -C apps/<app> install` (po ukončení Správce).
-- [ ] **Podpis repozitáře** (viz [DOC/apt-repo.md](DOC/apt-repo.md)): vlastní GPG klíč, `Release.gpg` (odpojený podpis, ne InRelease), klíč do `apt-key` na telefonu (`gnupg 1.4.6` a `gpgv` tam jsou; ověřit formát starého apt-key a chování apt 0.7.20 k nepodepsanému),
-  cíl `make repo-key`; podpis jen `Release`, ne každého `.deb`. Dnes apt hlásí `Ign Release.gpg` a instalace chce `--force-yes`.
+- [ ] **Podpis repozitáře** (`Release.gpg`, klíč na telefon, bez `--force-yes`): převedeno do issue [n900-repository#1](https://github.com/n900-resurrection/n900-repository/issues/1).
 - [ ] **Jellyfin na N900** (nahrazuje živé YouTube; server na LAN už běží). 1) Zkouška bez kódu: zapnout na serveru DLNA plugin a ověřit, jestli se server objeví v přehrávači N900 (Média, sdílená média/UPnP) a jestli video přehraje
   (N900 zvládá H.264 baseline a MPEG-4 v nízkém rozlišení, jinak překódování na serveru). 2) Pokud DLNA nestačí: vlastní Hildon klient přes REST API Jellyfinu (přihlášení, knihovny, hledání, přehrávání transkódovaného MP4 H.264 baseline + AAC),
   HTTPS přes lokální curl proxy jako v gPodderu (`ytdlp.stream_url` v `apps/gpodder/ytdlp.patch`) a přehrávač N900 přes MAFW; server s vlastním profilem zařízení.

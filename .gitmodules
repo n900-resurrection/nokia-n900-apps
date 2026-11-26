@@ -70,3 +70,9 @@
 [submodule "apps/gothi-ssh"]
 	path = apps/gothi-ssh
 	url = https://github.com/n900-resurrection/gothi-ssh.git
+[submodule "apps/gothi-gps"]
+	path = apps/gothi-gps
+	url = https://github.com/n900-resurrection/gothi-gps.git
+[submodule "apps/gothi-tiny"]
+	path = apps/gothi-tiny
+	url = https://github.com/n900-resurrection/gothi-tiny.git
