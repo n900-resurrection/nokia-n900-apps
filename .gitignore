@@ -13,5 +13,5 @@ build/
 *.pyc
 *__pycache__/
 
-# Screenshots of the phone (personal, copied by make screenshots)
-screenshots/
+# Screenshots of the phone (personal, copied by make screenshots into ./screenshots; the screenshots in apps/*/screenshots belong to the READMEs)
+/screenshots/

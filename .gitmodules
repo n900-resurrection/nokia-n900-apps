@@ -61,3 +61,12 @@
 [submodule "apps/n900-gothi"]
 	path = apps/n900-gothi
 	url = https://github.com/n900-resurrection/n900-gothi.git
+[submodule "apps/gothi-copyparty"]
+	path = apps/gothi-copyparty
+	url = https://github.com/n900-resurrection/gothi-copyparty.git
+[submodule "apps/gothi-timesync"]
+	path = apps/gothi-timesync
+	url = https://github.com/n900-resurrection/gothi-timesync.git
+[submodule "apps/gothi-ssh"]
+	path = apps/gothi-ssh
+	url = https://github.com/n900-resurrection/gothi-ssh.git
