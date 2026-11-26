@@ -20,7 +20,17 @@ rm -rf "$R/dists"
 mkdir -p "$R/pool/main" "$R/$B"
 cd "$R"
 # one directory per package: first move the files of the old flat layout (pool/main/*.deb), then add the given ones
-place() { local d; d="pool/main/$(dpkg-deb -f "$1" Package)"; mkdir -p "$d"; "$2" -- "$1" "$d/"; }
+# A file that is already in the pool and has the same bytes is left alone (the packages are reproducible, see scripts/debpack.sh, so a rebuild that changed
+# nothing changes no file in git); a file with the same name and other bytes is replaced and reported at the end: the version was not raised.
+CHANGED=""
+place() {
+    local d t; d="pool/main/$(dpkg-deb -f "$1" Package)"; mkdir -p "$d"; t="$d/$(basename "$1")"
+    if [ "$2" = cp ] && [ -e "$t" ]; then
+        cmp -s "$1" "$t" && return 0
+        CHANGED="$CHANGED $t"
+    fi
+    "$2" -- "$1" "$d/"
+}
 for f in pool/main/*.deb; do [ -e "$f" ] && place "$f" mv; done
 for f in "$@"; do place "$(cd "$PROJ" && readlink -f "$f")" cp; done
 dpkg-scanpackages -m --arch armel pool 2>"$PROJ/build/mkrepo.log" > "$B/Packages"
@@ -48,6 +58,7 @@ for f in "$@"; do
     echo "${cg}+${cn} ${cb}$(dpkg-deb -f "$d" Package)${cn} $(dpkg-deb -f "$d" Version)  ${cp}$(du -h "$d" | cut -f1)${cn}"
 done
 echo "${cg}${cb}$(grep -c '^Package:' "$B/Packages") packages${cn} in $R"
+for t in $CHANGED; do echo "${cy}changed without a new version:${cn} $t (raise REV or VERSION of the package if it is meant to be a new release)"; done
 # Size overview (GitHub Pages: the published site should stay below about 1 GB, the repository below a few GB)
 nd=$(find pool -name '*.deb' | wc -l)
 echo "${cc}size:${cn} $(du -sh pool | cut -f1) pool ($nd .deb files in $(find pool -mindepth 2 -maxdepth 2 -type d | wc -l) directories), $(du -sh dists | cut -f1) dists, $(du -sh --exclude=.git . | cut -f1) total without git"

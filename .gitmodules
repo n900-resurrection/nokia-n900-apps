@@ -76,3 +76,6 @@
 [submodule "apps/gothi-tiny"]
 	path = apps/gothi-tiny
 	url = https://github.com/n900-resurrection/gothi-tiny.git
+[submodule "apps/gothi-fmtx"]
+	path = apps/gothi-fmtx
+	url = https://github.com/n900-resurrection/gothi-fmtx.git

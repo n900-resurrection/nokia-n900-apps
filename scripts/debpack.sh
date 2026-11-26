@@ -84,7 +84,9 @@ debpack_build() {
 
     mkdir -p "$STAGE/DEBIAN"
     local size_kb
-    size_kb=$(du -sk "$STAGE" | cut -f1)
+    # Installed-Size from the sizes of the files (rounded up to 4 kB blocks), not from `du`: du counts what the file system of the build has allocated,
+    # which differs between two builds of the same package and would make the .deb not reproducible.
+    size_kb=$(find "$STAGE" -type f -not -path "$STAGE/DEBIAN/*" -printf '%s\n' | awk '{ s += int(($1 + 4095) / 4096) * 4 } END { print s + 0 }')
     {
         echo "Package: $PKG"
         echo "Version: ${EPOCH:+$EPOCH:}$VERSION-$REV"
@@ -99,7 +101,7 @@ debpack_build() {
         if [ -n "${DEBPACK_ICON:-}" ]; then
             # the icon of the Application Manager list: 26x26 PNG in base64, continuation lines start with one space
             echo "XB-Maemo-Icon-26:"
-            convert "$DEBPACK_ICON" -resize 26x26 png:- | base64 -w 0 | fold -w 76 | sed 's/^/ /'
+            convert "$DEBPACK_ICON" -resize 26x26 -strip -define png:exclude-chunk=tIME,tEXt,zTXt,iTXt +set date:create +set date:modify +set date:timestamp png:- | base64 -w 0 | fold -w 76 | sed 's/^/ /'
             echo
         fi
         echo "Description: $SHORT_DESC"
@@ -111,6 +113,19 @@ debpack_build() {
     # executables stay 755.
     chmod -R u+rwX,go+rX,go-w "$STAGE"
 
+    # Reproducible package: the same input gives the same bytes, so a rebuild does not change the .deb file in the git repository of the apt repo
+    # (and the packages that did not change are not committed again). All times in the stage are set to a fixed date, the ar header takes it from
+    # SOURCE_DATE_EPOCH. The date is a fixed one on purpose (not the date of the build or of a commit).
+    # ImageMagick writes the time of the conversion into every PNG that `convert` made (the chunk tIME and the properties date:create, date:modify,
+    # date:timestamp): remove it
+    # from the PNG files of the package (only those that have it; the picture stays the same).
+    find "$STAGE" -type f -name '*.png' -print0 | while IFS= read -r -d '' png; do
+        if grep -qa -e 'date:' -e 'tIME' "$png"; then
+            mogrify -strip -define png:exclude-chunk=tIME,tEXt,zTXt,iTXt +set date:create +set date:modify +set date:timestamp "$png"
+        fi
+    done
+    export SOURCE_DATE_EPOCH="${DEBPACK_EPOCH:-1767225600}"          # 2026-01-01 00:00:00 UTC
+    find "$STAGE" -exec touch -h -d "@$SOURCE_DATE_EPOCH" {} +
     mkdir -p "$(dirname "$deb")"
     # gzip: the old dpkg on Maemo 5 (1.14) does not know xz. --root-owner-group: files belong to root:root.
     dpkg-deb --root-owner-group -Zgzip --build "$STAGE" "$deb"
