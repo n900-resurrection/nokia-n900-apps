@@ -79,3 +79,6 @@
 [submodule "apps/gothi-fmtx"]
 	path = apps/gothi-fmtx
 	url = https://github.com/n900-resurrection/gothi-fmtx.git
+[submodule "apps/gothi-ir"]
+	path = apps/gothi-ir
+	url = https://github.com/n900-resurrection/gothi-ir.git
