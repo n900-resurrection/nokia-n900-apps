@@ -24,7 +24,7 @@ llama-story [-s] [-n steps] [-t temperature] [first words ...]
 | `-t temperature` | 0 is the surest word every time, 1 is freer, higher is wilder | 0.8 |
 | *first words* | the beginning of the story; without them it asks | `Once upon a time` |
 
-The model stories15M (61 MB) is **not in the package**. On the first run `llama-story` asks whether to download it (with `curl`, from huggingface.co), checks the SHA-256 and keeps it in `~/llama2c`
+The model stories15M (61 MB) is **not in the package**. On the first run `llama-story` asks whether to download it (with `curl`, from huggingface.co), checks the SHA-256 and keeps it in `~/MyDocs/llama2c` on the **memory card** (the 2 GB system partition, which holds `/home` and `/opt`, fills up quickly; without a mounted card it is `~/llama2c`, and a model that is already in `~/llama2c` is used there; `LLAMA2C_MODELS` sets the folder)
 (or in the directory of the variable `LLAMA2C_MODELS`). It needs about 130 MB of free space. When you say no, or the download fails, the tiny model is used.
 
 ## llama2c (the engine)

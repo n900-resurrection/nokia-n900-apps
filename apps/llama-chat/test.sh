@@ -20,5 +20,14 @@ while True:
     time.sleep(0.05)
 print(p.lower(), out.lower())"; r=$?; rm -rf /home/user/.llama-chat-test; exit $r'
 ok converter sh -c '/opt/python3/bin/python3 /opt/llama-chat/st2llama2c.py --help >/dev/null'
+# the models go to the memory card when it is mounted (the system partition is small); the free memory is read and the check works
+contains models-folder "models-folder-ok" sh -c 'su user -c "cd /opt/llama-chat && /opt/python3/bin/python3 -c \"
+import os, llama_chat as L
+card = os.path.ismount(os.path.expanduser(\\\"~/MyDocs\\\"))
+print(\\\"models-folder-ok\\\" if L.MODELS_DIR.endswith(\\\"MyDocs/llama2c\\\") == card else \\\"models-folder-bad\\\", L.MODELS_DIR)\""'
+contains free-memory-is-read "free-memory-ok" sh -c 'cd /opt/llama-chat && /opt/python3/bin/python3 -c "
+import llama_chat as L
+f = L.ram_free_bytes()
+print(\"free-memory-ok\" if f and f > 0 and L.missing_ram({\"size\": 10 ** 12}, free=f) > 0 and L.missing_ram({\"size\": 1}, free=10 ** 9) == 0 else \"free-memory-bad\")"'
 # The windows were checked in the emulator (make hildon-run APP=llama-chat); see README.md.
 summary

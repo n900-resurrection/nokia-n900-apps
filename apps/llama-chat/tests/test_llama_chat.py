@@ -238,5 +238,83 @@ class Download(unittest.TestCase):
         self.assertFalse(os.path.exists(os.path.join(L.MODELS_DIR, ".work", "tiny")))
 
 
+class ModelsFolderTest(unittest.TestCase):
+    """The models go to the memory card when it is mounted; models from before stay usable in ~/llama2c."""
+
+    def test_the_card_is_used_only_when_it_is_mounted(self):
+        self.assertEqual(L.default_models_dir("/home/user", mounted=lambda p: True), "/home/user/MyDocs/llama2c")
+        self.assertEqual(L.default_models_dir("/home/user", mounted=lambda p: False), "/home/user/llama2c")      # an unmounted card is an empty folder of the system partition
+        seen = []
+        L.default_models_dir("/home/user", mounted=lambda p: seen.append(p) or True)
+        self.assertEqual(seen, ["/home/user/MyDocs"])
+
+    def test_a_model_from_before_is_found_in_the_old_folder(self):
+        m = {"id": "old", "file": "old.bin", "size": 3}
+        os.makedirs(L.OLD_MODELS_DIR, exist_ok=True)
+        os.makedirs(L.MODELS_DIR, exist_ok=True)
+        old = os.path.join(L.OLD_MODELS_DIR, "old.bin")
+        open(old, "wb").write(b"abc")
+        try:
+            self.assertEqual(L.model_path(m), old)
+            self.assertTrue(L.installed(m))
+            open(os.path.join(L.MODELS_DIR, "old.bin"), "wb").write(b"abc")          # a copy in the new folder wins
+            self.assertEqual(L.model_path(m), os.path.join(L.MODELS_DIR, "old.bin"))
+            L.delete_model(m)
+            self.assertFalse(os.path.exists(os.path.join(L.MODELS_DIR, "old.bin")))
+        finally:
+            for p in (old, os.path.join(L.MODELS_DIR, "old.bin")):
+                if os.path.exists(p):
+                    os.remove(p)
+
+    def test_a_link_to_the_new_folder_is_not_a_second_copy(self):
+        m = {"id": "lnk", "file": "lnk.bin", "size": 3}
+        os.makedirs(L.MODELS_DIR, exist_ok=True)
+        link = L.OLD_MODELS_DIR
+        if os.path.lexists(link):
+            os.remove(link) if os.path.islink(link) else None
+        if not os.path.lexists(link):
+            os.symlink(L.MODELS_DIR, link)
+        try:
+            open(os.path.join(L.MODELS_DIR, "lnk.bin"), "wb").write(b"abc")
+            self.assertEqual(L.model_path(m), os.path.join(L.MODELS_DIR, "lnk.bin"))
+            self.assertTrue(L.installed(m))
+            L.delete_model(m)
+            self.assertFalse(L.installed(m))
+        finally:
+            if os.path.islink(link):
+                os.remove(link)
+
+    def test_free_memory_is_read_from_meminfo(self):
+        p = os.path.join(TMP, "meminfo")
+        with open(p, "w") as f:
+            f.write("MemTotal:  245540 kB\nMemFree:  4436 kB\nBuffers:  1264 kB\nCached:  100000 kB\nSwapCached: 5 kB\n")
+        self.assertEqual(L.ram_free_bytes(p), (4436 + 1264 + 100000) * 1024)
+        for bad in ("", "MemFree: x kB\n", "Cached: 5 kB\n"):
+            open(p, "w").write(bad)
+            self.assertIsNone(L.ram_free_bytes(p))
+        self.assertIsNone(L.ram_free_bytes(os.path.join(TMP, "none")))
+
+    def test_missing_ram_tells_when_the_weights_do_not_fit(self):
+        m = {"size": 100 * 1024 * 1024}
+        mb = 1024 * 1024
+        self.assertEqual(L.missing_ram(m, free=200 * mb), 0)
+        self.assertEqual(L.missing_ram(m, free=124 * mb), 0)                         # exactly the weights and the work memory
+        self.assertEqual(L.missing_ram(m, free=100 * mb), 24 * mb)
+        self.assertEqual(L.missing_ram(m, free=0), 124 * mb)
+        self.assertEqual(L.missing_ram({"size": 1 * mb}, free=5 * mb), 20 * mb)       # even a small model needs some room
+        orig = L.ram_free_bytes
+        L.ram_free_bytes = lambda *a: None                                           # the memory is not known: no warning
+        try:
+            self.assertEqual(L.missing_ram(m), 0)
+        finally:
+            L.ram_free_bytes = orig
+
+    def test_the_new_folder_is_made_for_a_download(self):
+        import shutil
+        shutil.rmtree(L.MODELS_DIR, ignore_errors=True)
+        self.assertGreater(L.free_bytes(), 0)
+        self.assertTrue(os.path.isdir(L.MODELS_DIR))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

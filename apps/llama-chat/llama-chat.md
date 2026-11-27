@@ -4,7 +4,7 @@ Status 2026-11-17 (first version, the windows were checked in the emulator; the 
 (`make llama-chat`); conventions in [../../mk/app.mk](../../mk/app.mk).
 
 Python 3 + [hildonlite](../hildonlite) on top of [llama2c](../llama2c): the engine runs as a child process, its standard output is read without blocking from a timer of the main loop (150 ms) and appended
-to the text view, so the window stays responsive. The settings (model, temperature, top-p, length, memory) are in `~/.llama-chat/settings.json`; the models are the files in `~/llama2c`.
+to the text view, so the window stays responsive. The settings (model, temperature, top-p, length, memory) are in `~/.llama-chat/settings.json`; the models are the files in `~/MyDocs/llama2c` (the memory card) or, without a mounted card or for older installs, in `~/llama2c`.
 
 ## What is in it
 - Chat view: entry + Send/Stop, the text of the story in a text view; the prompt of a turn is the end of the story (the last N words) and what you wrote; the echo of the prompt that the engine prints is dropped.

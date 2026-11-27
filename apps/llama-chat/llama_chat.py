@@ -1,7 +1,7 @@
 """llama-chat: the logic of the story teller for the N900 (no GUI here, so it can be tested on a PC).
 
 The engine is llama2c (llama2.c, one C file) started as a child process: its standard output is the story, token by token; its standard error
-ends with "achieved tok/s: N". The models are files in ~/llama2c (the folder that the terminal launcher llama-story uses as well); the catalogue
+ends with "achieved tok/s: N". The models are files in ~/MyDocs/llama2c on the memory card (or ~/llama2c, see default_models_dir; the folder that the terminal launcher llama-story uses as well); the catalogue
 of the models that can be downloaded is models.json next to this file, and ~/.llama-chat/models.json adds your own entries (same fields).
 A model that is not in llama2.c format but a Hugging Face safetensors checkpoint has a "convert" block: the files are downloaded and
 st2llama2c.py (pure Python) writes the .bin.
@@ -11,7 +11,17 @@ import codecs, hashlib, json, os, re, shutil, subprocess, sys, threading, time
 HERE = os.path.dirname(os.path.realpath(__file__))
 HOME = os.environ.get("HOME", "/home/user")
 DIR = os.environ.get("LLAMACHAT_DIR") or os.path.join(HOME, ".llama-chat")
-MODELS_DIR = os.environ.get("LLAMACHAT_MODELS") or os.path.join(HOME, "llama2c")
+OLD_MODELS_DIR = os.path.join(HOME, "llama2c")          # where the models used to be kept (the 2 GB system partition: it fills up)
+
+
+def default_models_dir(home=HOME, mounted=os.path.ismount):
+    """The models are big, so they go to the memory card (MyDocs, tens of GB) when it is there; the 2 GB partition of the system (/home and /opt) is nearly full
+    on a phone that has many packages. An unmounted card (USB storage mode) is only an empty folder on that partition, so it must not be used."""
+    card = os.path.join(home, "MyDocs")
+    return os.path.join(card, "llama2c") if mounted(card) else os.path.join(home, "llama2c")
+
+
+MODELS_DIR = os.environ.get("LLAMACHAT_MODELS") or default_models_dir()
 ENGINE = os.environ.get("LLAMACHAT_ENGINE", "/opt/llama2c/bin/llama2c")
 SHARE = os.environ.get("LLAMACHAT_SHARE", "/opt/llama2c/share/llama2c")
 CONVERTER = os.environ.get("LLAMACHAT_CONVERTER") or next(
@@ -68,7 +78,12 @@ def load_models():
 
 
 def model_path(m):
-    return os.path.join(SHARE if m.get("bundled") else MODELS_DIR, m["file"])
+    """The file of a model: in the models folder, or (a phone that has the models from before) in ~/llama2c; new downloads go to the models folder."""
+    if m.get("bundled"):
+        return os.path.join(SHARE, m["file"])
+    new = os.path.join(MODELS_DIR, m["file"])
+    old = os.path.join(OLD_MODELS_DIR, m["file"])
+    return old if not os.path.exists(new) and os.path.exists(old) and os.path.realpath(old) != os.path.realpath(new) else new
 
 
 def tokenizer_path(m):
@@ -85,6 +100,29 @@ def installed(m):
 
 def fits(m):
     return m.get("size", 0) <= RAM_LIMIT
+
+
+WORK_BYTES = 24 * 1024 * 1024        # what the engine needs besides the weights (the activations, the key-value cache, the tokenizer)
+
+
+def ram_free_bytes(path="/proc/meminfo"):
+    """The memory that could hold the weights: free + buffers + cached (the cache is given up on demand); None when it cannot be read."""
+    try:
+        with open(path) as f:
+            kb = {k: int(v.split()[0]) for k, v in (ln.split(":", 1) for ln in f if ":" in ln)}
+        return (kb["MemFree"] + kb.get("Buffers", 0) + kb.get("Cached", 0)) * 1024
+    except (OSError, ValueError, KeyError):
+        return None
+
+
+def missing_ram(m, free=None):
+    """Bytes of memory that are missing for the weights of a model to sit in the RAM at once (the models are read from the memory card by mapping the file:
+    when they do not fit, every token reads parts of the file from the card again and the speed drops to a half or less); 0 when they fit or the memory is
+    not known."""
+    free = ram_free_bytes() if free is None else free
+    if free is None:
+        return 0
+    return max(0, m.get("size", 0) + WORK_BYTES - free)
 
 
 def fmt_size(n):
@@ -111,7 +149,7 @@ def free_bytes():
 
 
 def delete_model(m):
-    for p in (model_path(m), model_path(m) + ".part"):
+    for p in {model_path(m), model_path(m) + ".part", os.path.join(MODELS_DIR, m["file"]), os.path.join(MODELS_DIR, m["file"]) + ".part"}:
         try:
             os.remove(p)
         except OSError:

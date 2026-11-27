@@ -1,9 +1,17 @@
 #!/bin/sh
 # llama-story: a pocket story teller. Asks for the first words of a story and lets a small language model (stories15M, 15 million weights) go on.
-# The model (61 MB) is downloaded once into ~/llama2c (or $LLAMA2C_MODELS); without it the tiny stories260K (1 MB) of the package is used.
+# The model (61 MB) is downloaded once into ~/MyDocs/llama2c on the memory card (the 2 GB system partition fills up), or ~/llama2c when there is no card;
+# $LLAMA2C_MODELS sets the folder. A model that is already in ~/llama2c is used there. Without a model the tiny stories260K (1 MB) of the package is used.
 #   llama-story [-s] [-n steps] [-t temperature] [first words ...]       -s: the tiny model, no download
 D=/opt/llama2c/share/llama2c
-MODELS=${LLAMA2C_MODELS:-$HOME/llama2c}
+if [ -n "$LLAMA2C_MODELS" ]; then
+    MODELS=$LLAMA2C_MODELS
+elif grep -q " $HOME/MyDocs " /proc/mounts 2>/dev/null; then
+    MODELS=$HOME/MyDocs/llama2c                       # the card is mounted (an unmounted card is only an empty folder on the system partition)
+else
+    MODELS=$HOME/llama2c
+fi
+[ ! -s "$MODELS/stories15M.bin" ] && [ -s "$HOME/llama2c/stories15M.bin" ] && MODELS=$HOME/llama2c      # a model from before the move to the card
 URL=https://huggingface.co/karpathy/tinyllamas/resolve/main/stories15M.bin
 SIZE=60816028
 SHA=cd590644d963867a2b6e5a1107f51fad663c41d79c149fbecbbb1f95fa81f49a
@@ -20,8 +28,9 @@ if [ -z "$SMALL" ]; then
     M=$MODELS/stories15M.bin
     if [ ! -s "$M" ]; then
         echo "The story model stories15M (61 MB) is not on the phone yet."
-        free=$(df -k "$HOME" 2>/dev/null | awk 'NR==2 {print $4}')
-        [ -n "$free" ] && [ "$free" -lt 130000 ] && { echo "Not enough free space in $HOME (need 130 MB, have $((free / 1024)) MB). Using the tiny model."; SMALL=1; }
+        mkdir -p "$MODELS" 2>/dev/null
+        free=$(df -k "$MODELS" 2>/dev/null | awk 'NR==2 {print $4}')
+        [ -n "$free" ] && [ "$free" -lt 130000 ] && { echo "Not enough free space in $MODELS (need 130 MB, have $((free / 1024)) MB). Using the tiny model."; SMALL=1; }
         if [ -z "$SMALL" ]; then
             printf "Download it now to %s? [y/N] " "$MODELS"
             read a

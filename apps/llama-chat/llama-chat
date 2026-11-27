@@ -108,6 +108,9 @@ def main():
         if not text and not state["story"]:
             hl.Banner(win, _("Write the first words of a story"))
             return
+        lack = L.missing_ram(m)
+        if lack:                                                  # the weights do not fit in the free memory: it works, but slowly (reads from the card)
+            hl.Banner(win, _("Little free memory (%d MB missing): close other applications, the model is slow") % ((lack + 1048575) // 1048576))
         prompt = L.build_prompt(state["story"], text, S["memory"])
         append(tv, "» " + (text if text else _("go on")) + "\n")
         state["story"] += (text + " ") if text else ""

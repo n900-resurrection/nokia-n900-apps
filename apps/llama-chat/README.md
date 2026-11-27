@@ -27,7 +27,7 @@ The list comes from `models.json` of the package; add your own models in `~/.lla
 ```
 `tokenizer` is `tokenizer.bin` (the 32000 token Llama tokenizer, for the usual models) or `tok512.bin` (the tiny demo model). A Hugging Face checkpoint
 (`config.json` + `model.safetensors`) is described by a `convert` block with the `files` to download (`name`, `url`, `size`, `sha256`); on the phone
-`st2llama2c.py` (pure Python, no numpy) converts it to the llama2.c format. Models are kept in `~/llama2c`, the folder that `llama-story` uses as well.
+`st2llama2c.py` (pure Python, no numpy) converts it to the llama2.c format. Models are kept in `~/MyDocs/llama2c` on the **memory card** when it is mounted (the 2 GB system partition fills up; an unmounted card is not used), otherwise in `~/llama2c`; a model that is already in `~/llama2c` is used there. `llama-story` uses the same folder.
 
 **The rule: a model has to fit in the RAM of the phone** (about 160 MB; the weights are read on every token). `stories42M` (167 MB) ran at 0.03 tokens per second.
 Larger models are marked and the download needs a confirmation.

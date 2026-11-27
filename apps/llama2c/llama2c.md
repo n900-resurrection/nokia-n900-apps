@@ -29,7 +29,7 @@ comfortably in RAM (about 160 MB at most).**
 
 - `Depends: libc6 (>= 2.5), curl`, `Section: user/games`, 1.2 MB.
 - `/usr/bin/llama2c`, `llama2c-q8`, `llama-story`; `/opt/llama2c/share/llama2c/{tokenizer.bin,stories260K.bin,tok512.bin}`; manuals `llama2c(1)` and `llama-story(1)`; `LICENSE`, `NOTICE`; a menu entry "Story teller".
-- `llama-story`: asks before it downloads stories15M (61 MB, SHA-256 checked, to `~/llama2c`); without it, or with `-s`, or when there is less than 130 MB free, it uses stories260K.
+- `llama-story`: asks before it downloads stories15M (61 MB, SHA-256 checked, to `~/MyDocs/llama2c` on the memory card, or `~/llama2c` without one); without it, or with `-s`, or when there is less than 130 MB free, it uses stories260K.
 
 ## Verified
 
