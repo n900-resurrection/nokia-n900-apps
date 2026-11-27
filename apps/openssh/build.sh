@@ -32,6 +32,11 @@ export MAEMO_DEPS="$SSL:$ZDIR"
 # (the first assignment is the cross compiling branch)
 sed -i '0,/select_works_with_rlimit=no/s//select_works_with_rlimit=yes/' configure
 grep -n "select_works_with_rlimit=" configure | head -4
+# The rlimit sandbox sets RLIMIT_NOFILE to 0, and on Linux (the 2.6.28 kernel of the N900 too) poll() and ppoll() fail with EINVAL when they are given more
+# descriptors than the limit: sshd polls the descriptor of the connection in the sandboxed process, so the key exchange died with "Invalid argument"
+# (found on the phone). A limit of 1 lets that one descriptor be polled and still stops the process from opening files (descriptor 0 is taken).
+sed -i 's/struct rlimit rl_zero;/struct rlimit rl_zero, rl_one;/; s/\(rl_zero.rlim_cur = rl_zero.rlim_max = 0;\)/\1\n\trl_one.rlim_cur = rl_one.rlim_max = 1;/; s/setrlimit(RLIMIT_NOFILE, &rl_zero)/setrlimit(RLIMIT_NOFILE, \&rl_one)/' sandbox-rlimit.c
+[ "$(grep -c 'rl_one' sandbox-rlimit.c)" = 3 ] || { echo "patch of sandbox-rlimit.c did not apply"; grep -n 'rl_one' sandbox-rlimit.c; exit 1; }
 # --with-sandbox=rlimit: the privilege separation sandbox without seccomp (the 2.6.28 kernel has only the old strict seccomp mode).
 # --without-pam: the phone has no PAM setup for it. --disable-strip: stripped below, make install would use the host strip.
 ./configure --host=arm-linux-gnueabi --build="$(gcc -dumpmachine)" --prefix=/opt/openssh --sysconfdir=/opt/openssh/etc \

@@ -1,0 +1,168 @@
+#!/bin/sh
+# openssh-switch: move the ssh server of the phone from the old OpenSSH 5.1 (port 22, started by upstart) to the new one (/opt/openssh), safely.
+#   openssh-switch check              look at everything that has to be true before the switch (nothing is changed)
+#   openssh-switch backup             pack the files of the old OpenSSH into /root/ssh-5.1-backup.tgz (mode 600: it holds the private host keys),
+#                                     so the old server can be put back without the network
+#   openssh-switch trial [seconds]    stop the old server, start the new one on port 22, and put the OLD one back after `seconds` (default 180)
+#                                     unless `openssh-switch confirm` is run before. Open a second ssh session and use it before you confirm.
+#   openssh-switch confirm            the new server works: keep it (until the next reboot, see below)
+#   openssh-switch revert             stop the new server on 22 and start the old one again
+#   openssh-switch restore            unpack the backup over the system (after the old packages were removed) and start the old server
+#   openssh-switch status             what listens where, which server it is, and what the safety timer is doing
+# Running sessions are never touched: stopping a server does not end the sessions it has already started.
+# The trial is not permanent: after a reboot the old server (upstart job /etc/event.d/sshd) starts again. The permanent replacement is the package
+# `openssh` of the revision that replaces openssh-server, -client and -common (its upstart job starts the new server); install it after `confirm`.
+# For tests every path and command can be replaced by an environment variable (see the top of the script); `start`, `stop`, `netstat` come from PATH.
+NEW_SSHD=${NEW_SSHD:-/opt/openssh/sbin/sshd}
+NEW_CONF=${NEW_CONF:-/opt/openssh/etc/sshd_config}
+PORT=${PORT:-22}
+PIDFILE=${PIDFILE:-/var/run/sshd.pid}
+RUN=${RUN:-/var/run}
+OK_FILE=$RUN/openssh-switch.ok
+GUARD_PID=$RUN/openssh-switch.guard
+LOG=${LOG:-/tmp/openssh-switch.log}
+BACKUP=${BACKUP:-/root/ssh-5.1-backup.tgz}                # NOT on the memory card: /etc/ssh holds the private host keys, and the card is readable by everybody
+JOB=${JOB:-sshd}                                       # the upstart job of the old server
+AUTH_FILES=${AUTH_FILES:-"/home/user/.ssh/authorized_keys /root/.ssh/authorized_keys"}
+SKIP_ROOT_CHECK=${SKIP_ROOT_CHECK:-}
+OLD_FILES=${OLD_FILES:-"/usr/sbin/sshd /usr/bin/ssh /usr/bin/scp /usr/bin/sftp /usr/bin/slogin /usr/bin/ssh-keygen /usr/bin/ssh-add /usr/bin/ssh-agent /usr/bin/ssh-copy-id /usr/bin/ssh-keyscan /usr/bin/ssh-argv0 /usr/bin/ssh-vulnkey /usr/lib/openssh /usr/lib/sftp-server /etc/ssh /etc/init.d/ssh /etc/event.d/sshd /etc/default/ssh"}
+SELF=$(cd "$(dirname "$0")" && pwd)/$(basename "$0")
+export PATH="$PATH:/sbin:/usr/sbin"
+
+say() { echo "$*"; }
+log() { echo "$(date '+%H:%M:%S') $*" >> "$LOG"; }
+fail() { echo "FAIL: $*" >&2; exit 1; }
+
+listening() { netstat -ltn 2>/dev/null | grep -q "[:.]$PORT[[:space:]]"; }
+pid_of_pidfile() { cat "$PIDFILE" 2>/dev/null; }
+alive() { [ -n "$1" ] && kill -0 "$1" 2>/dev/null; }
+is_sshd() { [ -r "/proc/$1/cmdline" ] && tr '\0' ' ' < "/proc/$1/cmdline" | grep -q sshd; }
+is_new() { [ -r "/proc/$1/cmdline" ] && tr '\0' ' ' < "/proc/$1/cmdline" | grep -q "$NEW_SSHD"; }
+
+wait_port() {            # wait_port up|down [seconds]
+    n=${2:-10}
+    while [ "$n" -gt 0 ]; do
+        if [ "$1" = up ] && listening; then return 0; fi
+        if [ "$1" = down ] && ! listening; then return 0; fi
+        sleep 1; n=$((n - 1))
+    done
+    return 1
+}
+
+stop_new() {             # stop the new server if it is the one in the pid file
+    p=$(pid_of_pidfile)
+    if alive "$p" && is_sshd "$p" && is_new "$p"; then kill "$p"; wait_port down 8; rm -f "$PIDFILE"; return 0; fi
+    return 1
+}
+
+stop_guard() {
+    g=$(cat "$GUARD_PID" 2>/dev/null)
+    if [ -n "$g" ] && alive "$g"; then pkill -P "$g" 2>/dev/null; kill "$g" 2>/dev/null; fi
+    rm -f "$GUARD_PID"
+}
+
+cmd_check() {
+    bad=0
+    ok()  { say "ok    $*"; }
+    no()  { say "FAIL  $*"; bad=1; }
+    if [ -n "$SKIP_ROOT_CHECK" ] || [ "$(id -u)" = 0 ]; then ok "running as root"; else no "must run as root"; fi
+    if [ -x "$NEW_SSHD" ]; then ok "new server $NEW_SSHD"; else no "new server $NEW_SSHD missing"; fi
+    if "$NEW_SSHD" -t -f "$NEW_CONF" -o "Port=$PORT" -o "PidFile=$PIDFILE" 2>/dev/null; then ok "configuration $NEW_CONF is valid for port $PORT (host keys load)"; else no "sshd -t failed for $NEW_CONF"; fi
+    keys=0
+    for f in $AUTH_FILES; do
+        c=0; [ -s "$f" ] && c=$(grep -c . "$f")
+        say "      $f: $c keys"; keys=$((keys + c))
+    done
+    [ "$keys" -gt 0 ] && ok "authorized keys present (passwords are off)" || no "no authorized keys: nobody could log in to the new server"
+    if grep -q "^PasswordAuthentication no" "$NEW_CONF" 2>/dev/null; then ok "passwords are refused by the new server"; else no "PasswordAuthentication is not off in $NEW_CONF"; fi
+    if [ -s "$BACKUP" ]; then ok "backup of the old OpenSSH: $BACKUP"; else say "warn  no backup yet (openssh-switch backup; trial makes one)"; fi
+    if status "$JOB" 2>/dev/null | grep -q running; then ok "old server runs as the upstart job $JOB"; else say "warn  the upstart job $JOB is not running"; fi
+    p=$(pid_of_pidfile)
+    if alive "$p" && is_new "$p"; then say "warn  the new server already runs on this port (pid $p)"; fi
+    return $bad
+}
+
+cmd_backup() {
+    [ -s "$BACKUP" ] && { say "backup exists: $BACKUP"; return 0; }
+    files=""
+    for f in $OLD_FILES; do [ -e "$f" ] && files="$files $f"; done
+    [ -n "$files" ] || fail "no files of the old OpenSSH found"
+    mkdir -p "$(dirname "$BACKUP")"
+    ( umask 077; tar czf "$BACKUP.tmp" $files 2>/dev/null ) && mv "$BACKUP.tmp" "$BACKUP" && chmod 600 "$BACKUP" || { rm -f "$BACKUP.tmp"; fail "cannot write $BACKUP"; }
+    say "backup written: $BACKUP ($(wc -c < "$BACKUP") bytes)"
+}
+
+cmd_trial() {
+    secs=${1:-180}
+    case $secs in ''|*[!0-9]*) fail "seconds must be a number";; esac
+    cmd_check || fail "the check did not pass; nothing was changed"
+    cmd_backup || exit 1
+    rm -f "$OK_FILE"
+    stop_guard
+    # the guard first: whatever happens after this point (a lost connection, a failing server), the old server comes back
+    setsid sh -c "sleep $secs; [ -e '$OK_FILE' ] || '$SELF' revert --auto" > /dev/null 2>&1 < /dev/null &
+    echo $! > "$GUARD_PID"
+    log "trial started, guard $(cat "$GUARD_PID"), $secs s"
+    say "stopping the old server (upstart job $JOB); running sessions stay"
+    stop "$JOB" > /dev/null 2>&1
+    wait_port down 10 || { log "port $PORT still busy"; "$SELF" revert; fail "the old server did not release port $PORT; reverted"; }
+    "$NEW_SSHD" -f "$NEW_CONF" -o "Port=$PORT" -o "PidFile=$PIDFILE" || { "$SELF" revert; fail "the new server did not start; reverted"; }
+    wait_port up 10 || { "$SELF" revert; fail "the new server does not listen on $PORT; reverted"; }
+    p=$(pid_of_pidfile)
+    is_new "$p" || { "$SELF" revert; fail "port $PORT is not held by the new server; reverted"; }
+    say "the NEW server (pid $p) listens on port $PORT."
+    say "Open a second terminal NOW and log in (as user and as root, with a key), try scp or sftp."
+    say "When it works:  openssh-switch confirm      (within $secs s)"
+    say "Otherwise do nothing, or:  openssh-switch revert   - the old server comes back by itself after $secs s."
+}
+
+cmd_confirm() {
+    p=$(pid_of_pidfile)
+    alive "$p" && is_new "$p" || fail "the new server does not run on port $PORT (was the trial reverted already?)"
+    touch "$OK_FILE"
+    stop_guard
+    log "confirmed"
+    say "confirmed: the new server stays on port $PORT (pid $p), the safety timer is off."
+    say "This lasts until the next reboot. Install the replacing package openssh to make it permanent."
+}
+
+cmd_revert() {
+    log "revert $*"
+    [ "$1" = --auto ] || stop_guard
+    rm -f "$OK_FILE"
+    stop_new
+    wait_port down 8
+    start "$JOB" > /dev/null 2>&1
+    if wait_port up 10; then say "the old server is back on port $PORT"; log "old server back"; else say "WARNING: nothing listens on port $PORT"; log "nothing listens"; return 1; fi
+}
+
+cmd_restore() {
+    [ -s "$BACKUP" ] || fail "no backup $BACKUP"
+    stop_new
+    tar xzf "$BACKUP" -C / || fail "unpacking $BACKUP failed"
+    start "$JOB" > /dev/null 2>&1
+    wait_port up 10 && say "restored: the old server listens on port $PORT" || fail "restored the files, but nothing listens on $PORT"
+}
+
+cmd_status() {
+    p=$(pid_of_pidfile)
+    if listening; then
+        if alive "$p" && is_new "$p"; then say "port $PORT: NEW server (pid $p)"; elif alive "$p"; then say "port $PORT: old server (pid $p)"; else say "port $PORT: listening, owner unknown"; fi
+    else say "port $PORT: nothing listens"; fi
+    say "upstart job $JOB: $(status "$JOB" 2>&1 | head -1)"
+    g=$(cat "$GUARD_PID" 2>/dev/null)
+    if [ -n "$g" ] && alive "$g"; then say "safety timer: running (pid $g), the old server returns unless: openssh-switch confirm"; else say "safety timer: off"; fi
+    [ -e "$OK_FILE" ] && say "confirmed: yes"
+    [ -s "$BACKUP" ] && say "backup: $BACKUP" || say "backup: none"
+}
+
+case "$1" in
+    check) cmd_check ;;
+    backup) cmd_backup ;;
+    trial) shift; cmd_trial "$@" ;;
+    confirm) cmd_confirm ;;
+    revert) shift; cmd_revert "$@" ;;
+    restore) cmd_restore ;;
+    status) cmd_status ;;
+    *) sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac
